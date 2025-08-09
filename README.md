@@ -4,12 +4,12 @@ A Quarkus and Angular library management system
 ## Project Structure
 
 This workspace contains:
-- **Backend**: Quarkus REST API (Java 17, Maven)
+- **Backend**: Quarkus REST API (Java 21, Maven)
 - **Frontend**: Angular SPA (TypeScript, npm)
 
 ## Prerequisites
 
-- Java 17 or later
+- Java 21 (Temurin/OpenJDK) or later
 - Maven 3.6+
 - Node.js 18+ and npm
 

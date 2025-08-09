@@ -1,0 +1,52 @@
+{
+  "name": "Librarie Dev (Java 21)",
+  "image": "mcr.microsoft.com/devcontainers/java:1-21-bullseye",
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "20"
+    },
+    "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {},
+    "ghcr.io/devcontainers/features/git:1": {}
+  },
+  "forwardPorts": [8080, 4200],
+  "portsAttributes": {
+    "8080": { "label": "Quarkus API" },
+    "4200": { "label": "Angular App" }
+  },
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "java.configuration.runtimes": [
+          {
+            "name": "JavaSE-21",
+            "path": "/usr/lib/jvm/msopenjdk-current",
+            "default": true
+          }
+        ],
+        "java.configuration.updateBuildConfiguration": "automatic",
+        "terminal.integrated.defaultProfile.linux": "bash"
+      },
+      "extensions": [
+        "redhat.java",
+        "vscjava.vscode-java-pack",
+        "esbenp.prettier-vscode",
+        "ms-azuretools.vscode-docker",
+        "angular.ng-template",
+        "editorconfig.editorconfig"
+      ]
+    }
+  },
+  "remoteEnv": {
+    "JAVA_HOME": "/usr/lib/jvm/msopenjdk-current"
+  },
+  "updateContentCommand": "cd frontend && npm ci || true",
+  "postCreateCommand": "mvn -DskipTests clean package && cd frontend && npm ci",
+  "postStartCommand": "echo 'Use mvn quarkus:dev & npm start (frontend) or ./start-dev.sh'",
+  "runArgs": [
+    "--init",
+    "--privileged"
+  ],
+  "containerEnv": {
+    "QUARKUS_HTTP_PORT": "8080"
+  }
+}
