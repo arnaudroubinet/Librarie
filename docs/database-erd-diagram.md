@@ -34,6 +34,25 @@ erDiagram
         timestamptz created_at "Record creation"
     }
     
+    ORIGINAL_WORKS {
+        uuid id PK "Primary key"
+        text title "Original work title (first publication)"
+        text title_sort "Sortable title"
+        text description "Work description"
+        date first_publication_date "First publication date"
+        jsonb metadata "Additional metadata"
+        timestamptz created_at "Record creation"
+        timestamptz last_modified "Last modification time"
+    }
+    
+    ORIGINAL_WORK_EXTERNAL_IDS {
+        uuid id PK "Primary key"
+        uuid original_work_id FK "Original work reference"
+        text identifier_type "Type (isbn, lccn, oclc, goodreads, etc.)"
+        text identifier_value "External identifier value"
+        timestamptz created_at "Record creation"
+    }
+    
     SERIES {
         uuid id PK "Primary key"
         text name "Series name"
@@ -76,11 +95,18 @@ erDiagram
     }
     
     %% Many-to-Many Relationship Tables
-    BOOK_AUTHORS {
-        uuid book_id FK "Book reference"
+    ORIGINAL_WORK_AUTHORS {
+        uuid original_work_id FK "Original work reference"
         uuid author_id FK "Author reference"
         text role "author, editor, translator, illustrator"
         integer order_index "Author order for display"
+    }
+    
+    BOOK_ORIGINAL_WORKS {
+        uuid book_id FK "Book reference"
+        uuid original_work_id FK "Original work reference"
+        text relationship_type "primary, collection, anthology, adaptation"
+        integer order_index "Order within collection"
     }
     
     BOOK_SERIES {
@@ -162,22 +188,27 @@ erDiagram
     BOOKS }o--|| LANGUAGES : "written in language"
     BOOKS ||--o{ READING_PROGRESS : "reading sessions"
     BOOKS ||--o{ DOWNLOAD_HISTORY : "download events"
+
+    BOOKS ||--o{ BOOK_ORIGINAL_WORKS : "represents original works"
+    ORIGINAL_WORKS ||--o{ BOOK_ORIGINAL_WORKS : "manifested in books"
     
-    BOOKS ||--o{ BOOK_AUTHORS : "has authors"
-    AUTHORS ||--o{ BOOK_AUTHORS : "authored books"
+    ORIGINAL_WORKS ||--o{ ORIGINAL_WORK_AUTHORS : "created by authors"
+    AUTHORS ||--o{ ORIGINAL_WORK_AUTHORS : "created original works"
     
+    ORIGINAL_WORKS ||--o{ ORIGINAL_WORK_EXTERNAL_IDS : "has external identifiers"
+
     BOOKS ||--o{ BOOK_SERIES : "part of series"
     SERIES ||--o{ BOOK_SERIES : "contains books"
-    
+
     BOOKS ||--o{ BOOK_TAGS : "has tags"
     TAGS ||--o{ BOOK_TAGS : "applied to books"
-    
+
     BOOKS ||--o{ BOOK_PUBLISHERS : "published by"
     PUBLISHERS ||--o{ BOOK_PUBLISHERS : "published books"
-    
+
     FORMATS ||--o{ READING_PROGRESS : "read in format"
     FORMATS ||--o{ DOWNLOAD_HISTORY : "downloaded format"
-    
+
     LANGUAGES ||--o{ USER_PREFERENCES : "preferred language"
 ```
 
@@ -199,6 +230,9 @@ erDiagram
 
 ### Modern Application Features
 - **OIDC Integration**: No local user storage, relies on external identity providers
+- **Original Work Abstraction**: Separates intellectual content from physical manifestations
+- **Multi-Work Collections**: Books can represent multiple original works (anthologies, collections)
+- **External Identifier Management**: Flexible system for managing various identifier types
 - **Reading Sync**: Compatible with KOReader and other reading applications
 - **Multi-Format Support**: Handles multiple file formats per book
 - **Flexible Metadata**: JSONB fields allow custom metadata without schema changes

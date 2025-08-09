@@ -63,6 +63,9 @@
 - **Audit Trails**: Comprehensive activity tracking
 
 #### 4. **Enhanced Features**
+- **Original Work Abstraction**: Separates intellectual content from physical manifestations
+- **Multi-Work Collections**: Books can represent multiple original works (anthologies, collections)
+- **External Identifier Management**: Flexible system for managing various identifier types (ISBN, LCCN, OCLC, etc.)
 - **Multi-Format Support**: Separate formats table with quality scoring
 - **Reading Sync**: Enhanced progress tracking with device support
 - **User Preferences**: Flexible user settings storage

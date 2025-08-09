@@ -65,6 +65,40 @@ CREATE UNIQUE INDEX idx_authors_name ON authors(name);
 CREATE INDEX idx_authors_sort ON authors USING btree(sort_name);
 ```
 
+### Original Works
+```sql
+CREATE TABLE original_works (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    title TEXT NOT NULL, -- Title of first publication
+    title_sort TEXT NOT NULL, -- Computed sort field for proper ordering
+    description TEXT,
+    first_publication_date DATE,
+    metadata JSONB DEFAULT '{}',
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    last_modified TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_original_works_title_sort ON original_works USING btree(title_sort);
+CREATE INDEX idx_original_works_created_at ON original_works USING btree(created_at);
+CREATE INDEX idx_original_works_metadata ON original_works USING gin(metadata);
+```
+
+### Original Work External Identifiers
+```sql
+CREATE TABLE original_work_external_ids (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    original_work_id UUID NOT NULL REFERENCES original_works(id) ON DELETE CASCADE,
+    identifier_type TEXT NOT NULL, -- isbn, lccn, oclc, goodreads, etc.
+    identifier_value TEXT NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(original_work_id, identifier_type, identifier_value)
+);
+
+CREATE INDEX idx_original_work_external_ids_work ON original_work_external_ids(original_work_id);
+CREATE INDEX idx_original_work_external_ids_type ON original_work_external_ids(identifier_type);
+CREATE INDEX idx_original_work_external_ids_value ON original_work_external_ids(identifier_value);
+```
+
 ### Series
 ```sql
 CREATE TABLE series (
@@ -159,18 +193,32 @@ CREATE UNIQUE INDEX idx_ratings_book_user ON ratings(book_id, user_subject);
 
 ## Relationship Tables (Many-to-Many)
 
-### Book-Author Relationships
+### Original Work-Author Relationships
 ```sql
-CREATE TABLE book_authors (
-    book_id UUID REFERENCES books(id) ON DELETE CASCADE,
+CREATE TABLE original_work_authors (
+    original_work_id UUID REFERENCES original_works(id) ON DELETE CASCADE,
     author_id UUID REFERENCES authors(id) ON DELETE CASCADE,
     role TEXT DEFAULT 'author', -- author, editor, translator, illustrator
     order_index INTEGER DEFAULT 0,
-    PRIMARY KEY (book_id, author_id, role)
+    PRIMARY KEY (original_work_id, author_id, role)
 );
 
-CREATE INDEX idx_book_authors_book ON book_authors(book_id);
-CREATE INDEX idx_book_authors_author ON book_authors(author_id);
+CREATE INDEX idx_original_work_authors_work ON original_work_authors(original_work_id);
+CREATE INDEX idx_original_work_authors_author ON original_work_authors(author_id);
+```
+
+### Book-Original Work Relationships
+```sql
+CREATE TABLE book_original_works (
+    book_id UUID REFERENCES books(id) ON DELETE CASCADE,
+    original_work_id UUID REFERENCES original_works(id) ON DELETE CASCADE,
+    relationship_type TEXT DEFAULT 'primary', -- primary, collection, anthology, adaptation
+    order_index INTEGER DEFAULT 0, -- Order within collection
+    PRIMARY KEY (book_id, original_work_id, relationship_type)
+);
+
+CREATE INDEX idx_book_original_works_book ON book_original_works(book_id);
+CREATE INDEX idx_book_original_works_work ON book_original_works(original_work_id);
 ```
 
 ### Book-Series Relationships
@@ -314,14 +362,15 @@ INSERT INTO system_config VALUES
 
 ### Materialized Views for Common Queries
 ```sql
--- Book counts by author
+-- Book counts by author (through original works)
 CREATE MATERIALIZED VIEW author_book_counts AS
 SELECT 
     a.id,
     a.name,
-    COUNT(ba.book_id) as book_count
+    COUNT(DISTINCT bow.book_id) as book_count
 FROM authors a
-LEFT JOIN book_authors ba ON a.id = ba.author_id
+LEFT JOIN original_work_authors owa ON a.id = owa.author_id
+LEFT JOIN book_original_works bow ON owa.original_work_id = bow.original_work_id
 GROUP BY a.id, a.name;
 
 CREATE UNIQUE INDEX idx_author_book_counts_id ON author_book_counts(id);
@@ -363,8 +412,9 @@ SELECT
     COUNT(r.rating) as rating_count
 FROM books b
 LEFT JOIN languages l ON b.language_code = l.code
-LEFT JOIN book_authors ba ON b.id = ba.book_id
-LEFT JOIN authors a ON ba.author_id = a.id
+LEFT JOIN book_original_works bow ON b.id = bow.book_id
+LEFT JOIN original_work_authors owa ON bow.original_work_id = owa.original_work_id
+LEFT JOIN authors a ON owa.author_id = a.id
 LEFT JOIN book_series bs ON b.id = bs.book_id
 LEFT JOIN series s ON bs.series_id = s.id
 LEFT JOIN book_tags bt ON b.id = bt.book_id
@@ -404,6 +454,25 @@ erDiagram
         date death_date
         text website_url
         jsonb metadata
+        timestamptz created_at
+    }
+    
+    ORIGINAL_WORKS {
+        uuid id PK
+        text title
+        text title_sort
+        text description
+        date first_publication_date
+        jsonb metadata
+        timestamptz created_at
+        timestamptz last_modified
+    }
+    
+    ORIGINAL_WORK_EXTERNAL_IDS {
+        uuid id PK
+        uuid original_work_id FK
+        text identifier_type
+        text identifier_value
         timestamptz created_at
     }
     
@@ -458,10 +527,17 @@ erDiagram
         timestamptz updated_at
     }
     
-    BOOK_AUTHORS {
-        uuid book_id FK
+    ORIGINAL_WORK_AUTHORS {
+        uuid original_work_id FK
         uuid author_id FK
         text role
+        integer order_index
+    }
+    
+    BOOK_ORIGINAL_WORKS {
+        uuid book_id FK
+        uuid original_work_id FK
+        text relationship_type
         integer order_index
     }
     
@@ -507,17 +583,21 @@ erDiagram
     BOOKS ||--o{ FORMATS : contains
     BOOKS ||--o{ RATINGS : "rated by users"
     BOOKS }o--|| LANGUAGES : "written in"
-    BOOKS ||--o{ BOOK_AUTHORS : "authored by"
+    BOOKS ||--o{ BOOK_ORIGINAL_WORKS : "represents original works"
     BOOKS ||--o{ BOOK_SERIES : "part of"
     BOOKS ||--o{ BOOK_TAGS : "tagged with"
     BOOKS ||--o{ BOOK_PUBLISHERS : "published by"
     BOOKS ||--o{ READING_PROGRESS : "read by users"
+
+    ORIGINAL_WORKS ||--o{ ORIGINAL_WORK_AUTHORS : "created by authors"
+    ORIGINAL_WORKS ||--o{ BOOK_ORIGINAL_WORKS : "manifested in books"
+    ORIGINAL_WORKS ||--o{ ORIGINAL_WORK_EXTERNAL_IDS : "has external identifiers"
     
-    AUTHORS ||--o{ BOOK_AUTHORS : "authors"
+    AUTHORS ||--o{ ORIGINAL_WORK_AUTHORS : "created original works"
     SERIES ||--o{ BOOK_SERIES : "contains"
     TAGS ||--o{ BOOK_TAGS : "tags"
     PUBLISHERS ||--o{ BOOK_PUBLISHERS : "publishes"
-    
+
     FORMATS ||--o{ READING_PROGRESS : "read in format"
     LANGUAGES ||--o{ USER_PREFERENCES : "preferred by users"
 ```
@@ -525,10 +605,11 @@ erDiagram
 ## Migration Strategy
 
 ### Phase 1: Core Schema
-1. Create core tables (books, authors, series, tags, publishers)
-2. Create relationship tables
-3. Add basic indexes
-4. Set up full-text search
+1. Create core tables (books, authors, original_works, series, tags, publishers)
+2. Create original work external identifiers table
+3. Create relationship tables (original_work_authors, book_original_works, etc.)
+4. Add basic indexes
+5. Set up full-text search
 
 ### Phase 2: User Features
 1. Add reading progress tracking
@@ -548,6 +629,9 @@ erDiagram
 2. **Scalability**: UUID primary keys enable distributed systems
 3. **Flexibility**: JSONB metadata allows schema evolution without migrations
 4. **Modern Features**: Full-text search, reading sync, proper timestamp handling
+5. **Original Work Abstraction**: Separates intellectual content from physical manifestations
+6. **Collection Support**: Books can represent multiple original works (anthologies, collections)
+7. **External Identifier Management**: Flexible system for managing various identifier types
 5. **Security**: OIDC-based authentication, no local user storage
 6. **Maintainability**: Clear separation of concerns, proper normalization
 7. **PostgreSQL Native**: Leverages PostgreSQL 16 specific features
