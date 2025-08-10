@@ -2,9 +2,9 @@ name: Full CI (Backend + Frontend)
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
   workflow_dispatch:
 
 jobs:
@@ -131,8 +131,10 @@ jobs:
 
       - name: Run integration smoke tests
         run: |
-          curl -f http://localhost:8080/hello || (echo "Backend health check failed" && exit 1)
-          curl -f http://localhost:8080/q/health || (echo "Backend health endpoint failed" && exit 1)
+          curl -f http://localhost:8080/hello || \
+            (echo "Backend health check failed" && exit 1)
+          curl -f http://localhost:8080/q/health || \
+            (echo "Backend health endpoint failed" && exit 1)
 
       - name: Stop backend
         run: pkill -f quarkus:dev || true
