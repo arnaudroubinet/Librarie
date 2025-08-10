@@ -4,8 +4,8 @@ A Quarkus and Angular library management system
 ## Project Structure
 
 This workspace contains:
-- **Backend**: Quarkus REST API (Java 21, Maven)
-- **Frontend**: Angular SPA (TypeScript, npm)
+- **Backend**: Quarkus REST API (Java 21, Maven) in `backend/`
+- **Frontend**: Angular SPA (TypeScript, npm) in `frontend/`
 
 ## Prerequisites
 
@@ -29,6 +29,7 @@ This will start:
 
 #### Backend (Quarkus)
 ```bash
+cd backend
 mvn quarkus:dev
 ```
 The backend will be available at http://localhost:8080
@@ -49,6 +50,7 @@ The frontend will be available at http://localhost:4200
 
 #### Backend Tests
 ```bash
+cd backend
 mvn test
 ```
 

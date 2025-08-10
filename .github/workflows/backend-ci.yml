@@ -1,0 +1,80 @@
+name: Backend CI
+
+on:
+  push:
+    branches-ignore: [main]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend-ci.yml'
+  pull_request:
+    branches-ignore: [main]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend-ci.yml'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    name: Java ${{ matrix.java }} Maven Test
+    strategy:
+      matrix:
+        java: [21]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK ${{ matrix.java }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ matrix.java }}
+          distribution: 'temurin'
+
+      - name: Cache Maven dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.m2/repository
+            !~/.m2/repository/org/roubinet/librarie
+          key: ${{ runner.os }}-maven-${{ hashFiles('backend/**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+
+      - name: Cache Quarkus build cache
+        uses: actions/cache@v4
+        with:
+          path: backend/target/quarkus-work
+          key: ${{ runner.os }}-quarkus-${{ hashFiles('backend/src/**/*.java', 'backend/src/**/*.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-quarkus-
+
+      - name: Verify Maven and Java versions
+        run: |
+          java -version
+          mvn -version
+
+      - name: Run tests
+        run: |
+          cd backend
+          mvn clean test
+
+      - name: Package application
+        run: |
+          cd backend
+          mvn package -DskipTests
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results-java-${{ matrix.java }}
+          path: backend/target/surefire-reports/
+          retention-days: 7
+
+      - name: Upload coverage reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-reports-java-${{ matrix.java }}
+          path: backend/target/site/jacoco/
+          retention-days: 7
