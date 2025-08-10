@@ -29,7 +29,7 @@ CREATE TABLE books (
     isbn TEXT,
     path TEXT NOT NULL,
     file_size BIGINT,
-    file_hash CHAR(64),
+    file_hash VARCHAR(64),
     has_cover BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW(),
@@ -88,7 +88,7 @@ CREATE TABLE tags (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name TEXT NOT NULL,
     category TEXT DEFAULT 'general',
-    color CHAR(7),
+    color VARCHAR(7),
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
