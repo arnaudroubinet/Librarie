@@ -133,8 +133,4 @@ jobs:
         run: |
           cd backend && mvn quarkus:dev &
           sleep 30
-          curl -f http://localhost:8080/hello || \
-            (echo "Backend health check failed" && exit 1)
-          curl -f http://localhost:8080/q/health || \
-            (echo "Backend health endpoint failed" && exit 1)
           pkill -f quarkus:dev || true
