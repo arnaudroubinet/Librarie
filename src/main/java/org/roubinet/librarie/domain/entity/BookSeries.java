@@ -7,10 +7,13 @@ import java.math.BigDecimal;
 import java.util.Objects;
 
 /**
- * BookSeries entity representing the many-to-many relationship between books and series.
+ * BookSeries entity representing the relationship between books and series.
+ * A book can only be in one series (enforced by unique constraint on book_id).
  */
 @Entity
-@Table(name = "book_series")
+@Table(name = "book_series", uniqueConstraints = {
+    @UniqueConstraint(columnNames = {"book_id"}, name = "uk_book_series_book_id")
+})
 @IdClass(BookSeries.BookSeriesId.class)
 public class BookSeries {
 

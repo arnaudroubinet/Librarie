@@ -57,6 +57,22 @@ COMMENT ON COLUMN download_history.ip_address IS 'TODO: Implement encryption for
 COMMENT ON COLUMN authors.bio IS 'TODO: Externalize by language for multilingual support';
 COMMENT ON COLUMN authors.website_url IS 'TODO: Externalize by language for multilingual support';
 
+-- Add constraint to ensure book can only be in one series
+ALTER TABLE book_series ADD CONSTRAINT uk_book_series_book_id UNIQUE (book_id);
+
+-- Fix column type mismatch for schema validation (PostgreSQL types to standard types)
+ALTER TABLE books ALTER COLUMN file_hash TYPE VARCHAR(64);
+ALTER TABLE books ALTER COLUMN language_code TYPE VARCHAR(2);
+ALTER TABLE languages ALTER COLUMN code TYPE VARCHAR(2);
+ALTER TABLE tags ALTER COLUMN color TYPE VARCHAR(7);
+ALTER TABLE download_history ALTER COLUMN ip_address TYPE VARCHAR(45); -- IPv6 compatible
+
+-- Drop GIN index on search_vector before changing column type
+DROP INDEX IF EXISTS idx_books_search;
+ALTER TABLE books ALTER COLUMN search_vector TYPE TEXT;
+-- Recreate as btree index for text search (can be improved later with full-text search)
+CREATE INDEX idx_books_search ON books USING btree(search_vector);
+
 -- Create indexes for new relationships
 CREATE INDEX idx_books_publisher_id ON books(publisher_id);
 CREATE INDEX idx_ratings_user_id ON ratings(user_id);
