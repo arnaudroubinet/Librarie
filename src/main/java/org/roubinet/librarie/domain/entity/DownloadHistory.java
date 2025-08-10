@@ -21,8 +21,8 @@ public class DownloadHistory extends PanacheEntityBase {
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "book_id", nullable = false)
-    private Book book;
+    @JoinColumn(name = "format_id", nullable = false)
+    private Format format;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id", nullable = false)
@@ -55,12 +55,12 @@ public class DownloadHistory extends PanacheEntityBase {
         this.id = id;
     }
 
-    public Book getBook() {
-        return book;
+    public Format getFormat() {
+        return format;
     }
 
-    public void setBook(Book book) {
-        this.book = book;
+    public void setFormat(Format format) {
+        this.format = format;
     }
 
     public User getUser() {

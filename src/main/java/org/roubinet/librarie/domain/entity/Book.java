@@ -93,8 +93,7 @@ public class Book extends PanacheEntityBase {
     @OneToMany(mappedBy = "book", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private Set<ReadingProgress> readingProgress = new HashSet<>();
 
-    @OneToMany(mappedBy = "book", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    private Set<DownloadHistory> downloadHistory = new HashSet<>();
+
 
     // Default constructor
     public Book() {}
@@ -268,13 +267,7 @@ public class Book extends PanacheEntityBase {
         this.readingProgress = readingProgress;
     }
 
-    public Set<DownloadHistory> getDownloadHistory() {
-        return downloadHistory;
-    }
 
-    public void setDownloadHistory(Set<DownloadHistory> downloadHistory) {
-        this.downloadHistory = downloadHistory;
-    }
 
     @Override
     public boolean equals(Object o) {

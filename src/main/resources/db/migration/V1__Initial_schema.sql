@@ -5,11 +5,20 @@
 -- Create UUID extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- Languages table (reference data)
+-- Languages table (reference data) - Updated for full ISO locale codes
 CREATE TABLE languages (
-    code CHAR(2) PRIMARY KEY,
+    code VARCHAR(10) PRIMARY KEY,
     name TEXT NOT NULL,
     rtl BOOLEAN DEFAULT FALSE
+);
+
+CREATE TABLE publishers (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name TEXT NOT NULL,
+    website_url TEXT,
+    metadata JSONB DEFAULT '{}',
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- Core content tables
@@ -23,23 +32,25 @@ CREATE TABLE books (
     file_hash CHAR(64),
     has_cover BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMPTZ DEFAULT NOW(),
-    last_modified TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
     publication_date DATE,
-    language_code CHAR(2) REFERENCES languages(code),
+    language_code VARCHAR(10) REFERENCES languages(code),
+    publisher_id UUID REFERENCES publishers(id),
     metadata JSONB DEFAULT '{}',
-    search_vector TSVECTOR
+    search_vector TEXT
 );
 
 CREATE TABLE authors (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name TEXT NOT NULL,
     sort_name TEXT NOT NULL,
-    bio TEXT,
+    bio JSONB,
     birth_date DATE,
     death_date DATE,
     website_url TEXT,
     metadata JSONB DEFAULT '{}',
-    created_at TIMESTAMPTZ DEFAULT NOW()
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 CREATE TABLE original_works (
@@ -50,7 +61,7 @@ CREATE TABLE original_works (
     first_publication_date DATE,
     metadata JSONB DEFAULT '{}',
     created_at TIMESTAMPTZ DEFAULT NOW(),
-    last_modified TIMESTAMPTZ DEFAULT NOW()
+    updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 CREATE TABLE original_work_external_ids (
@@ -59,6 +70,7 @@ CREATE TABLE original_work_external_ids (
     identifier_type TEXT NOT NULL,
     identifier_value TEXT NOT NULL,
     created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
     UNIQUE(original_work_id, identifier_type, identifier_value)
 );
 
@@ -68,7 +80,8 @@ CREATE TABLE series (
     sort_name TEXT NOT NULL,
     description TEXT,
     metadata JSONB DEFAULT '{}',
-    created_at TIMESTAMPTZ DEFAULT NOW()
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 CREATE TABLE tags (
@@ -76,15 +89,20 @@ CREATE TABLE tags (
     name TEXT NOT NULL,
     category TEXT DEFAULT 'general',
     color CHAR(7),
-    created_at TIMESTAMPTZ DEFAULT NOW()
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE TABLE publishers (
+-- Users table for OIDC integration
+CREATE TABLE users (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    name TEXT NOT NULL,
-    website_url TEXT,
-    metadata JSONB DEFAULT '{}',
-    created_at TIMESTAMPTZ DEFAULT NOW()
+    oidc_origin TEXT NOT NULL,
+    oidc_origin_url TEXT NOT NULL,
+    oidc_subject TEXT NOT NULL,
+    username TEXT NOT NULL UNIQUE,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    CONSTRAINT uk_users_oidc UNIQUE (oidc_origin, oidc_subject)
 );
 
 CREATE TABLE formats (
@@ -94,7 +112,8 @@ CREATE TABLE formats (
     file_path TEXT NOT NULL,
     file_size BIGINT NOT NULL,
     quality_score INTEGER DEFAULT 0,
-    created_at TIMESTAMPTZ DEFAULT NOW()
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- Many-to-many relationship tables
@@ -127,18 +146,11 @@ CREATE TABLE book_tags (
     PRIMARY KEY (book_id, tag_id)
 );
 
-CREATE TABLE book_publishers (
-    book_id UUID REFERENCES books(id) ON DELETE CASCADE,
-    publisher_id UUID REFERENCES publishers(id) ON DELETE CASCADE,
-    role TEXT DEFAULT 'publisher',
-    PRIMARY KEY (book_id, publisher_id, role)
-);
-
 -- User activity tables
 CREATE TABLE ratings (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     book_id UUID NOT NULL REFERENCES books(id) ON DELETE CASCADE,
-    user_subject TEXT NOT NULL,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     rating INTEGER CHECK (rating >= 1 AND rating <= 5),
     review TEXT,
     created_at TIMESTAMPTZ DEFAULT NOW(),
@@ -149,12 +161,13 @@ CREATE TABLE reading_progress (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     book_id UUID NOT NULL REFERENCES books(id) ON DELETE CASCADE,
     format_id UUID REFERENCES formats(id) ON DELETE CASCADE,
-    user_subject TEXT NOT NULL,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     device_id TEXT NOT NULL,
     progress_cfi TEXT,
     progress_percent DECIMAL(5,2) CHECK (progress_percent >= 0 AND progress_percent <= 100),
     last_read_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    created_at TIMESTAMPTZ DEFAULT NOW()
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 CREATE TABLE user_preferences (
@@ -169,12 +182,12 @@ CREATE TABLE user_preferences (
 
 CREATE TABLE download_history (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    book_id UUID NOT NULL REFERENCES books(id) ON DELETE CASCADE,
-    format_id UUID REFERENCES formats(id) ON DELETE CASCADE,
-    user_subject TEXT NOT NULL,
-    ip_address INET,
+    format_id UUID NOT NULL REFERENCES formats(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    ip_address VARCHAR(45),
     user_agent TEXT,
-    downloaded_at TIMESTAMPTZ DEFAULT NOW()
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- System tables
@@ -201,8 +214,9 @@ CREATE TABLE system_config (
 CREATE INDEX idx_books_title_sort ON books USING btree(title_sort);
 CREATE INDEX idx_books_created_at ON books USING btree(created_at);
 CREATE INDEX idx_books_language ON books USING btree(language_code);
+CREATE INDEX idx_books_publisher ON books USING btree(publisher_id);
 CREATE INDEX idx_books_file_hash ON books USING hash(file_hash);
-CREATE INDEX idx_books_search ON books USING gin(search_vector);
+CREATE INDEX idx_books_search ON books USING btree(search_vector);
 CREATE INDEX idx_books_metadata ON books USING gin(metadata);
 
 CREATE UNIQUE INDEX idx_authors_name ON authors(name);
@@ -240,41 +254,43 @@ CREATE INDEX idx_book_series_index ON book_series(series_index);
 CREATE INDEX idx_book_tags_book ON book_tags(book_id);
 CREATE INDEX idx_book_tags_tag ON book_tags(tag_id);
 
-CREATE INDEX idx_book_publishers_book ON book_publishers(book_id);
-CREATE INDEX idx_book_publishers_publisher ON book_publishers(publisher_id);
-
 CREATE INDEX idx_ratings_book ON ratings(book_id);
-CREATE INDEX idx_ratings_user ON ratings(user_subject);
-CREATE UNIQUE INDEX idx_ratings_book_user ON ratings(book_id, user_subject);
+CREATE INDEX idx_ratings_user ON ratings(user_id);
+CREATE UNIQUE INDEX idx_ratings_book_user ON ratings(book_id, user_id);
 
-CREATE INDEX idx_reading_progress_user ON reading_progress(user_subject);
+CREATE INDEX idx_reading_progress_user ON reading_progress(user_id);
 CREATE INDEX idx_reading_progress_book ON reading_progress(book_id);
 CREATE INDEX idx_reading_progress_last_read ON reading_progress(last_read_at);
-CREATE UNIQUE INDEX idx_reading_progress_unique ON reading_progress(book_id, user_subject, device_id);
+CREATE UNIQUE INDEX idx_reading_progress_unique ON reading_progress(book_id, user_id, device_id);
 
 CREATE INDEX idx_user_preferences_last_login ON user_preferences(last_login);
 
-CREATE INDEX idx_download_history_user ON download_history(user_subject);
-CREATE INDEX idx_download_history_book ON download_history(book_id);
-CREATE INDEX idx_download_history_date ON download_history(downloaded_at);
+CREATE INDEX idx_download_history_user ON download_history(user_id);
+CREATE INDEX idx_download_history_format ON download_history(format_id);
+CREATE INDEX idx_download_history_date ON download_history(created_at);
 
 CREATE INDEX idx_import_jobs_status ON import_jobs(status);
 CREATE INDEX idx_import_jobs_created ON import_jobs(created_at);
 
--- Insert reference data
+-- Insert reference data with full locale codes
 INSERT INTO languages VALUES 
-    ('en', 'English', FALSE),
-    ('fr', 'French', FALSE),
-    ('es', 'Spanish', FALSE),
-    ('de', 'German', FALSE),
-    ('it', 'Italian', FALSE),
-    ('pt', 'Portuguese', FALSE),
-    ('ru', 'Russian', FALSE),
-    ('zh', 'Chinese', FALSE),
-    ('ja', 'Japanese', FALSE),
-    ('ko', 'Korean', FALSE),
-    ('ar', 'Arabic', TRUE),
-    ('he', 'Hebrew', TRUE);
+    ('en-US', 'English (United States)', FALSE),
+    ('en-GB', 'English (United Kingdom)', FALSE),
+    ('fr-FR', 'French (France)', FALSE),
+    ('fr-CA', 'French (Canada)', FALSE),
+    ('es-ES', 'Spanish (Spain)', FALSE),
+    ('es-MX', 'Spanish (Mexico)', FALSE),
+    ('de-DE', 'German (Germany)', FALSE),
+    ('it-IT', 'Italian (Italy)', FALSE),
+    ('pt-PT', 'Portuguese (Portugal)', FALSE),
+    ('pt-BR', 'Portuguese (Brazil)', FALSE),
+    ('ru-RU', 'Russian (Russia)', FALSE),
+    ('zh-CN', 'Chinese (Simplified)', FALSE),
+    ('zh-TW', 'Chinese (Traditional)', FALSE),
+    ('ja-JP', 'Japanese (Japan)', FALSE),
+    ('ko-KR', 'Korean (South Korea)', FALSE),
+    ('ar-SA', 'Arabic (Saudi Arabia)', TRUE),
+    ('he-IL', 'Hebrew (Israel)', TRUE);
 
 -- Insert default system configuration
 INSERT INTO system_config VALUES 

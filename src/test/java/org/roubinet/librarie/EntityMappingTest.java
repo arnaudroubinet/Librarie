@@ -7,6 +7,9 @@ import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
 import org.roubinet.librarie.domain.entity.*;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
@@ -52,8 +55,10 @@ public class EntityMappingTest {
         assertEquals("Test Author", author.getName());
         assertEquals("Author, Test", author.getSortName());
         
-        author.setBio("Test biography");
-        assertEquals("Test biography", author.getBio());
+        Map<String, String> bio = new HashMap<>();
+        bio.put("en", "Test biography");
+        author.setBio(bio);
+        assertEquals("Test biography", author.getBio().get("en"));
     }
 
     @Test

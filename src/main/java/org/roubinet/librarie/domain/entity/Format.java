@@ -51,6 +51,9 @@ public class Format extends PanacheEntityBase {
     @OneToMany(mappedBy = "format", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private Set<ReadingProgress> readingProgress = new HashSet<>();
 
+    @OneToMany(mappedBy = "format", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private Set<DownloadHistory> downloadHistory = new HashSet<>();
+
     // Default constructor
     public Format() {}
 
@@ -132,6 +135,14 @@ public class Format extends PanacheEntityBase {
 
     public void setReadingProgress(Set<ReadingProgress> readingProgress) {
         this.readingProgress = readingProgress;
+    }
+
+    public Set<DownloadHistory> getDownloadHistory() {
+        return downloadHistory;
+    }
+
+    public void setDownloadHistory(Set<DownloadHistory> downloadHistory) {
+        this.downloadHistory = downloadHistory;
     }
 
     @Override

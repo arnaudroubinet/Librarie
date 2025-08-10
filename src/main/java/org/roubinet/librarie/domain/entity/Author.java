@@ -32,10 +32,9 @@ public class Author extends PanacheEntityBase {
     @Column(name = "sort_name", nullable = false)
     private String sortName;
 
-    // TODO: Bio and website URL should be externalized by language
-    // For now keeping as simple fields until multilingual content system is implemented
-    @Column(name = "bio", columnDefinition = "TEXT")
-    private String bio;
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "bio", columnDefinition = "jsonb")
+    private Map<String, String> bio;
 
     @Column(name = "birth_date")
     private LocalDate birthDate;
@@ -96,11 +95,11 @@ public class Author extends PanacheEntityBase {
         this.sortName = sortName;
     }
 
-    public String getBio() {
+    public Map<String, String> getBio() {
         return bio;
     }
 
-    public void setBio(String bio) {
+    public void setBio(Map<String, String> bio) {
         this.bio = bio;
     }
 

@@ -7,15 +7,14 @@ import jakarta.persistence.Table;
 
 /**
  * Language entity representing supported languages for books and user preferences.
- * Uses ISO 639-1 language codes as primary key.
- * TODO: Consider extending to support full ISO locale codes (e.g., fr-FR) for better internationalization
+ * Uses full ISO locale codes (e.g., fr-FR, en-US) as primary key for better internationalization.
  */
 @Entity
 @Table(name = "languages")
 public class Language {
 
     @Id
-    @Column(name = "code", length = 2)
+    @Column(name = "code", length = 10)
     private String code;
 
     @Column(name = "name", nullable = false)
