@@ -23,12 +23,6 @@ This repository contains GitHub Actions workflows for continuous integration and
   - Builds production Angular application
   - Uploads test results and build artifacts
 
-### Full CI (`full-ci.yml`)
-- **Triggers**: Main branch pushes/PRs, or manual dispatch
-- **Features**:
-  - Runs both backend and frontend tests
-  - Integration tests with basic health checks
-  - Comprehensive artifact collection
 
 ## Local Testing
 
