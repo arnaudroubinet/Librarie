@@ -5,9 +5,9 @@
 -- Create UUID extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- Languages table (reference data) - Updated for full ISO locale codes
+-- Languages table (reference data) - BCP 47 standard support
 CREATE TABLE languages (
-    code VARCHAR(10) PRIMARY KEY,
+    code VARCHAR(35) PRIMARY KEY,
     name TEXT NOT NULL,
     rtl BOOLEAN DEFAULT FALSE
 );
@@ -34,7 +34,7 @@ CREATE TABLE books (
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW(),
     publication_date DATE,
-    language_code VARCHAR(10) REFERENCES languages(code),
+    language_code VARCHAR(35) REFERENCES languages(code),
     publisher_id UUID REFERENCES publishers(id),
     metadata JSONB DEFAULT '{}',
     search_vector TEXT
@@ -58,7 +58,7 @@ CREATE TABLE original_works (
     title TEXT NOT NULL,
     title_sort TEXT NOT NULL,
     description TEXT,
-    first_publication_date DATE,
+    first_publication DATE,
     metadata JSONB DEFAULT '{}',
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
@@ -67,11 +67,10 @@ CREATE TABLE original_works (
 CREATE TABLE original_work_external_ids (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     original_work_id UUID NOT NULL REFERENCES original_works(id) ON DELETE CASCADE,
-    identifier_type TEXT NOT NULL,
-    identifier_value TEXT NOT NULL,
+    type TEXT NOT NULL,
+    value TEXT NOT NULL,
     created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW(),
-    UNIQUE(original_work_id, identifier_type, identifier_value)
+    UNIQUE(original_work_id, type, value)
 );
 
 CREATE TABLE series (
@@ -87,7 +86,6 @@ CREATE TABLE series (
 CREATE TABLE tags (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name TEXT NOT NULL,
-    category TEXT DEFAULT 'general',
     color VARCHAR(7),
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
@@ -96,13 +94,12 @@ CREATE TABLE tags (
 -- Users table for OIDC integration
 CREATE TABLE users (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    oidc_origin TEXT NOT NULL,
-    oidc_origin_url TEXT NOT NULL,
+    oidc_origin_name TEXT NOT NULL,
     oidc_subject TEXT NOT NULL,
-    username TEXT NOT NULL UNIQUE,
+    public_name TEXT NOT NULL UNIQUE,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW(),
-    CONSTRAINT uk_users_oidc UNIQUE (oidc_origin, oidc_subject)
+    CONSTRAINT uk_users_oidc UNIQUE (oidc_origin_name, oidc_subject)
 );
 
 CREATE TABLE formats (
@@ -121,14 +118,13 @@ CREATE TABLE original_work_authors (
     original_work_id UUID REFERENCES original_works(id) ON DELETE CASCADE,
     author_id UUID REFERENCES authors(id) ON DELETE CASCADE,
     role TEXT DEFAULT 'author',
-    order_index INTEGER DEFAULT 0,
     PRIMARY KEY (original_work_id, author_id, role)
 );
 
 CREATE TABLE book_original_works (
     book_id UUID REFERENCES books(id) ON DELETE CASCADE,
     original_work_id UUID REFERENCES original_works(id) ON DELETE CASCADE,
-    relationship_type TEXT DEFAULT 'primary',
+    relationship_type TEXT DEFAULT 'PRIMARY' CHECK (relationship_type IN ('PRIMARY', 'COLLECTION', 'ANTHOLOGY', 'ADAPTATION', 'TRANSLATION', 'EXCERPT')),
     order_index INTEGER DEFAULT 0,
     PRIMARY KEY (book_id, original_work_id, relationship_type)
 );
@@ -173,7 +169,7 @@ CREATE TABLE reading_progress (
 CREATE TABLE user_preferences (
     user_subject TEXT PRIMARY KEY,
     display_name TEXT,
-    language_preference CHAR(2) REFERENCES languages(code),
+    language_preference VARCHAR(35) REFERENCES languages(code),
     timezone TEXT DEFAULT 'UTC',
     preferences JSONB DEFAULT '{}',
     created_at TIMESTAMPTZ DEFAULT NOW(),
@@ -227,14 +223,13 @@ CREATE INDEX idx_original_works_created_at ON original_works USING btree(created
 CREATE INDEX idx_original_works_metadata ON original_works USING gin(metadata);
 
 CREATE INDEX idx_original_work_external_ids_work ON original_work_external_ids(original_work_id);
-CREATE INDEX idx_original_work_external_ids_type ON original_work_external_ids(identifier_type);
-CREATE INDEX idx_original_work_external_ids_value ON original_work_external_ids(identifier_value);
+CREATE INDEX idx_original_work_external_ids_type ON original_work_external_ids(type);
+CREATE INDEX idx_original_work_external_ids_value ON original_work_external_ids(value);
 
 CREATE UNIQUE INDEX idx_series_name ON series(name);
 CREATE INDEX idx_series_sort ON series USING btree(sort_name);
 
 CREATE UNIQUE INDEX idx_tags_name ON tags(name);
-CREATE INDEX idx_tags_category ON tags(category);
 
 CREATE UNIQUE INDEX idx_publishers_name ON publishers(name);
 
