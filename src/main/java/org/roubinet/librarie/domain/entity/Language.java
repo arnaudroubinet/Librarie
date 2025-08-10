@@ -8,6 +8,7 @@ import jakarta.persistence.Table;
 /**
  * Language entity representing supported languages for books and user preferences.
  * Uses ISO 639-1 language codes as primary key.
+ * TODO: Consider extending to support full ISO locale codes (e.g., fr-FR) for better internationalization
  */
 @Entity
 @Table(name = "languages")
@@ -20,6 +21,7 @@ public class Language {
     @Column(name = "name", nullable = false)
     private String name;
 
+    // RTL = Right-to-Left text direction (e.g., Arabic, Hebrew)
     @Column(name = "rtl", nullable = false, columnDefinition = "boolean default false")
     private Boolean rtl = false;
 

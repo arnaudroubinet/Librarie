@@ -3,6 +3,7 @@ package org.roubinet.librarie.domain.entity;
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 import jakarta.persistence.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
@@ -31,6 +32,8 @@ public class Author extends PanacheEntityBase {
     @Column(name = "sort_name", nullable = false)
     private String sortName;
 
+    // TODO: Bio and website URL should be externalized by language
+    // For now keeping as simple fields until multilingual content system is implemented
     @Column(name = "bio", columnDefinition = "TEXT")
     private String bio;
 
@@ -40,6 +43,7 @@ public class Author extends PanacheEntityBase {
     @Column(name = "death_date")
     private LocalDate deathDate;
 
+    // TODO: Website URL should be externalized by language  
     @Column(name = "website_url")
     private String websiteUrl;
 
@@ -50,6 +54,10 @@ public class Author extends PanacheEntityBase {
     @CreationTimestamp
     @Column(name = "created_at", nullable = false)
     private OffsetDateTime createdAt;
+
+    @UpdateTimestamp
+    @Column(name = "updated_at", nullable = false)
+    private OffsetDateTime updatedAt;
 
     // Relationships
     @OneToMany(mappedBy = "author", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -134,6 +142,14 @@ public class Author extends PanacheEntityBase {
 
     public void setCreatedAt(OffsetDateTime createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public OffsetDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(OffsetDateTime updatedAt) {
+        this.updatedAt = updatedAt;
     }
 
     public Set<OriginalWorkAuthor> getOriginalWorks() {

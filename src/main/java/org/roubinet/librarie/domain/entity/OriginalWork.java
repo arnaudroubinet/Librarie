@@ -49,8 +49,8 @@ public class OriginalWork extends PanacheEntityBase {
     private OffsetDateTime createdAt;
 
     @UpdateTimestamp
-    @Column(name = "last_modified", nullable = false)
-    private OffsetDateTime lastModified;
+    @Column(name = "updated_at", nullable = false)
+    private OffsetDateTime updatedAt;
 
     // Relationships
     @OneToMany(mappedBy = "originalWork", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -127,12 +127,12 @@ public class OriginalWork extends PanacheEntityBase {
         this.createdAt = createdAt;
     }
 
-    public OffsetDateTime getLastModified() {
-        return lastModified;
+    public OffsetDateTime getUpdatedAt() {
+        return updatedAt;
     }
 
-    public void setLastModified(OffsetDateTime lastModified) {
-        this.lastModified = lastModified;
+    public void setUpdatedAt(OffsetDateTime updatedAt) {
+        this.updatedAt = updatedAt;
     }
 
     public Set<OriginalWorkAuthor> getAuthors() {

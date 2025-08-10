@@ -3,6 +3,7 @@ package org.roubinet.librarie.domain.entity;
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 import jakarta.persistence.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
@@ -38,9 +39,13 @@ public class Publisher extends PanacheEntityBase {
     @Column(name = "created_at", nullable = false)
     private OffsetDateTime createdAt;
 
+    @UpdateTimestamp
+    @Column(name = "updated_at", nullable = false)
+    private OffsetDateTime updatedAt;
+
     // Relationships
-    @OneToMany(mappedBy = "publisher", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Set<BookPublisher> books = new HashSet<>();
+    @OneToMany(mappedBy = "publisher", fetch = FetchType.LAZY)
+    private Set<Book> books = new HashSet<>();
 
     // Default constructor
     public Publisher() {}
@@ -90,11 +95,19 @@ public class Publisher extends PanacheEntityBase {
         this.createdAt = createdAt;
     }
 
-    public Set<BookPublisher> getBooks() {
+    public OffsetDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(OffsetDateTime updatedAt) {
+        this.updatedAt = updatedAt;
+    }
+
+    public Set<Book> getBooks() {
         return books;
     }
 
-    public void setBooks(Set<BookPublisher> books) {
+    public void setBooks(Set<Book> books) {
         this.books = books;
     }
 

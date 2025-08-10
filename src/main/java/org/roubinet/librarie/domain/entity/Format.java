@@ -3,6 +3,7 @@ package org.roubinet.librarie.domain.entity;
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 import jakarta.persistence.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.OffsetDateTime;
 import java.util.HashSet;
@@ -42,12 +43,13 @@ public class Format extends PanacheEntityBase {
     @Column(name = "created_at", nullable = false)
     private OffsetDateTime createdAt;
 
-    // Relationships
-    @OneToMany(mappedBy = "format", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Set<ReadingProgress> readingProgress = new HashSet<>();
+    @UpdateTimestamp
+    @Column(name = "updated_at", nullable = false)
+    private OffsetDateTime updatedAt;
 
-    @OneToMany(mappedBy = "format", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Set<DownloadHistory> downloadHistory = new HashSet<>();
+    // Relationships - As per comment, both one-to-many must be lazy
+    @OneToMany(mappedBy = "format", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private Set<ReadingProgress> readingProgress = new HashSet<>();
 
     // Default constructor
     public Format() {}
@@ -116,20 +118,20 @@ public class Format extends PanacheEntityBase {
         this.createdAt = createdAt;
     }
 
+    public OffsetDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(OffsetDateTime updatedAt) {
+        this.updatedAt = updatedAt;
+    }
+
     public Set<ReadingProgress> getReadingProgress() {
         return readingProgress;
     }
 
     public void setReadingProgress(Set<ReadingProgress> readingProgress) {
         this.readingProgress = readingProgress;
-    }
-
-    public Set<DownloadHistory> getDownloadHistory() {
-        return downloadHistory;
-    }
-
-    public void setDownloadHistory(Set<DownloadHistory> downloadHistory) {
-        this.downloadHistory = downloadHistory;
     }
 
     @Override

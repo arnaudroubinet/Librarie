@@ -3,6 +3,7 @@ package org.roubinet.librarie.domain.entity;
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 import jakarta.persistence.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
@@ -28,8 +29,9 @@ public class ReadingProgress extends PanacheEntityBase {
     @JoinColumn(name = "format_id")
     private Format format;
 
-    @Column(name = "user_subject", nullable = false)
-    private String userSubject;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 
     @Column(name = "device_id", nullable = false)
     private String deviceId;
@@ -46,6 +48,10 @@ public class ReadingProgress extends PanacheEntityBase {
     @CreationTimestamp
     @Column(name = "created_at", nullable = false)
     private OffsetDateTime createdAt;
+
+    @UpdateTimestamp
+    @Column(name = "updated_at", nullable = false)
+    private OffsetDateTime updatedAt;
 
     // Default constructor
     public ReadingProgress() {}
@@ -75,12 +81,12 @@ public class ReadingProgress extends PanacheEntityBase {
         this.format = format;
     }
 
-    public String getUserSubject() {
-        return userSubject;
+    public User getUser() {
+        return user;
     }
 
-    public void setUserSubject(String userSubject) {
-        this.userSubject = userSubject;
+    public void setUser(User user) {
+        this.user = user;
     }
 
     public String getDeviceId() {
@@ -121,6 +127,14 @@ public class ReadingProgress extends PanacheEntityBase {
 
     public void setCreatedAt(OffsetDateTime createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public OffsetDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(OffsetDateTime updatedAt) {
+        this.updatedAt = updatedAt;
     }
 
     @Override

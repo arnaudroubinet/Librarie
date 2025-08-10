@@ -24,8 +24,9 @@ public class Rating extends PanacheEntityBase {
     @JoinColumn(name = "book_id", nullable = false)
     private Book book;
 
-    @Column(name = "user_subject", nullable = false)
-    private String userSubject;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 
     @Column(name = "rating")
     private Integer rating;
@@ -61,12 +62,12 @@ public class Rating extends PanacheEntityBase {
         this.book = book;
     }
 
-    public String getUserSubject() {
-        return userSubject;
+    public User getUser() {
+        return user;
     }
 
-    public void setUserSubject(String userSubject) {
-        this.userSubject = userSubject;
+    public void setUser(User user) {
+        this.user = user;
     }
 
     public Integer getRating() {

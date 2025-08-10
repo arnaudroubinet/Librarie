@@ -9,31 +9,31 @@ import java.time.OffsetDateTime;
 import java.util.UUID;
 
 /**
- * DownloadHistory entity for tracking download events.
+ * User entity representing system users with OIDC integration.
  */
 @Entity
-@Table(name = "download_history")
-public class DownloadHistory extends PanacheEntityBase {
+@Table(name = "users", uniqueConstraints = {
+    @UniqueConstraint(columnNames = {"oidc_origin", "oidc_subject"}),
+    @UniqueConstraint(columnNames = {"username"})
+})
+public class User extends PanacheEntityBase {
 
     @Id
     @GeneratedValue
     @Column(name = "id", columnDefinition = "uuid")
     private UUID id;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "book_id", nullable = false)
-    private Book book;
+    @Column(name = "oidc_origin", nullable = false)
+    private String oidcOrigin;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+    @Column(name = "oidc_origin_url", nullable = false)
+    private String oidcOriginUrl;
 
-    // TODO: Implement encryption for GDPR compliance
-    @Column(name = "ip_address")
-    private String ipAddress;
+    @Column(name = "oidc_subject", nullable = false)
+    private String oidcSubject;
 
-    @Column(name = "user_agent")
-    private String userAgent;
+    @Column(name = "username", nullable = false, unique = true)
+    private String username;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false)
@@ -44,7 +44,7 @@ public class DownloadHistory extends PanacheEntityBase {
     private OffsetDateTime updatedAt;
 
     // Default constructor
-    public DownloadHistory() {}
+    public User() {}
 
     // Getters and setters
     public UUID getId() {
@@ -55,36 +55,36 @@ public class DownloadHistory extends PanacheEntityBase {
         this.id = id;
     }
 
-    public Book getBook() {
-        return book;
+    public String getOidcOrigin() {
+        return oidcOrigin;
     }
 
-    public void setBook(Book book) {
-        this.book = book;
+    public void setOidcOrigin(String oidcOrigin) {
+        this.oidcOrigin = oidcOrigin;
     }
 
-    public User getUser() {
-        return user;
+    public String getOidcOriginUrl() {
+        return oidcOriginUrl;
     }
 
-    public void setUser(User user) {
-        this.user = user;
+    public void setOidcOriginUrl(String oidcOriginUrl) {
+        this.oidcOriginUrl = oidcOriginUrl;
     }
 
-    public String getIpAddress() {
-        return ipAddress;
+    public String getOidcSubject() {
+        return oidcSubject;
     }
 
-    public void setIpAddress(String ipAddress) {
-        this.ipAddress = ipAddress;
+    public void setOidcSubject(String oidcSubject) {
+        this.oidcSubject = oidcSubject;
     }
 
-    public String getUserAgent() {
-        return userAgent;
+    public String getUsername() {
+        return username;
     }
 
-    public void setUserAgent(String userAgent) {
-        this.userAgent = userAgent;
+    public void setUsername(String username) {
+        this.username = username;
     }
 
     public OffsetDateTime getCreatedAt() {
@@ -106,9 +106,9 @@ public class DownloadHistory extends PanacheEntityBase {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof DownloadHistory)) return false;
-        DownloadHistory that = (DownloadHistory) o;
-        return id != null && id.equals(that.id);
+        if (!(o instanceof User)) return false;
+        User user = (User) o;
+        return id != null && id.equals(user.id);
     }
 
     @Override

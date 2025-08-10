@@ -53,15 +53,19 @@ public class Book extends PanacheEntityBase {
     private OffsetDateTime createdAt;
 
     @UpdateTimestamp
-    @Column(name = "last_modified", nullable = false)
-    private OffsetDateTime lastModified;
+    @Column(name = "updated_at", nullable = false)
+    private OffsetDateTime updatedAt;
 
     @Column(name = "publication_date")
     private LocalDate publicationDate;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "language_code", referencedColumnName = "code")
     private Language language;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "publisher_id")
+    private Publisher publisher;
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "metadata", columnDefinition = "jsonb")
@@ -71,28 +75,29 @@ public class Book extends PanacheEntityBase {
     private String searchVector;
 
     // Relationships
-    @OneToMany(mappedBy = "book", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "book", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private Set<Format> formats = new HashSet<>();
 
-    @OneToMany(mappedBy = "book", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "book", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private Set<BookOriginalWork> originalWorks = new HashSet<>();
 
-    @OneToMany(mappedBy = "book", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Set<BookSeries> series = new HashSet<>();
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "series_id")
+    private Series series;
 
-    @OneToMany(mappedBy = "book", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Column(name = "series_index", precision = 10, scale = 2)
+    private java.math.BigDecimal seriesIndex;
+
+    @OneToMany(mappedBy = "book", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private Set<BookTag> tags = new HashSet<>();
 
-    @OneToMany(mappedBy = "book", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Set<BookPublisher> publishers = new HashSet<>();
-
-    @OneToMany(mappedBy = "book", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "book", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private Set<Rating> ratings = new HashSet<>();
 
-    @OneToMany(mappedBy = "book", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "book", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private Set<ReadingProgress> readingProgress = new HashSet<>();
 
-    @OneToMany(mappedBy = "book", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "book", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private Set<DownloadHistory> downloadHistory = new HashSet<>();
 
     // Default constructor
@@ -171,12 +176,12 @@ public class Book extends PanacheEntityBase {
         this.createdAt = createdAt;
     }
 
-    public OffsetDateTime getLastModified() {
-        return lastModified;
+    public OffsetDateTime getUpdatedAt() {
+        return updatedAt;
     }
 
-    public void setLastModified(OffsetDateTime lastModified) {
-        this.lastModified = lastModified;
+    public void setUpdatedAt(OffsetDateTime updatedAt) {
+        this.updatedAt = updatedAt;
     }
 
     public LocalDate getPublicationDate() {
@@ -193,6 +198,14 @@ public class Book extends PanacheEntityBase {
 
     public void setLanguage(Language language) {
         this.language = language;
+    }
+
+    public Publisher getPublisher() {
+        return publisher;
+    }
+
+    public void setPublisher(Publisher publisher) {
+        this.publisher = publisher;
     }
 
     public Map<String, Object> getMetadata() {
@@ -227,12 +240,20 @@ public class Book extends PanacheEntityBase {
         this.originalWorks = originalWorks;
     }
 
-    public Set<BookSeries> getSeries() {
+    public Series getSeries() {
         return series;
     }
 
-    public void setSeries(Set<BookSeries> series) {
+    public void setSeries(Series series) {
         this.series = series;
+    }
+
+    public java.math.BigDecimal getSeriesIndex() {
+        return seriesIndex;
+    }
+
+    public void setSeriesIndex(java.math.BigDecimal seriesIndex) {
+        this.seriesIndex = seriesIndex;
     }
 
     public Set<BookTag> getTags() {
@@ -241,14 +262,6 @@ public class Book extends PanacheEntityBase {
 
     public void setTags(Set<BookTag> tags) {
         this.tags = tags;
-    }
-
-    public Set<BookPublisher> getPublishers() {
-        return publishers;
-    }
-
-    public void setPublishers(Set<BookPublisher> publishers) {
-        this.publishers = publishers;
     }
 
     public Set<Rating> getRatings() {
