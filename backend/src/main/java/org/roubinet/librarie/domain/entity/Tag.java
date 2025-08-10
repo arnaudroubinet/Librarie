@@ -1,7 +1,13 @@
 package org.roubinet.librarie.domain.entity;
 
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import jakarta.persistence.ManyToMany;
+import jakarta.persistence.FetchType;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
@@ -12,7 +18,6 @@ import java.util.UUID;
 
 /**
  * Tag entity representing categorization labels for books.
- * Tags can be grouped by category (e.g., genre, subject, etc.).
  */
 @Entity
 @Table(name = "tags")
@@ -26,9 +31,6 @@ public class Tag extends PanacheEntityBase {
     @Column(name = "name", nullable = false, unique = true)
     private String name;
 
-    @Column(name = "category", nullable = false, columnDefinition = "text default 'general'")
-    private String category = "general";
-
     @Column(name = "color", length = 7)
     private String color;
 
@@ -41,15 +43,14 @@ public class Tag extends PanacheEntityBase {
     private OffsetDateTime updatedAt;
 
     // Relationships
-    @OneToMany(mappedBy = "tag", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Set<BookTag> books = new HashSet<>();
+    @ManyToMany(mappedBy = "tags", fetch = FetchType.LAZY)
+    private Set<Book> books = new HashSet<>();
 
     // Default constructor
     public Tag() {}
 
-    public Tag(String name, String category) {
+    public Tag(String name) {
         this.name = name;
-        this.category = category;
     }
 
     // Getters and setters
@@ -67,14 +68,6 @@ public class Tag extends PanacheEntityBase {
 
     public void setName(String name) {
         this.name = name;
-    }
-
-    public String getCategory() {
-        return category;
-    }
-
-    public void setCategory(String category) {
-        this.category = category;
     }
 
     public String getColor() {
@@ -101,11 +94,11 @@ public class Tag extends PanacheEntityBase {
         this.updatedAt = updatedAt;
     }
 
-    public Set<BookTag> getBooks() {
+    public Set<Book> getBooks() {
         return books;
     }
 
-    public void setBooks(Set<BookTag> books) {
+    public void setBooks(Set<Book> books) {
         this.books = books;
     }
 
@@ -127,7 +120,6 @@ public class Tag extends PanacheEntityBase {
         return "Tag{" +
                 "id=" + id +
                 ", name='" + name + '\'' +
-                ", category='" + category + '\'' +
                 '}';
     }
 }

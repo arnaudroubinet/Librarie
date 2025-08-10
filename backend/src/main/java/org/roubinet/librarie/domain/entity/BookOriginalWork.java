@@ -1,6 +1,15 @@
 package org.roubinet.librarie.domain.entity;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.Id;
+import jakarta.persistence.IdClass;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
 
 import java.io.Serializable;
 
@@ -23,8 +32,9 @@ public record BookOriginalWork(
     OriginalWork originalWork,
 
     @Id
-    @Column(name = "relationship_type", nullable = false, columnDefinition = "text default 'primary'")
-    String relationshipType,
+    @Enumerated(EnumType.STRING)
+    @Column(name = "relationship_type", nullable = false, columnDefinition = "text default 'PRIMARY'")
+    BookOriginalWorkRelationType relationshipType,
 
     @Column(name = "order_index", nullable = false, columnDefinition = "integer default 0")
     Integer orderIndex
@@ -32,7 +42,7 @@ public record BookOriginalWork(
     
     public BookOriginalWork {
         if (relationshipType == null) {
-            relationshipType = "primary";
+            relationshipType = BookOriginalWorkRelationType.PRIMARY;
         }
         if (orderIndex == null) {
             orderIndex = 0;
@@ -40,5 +50,5 @@ public record BookOriginalWork(
     }
 
     // Composite key class
-    public static record BookOriginalWorkId(Book book, OriginalWork originalWork, String relationshipType) implements Serializable {}
+    public static record BookOriginalWorkId(Book book, OriginalWork originalWork, BookOriginalWorkRelationType relationshipType) implements Serializable {}
 }

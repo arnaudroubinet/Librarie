@@ -37,8 +37,8 @@ public class OriginalWork extends PanacheEntityBase {
     @Column(name = "description", columnDefinition = "TEXT")
     private String description;
 
-    @Column(name = "first_publication_date")
-    private LocalDate firstPublicationDate;
+    @Column(name = "first_publication")
+    private LocalDate firstPublication;
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "metadata", columnDefinition = "jsonb")
@@ -52,7 +52,6 @@ public class OriginalWork extends PanacheEntityBase {
     @Column(name = "updated_at", nullable = false)
     private OffsetDateTime updatedAt;
 
-    // Relationships
     @OneToMany(mappedBy = "originalWork", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<OriginalWorkAuthor> authors = new HashSet<>();
 
@@ -103,12 +102,12 @@ public class OriginalWork extends PanacheEntityBase {
         this.description = description;
     }
 
-    public LocalDate getFirstPublicationDate() {
-        return firstPublicationDate;
+    public LocalDate getFirstPublication() {
+        return firstPublication;
     }
 
-    public void setFirstPublicationDate(LocalDate firstPublicationDate) {
-        this.firstPublicationDate = firstPublicationDate;
+    public void setFirstPublication(LocalDate firstPublication) {
+        this.firstPublication = firstPublication;
     }
 
     public Map<String, Object> getMetadata() {

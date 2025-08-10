@@ -30,7 +30,7 @@ public class EntityMappingTest {
         assertDoesNotThrow(() -> new OriginalWork("Test Work", "Test Work"));
         assertDoesNotThrow(() -> new Book());
         assertDoesNotThrow(() -> new Series("Test Series", "Test Series"));
-        assertDoesNotThrow(() -> new Tag("test", "general"));
+        assertDoesNotThrow(() -> new Tag("test"));
         assertDoesNotThrow(() -> new Publisher("Test Publisher"));
         assertDoesNotThrow(() -> new User());
         assertDoesNotThrow(() -> new Rating());
@@ -77,14 +77,12 @@ public class EntityMappingTest {
     public void testUserEntity() {
         // Test User entity with OIDC integration
         User user = new User();
-        user.setOidcOrigin("keycloak");
-        user.setOidcOriginUrl("http://localhost:8180/auth/realms/librarie");
+        user.setOidcOriginName("keycloak");
         user.setOidcSubject("123e4567-e89b-12d3-a456-426614174000");
-        user.setUsername("testuser");
+        user.setPublicName("testuser");
 
-        assertEquals("testuser", user.getUsername());
-        assertEquals("keycloak", user.getOidcOrigin());
-        assertEquals("http://localhost:8180/auth/realms/librarie", user.getOidcOriginUrl());
+        assertEquals("testuser", user.getPublicName());
+        assertEquals("keycloak", user.getOidcOriginName());
         assertEquals("123e4567-e89b-12d3-a456-426614174000", user.getOidcSubject());
     }
 
@@ -121,18 +119,16 @@ public class EntityMappingTest {
     }
 
     @Test
-    public void testRecordEntities() {
-        // Test immutable record entities
+    public void testManyToManyRelationship() {
+        // Test Book-Tag many-to-many relationship
         Book book = new Book();
-        Tag tag = new Tag("test", "general");
-        BookTag bookTag = new BookTag(book, tag);
+        Tag tag = new Tag("test");
         
-        assertEquals(book, bookTag.book());
-        assertEquals(tag, bookTag.tag());
+        // Add tag to book's tag collection
+        book.getTags().add(tag);
         
-        // Test that records are immutable - fields are final
-        assertNotNull(bookTag.book());
-        assertNotNull(bookTag.tag());
+        assertTrue(book.getTags().contains(tag));
+        assertEquals(1, book.getTags().size());
     }
 
     @Test
@@ -141,17 +137,16 @@ public class EntityMappingTest {
         // Test User entity persistence with OIDC fields
         try {
             User user = new User();
-            user.setOidcOrigin("keycloak");
-            user.setOidcOriginUrl("http://localhost:8180/auth/realms/librarie");
+            user.setOidcOriginName("keycloak");
             user.setOidcSubject("persist-test-123");
-            user.setUsername("persistuser");
+            user.setPublicName("persistuser");
             
             entityManager.persist(user);
             entityManager.flush();
 
             assertNotNull(user.getId());
-            assertEquals("persistuser", user.getUsername());
-            assertEquals("keycloak", user.getOidcOrigin());
+            assertEquals("persistuser", user.getPublicName());
+            assertEquals("keycloak", user.getOidcOriginName());
             assertNotNull(user.getCreatedAt());
             assertNotNull(user.getUpdatedAt());
         } catch (Exception e) {
@@ -168,10 +163,9 @@ public class EntityMappingTest {
         try {
             // Create a test user
             User user = new User();
-            user.setOidcOrigin("keycloak");
-            user.setOidcOriginUrl("http://localhost:8180/auth/realms/librarie");
+            user.setOidcOriginName("keycloak");
             user.setOidcSubject("rating-user-123");
-            user.setUsername("ratinguser");
+            user.setPublicName("ratinguser");
             entityManager.persist(user);
 
             // Create a test book

@@ -28,17 +28,13 @@ public class OriginalWorkAuthor {
     @Column(name = "role", nullable = false)
     private String role;
 
-    @Column(name = "order_index", nullable = false, columnDefinition = "integer default 0")
-    private Integer orderIndex = 0;
-
     // Default constructor
     public OriginalWorkAuthor() {}
 
-    public OriginalWorkAuthor(OriginalWork originalWork, Author author, String role, Integer orderIndex) {
+    public OriginalWorkAuthor(OriginalWork originalWork, Author author, String role) {
         this.originalWork = originalWork;
         this.author = author;
         this.role = role;
-        this.orderIndex = orderIndex;
     }
 
     // Getters and setters
@@ -64,14 +60,6 @@ public class OriginalWorkAuthor {
 
     public void setRole(String role) {
         this.role = role;
-    }
-
-    public Integer getOrderIndex() {
-        return orderIndex;
-    }
-
-    public void setOrderIndex(Integer orderIndex) {
-        this.orderIndex = orderIndex;
     }
 
     @Override

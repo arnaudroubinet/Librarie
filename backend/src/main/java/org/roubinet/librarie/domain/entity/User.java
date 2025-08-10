@@ -13,8 +13,8 @@ import java.util.UUID;
  */
 @Entity
 @Table(name = "users", uniqueConstraints = {
-    @UniqueConstraint(columnNames = {"oidc_origin", "oidc_subject"}),
-    @UniqueConstraint(columnNames = {"username"})
+    @UniqueConstraint(columnNames = {"oidc_origin_name", "oidc_subject"}),
+    @UniqueConstraint(columnNames = {"public_name"})
 })
 public class User extends PanacheEntityBase {
 
@@ -23,17 +23,14 @@ public class User extends PanacheEntityBase {
     @Column(name = "id", columnDefinition = "uuid")
     private UUID id;
 
-    @Column(name = "oidc_origin", nullable = false)
-    private String oidcOrigin;
-
-    @Column(name = "oidc_origin_url", nullable = false)
-    private String oidcOriginUrl;
+    @Column(name = "oidc_origin_name", nullable = false)
+    private String oidcOriginName;
 
     @Column(name = "oidc_subject", nullable = false)
     private String oidcSubject;
 
-    @Column(name = "username", nullable = false, unique = true)
-    private String username;
+    @Column(name = "public_name", nullable = false, unique = true)
+    private String publicName;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false)
@@ -55,20 +52,12 @@ public class User extends PanacheEntityBase {
         this.id = id;
     }
 
-    public String getOidcOrigin() {
-        return oidcOrigin;
+    public String getOidcOriginName() {
+        return oidcOriginName;
     }
 
-    public void setOidcOrigin(String oidcOrigin) {
-        this.oidcOrigin = oidcOrigin;
-    }
-
-    public String getOidcOriginUrl() {
-        return oidcOriginUrl;
-    }
-
-    public void setOidcOriginUrl(String oidcOriginUrl) {
-        this.oidcOriginUrl = oidcOriginUrl;
+    public void setOidcOriginName(String oidcOriginName) {
+        this.oidcOriginName = oidcOriginName;
     }
 
     public String getOidcSubject() {
@@ -79,12 +68,12 @@ public class User extends PanacheEntityBase {
         this.oidcSubject = oidcSubject;
     }
 
-    public String getUsername() {
-        return username;
+    public String getPublicName() {
+        return publicName;
     }
 
-    public void setUsername(String username) {
-        this.username = username;
+    public void setPublicName(String publicName) {
+        this.publicName = publicName;
     }
 
     public OffsetDateTime getCreatedAt() {

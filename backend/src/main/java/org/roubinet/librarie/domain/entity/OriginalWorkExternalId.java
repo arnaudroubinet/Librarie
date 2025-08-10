@@ -1,6 +1,13 @@
 package org.roubinet.librarie.domain.entity;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.OffsetDateTime;
@@ -22,11 +29,11 @@ public record OriginalWorkExternalId(
     @JoinColumn(name = "original_work_id", nullable = false)
     OriginalWork originalWork,
     
-    @Column(name = "identifier_type", nullable = false)
-    String identifierType,
+    @Column(name = "type", nullable = false)
+    String type,
     
-    @Column(name = "identifier_value", nullable = false)
-    String identifierValue,
+    @Column(name = "value", nullable = false)
+    String value,
     
     @CreationTimestamp
     @Column(name = "created_at", nullable = false)
@@ -39,7 +46,7 @@ public record OriginalWorkExternalId(
     }
     
     // Constructor for creating new instances
-    public OriginalWorkExternalId(OriginalWork originalWork, String identifierType, String identifierValue) {
-        this(null, originalWork, identifierType, identifierValue, null);
+    public OriginalWorkExternalId(OriginalWork originalWork, String type, String value) {
+        this(null, originalWork, type, value, null);
     }
 }

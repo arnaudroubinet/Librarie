@@ -7,14 +7,14 @@ import jakarta.persistence.Table;
 
 /**
  * Language entity representing supported languages for books and user preferences.
- * Uses full ISO locale codes (e.g., fr-FR, en-US) as primary key for better internationalization.
+ * Uses BCP 47 language tags (e.g., en-US, fr-FR, zh-Hans) as primary key for better internationalization.
  */
 @Entity
 @Table(name = "languages")
 public class Language {
 
     @Id
-    @Column(name = "code", length = 10)
+    @Column(name = "code", length = 35)
     private String code;
 
     @Column(name = "name", nullable = false)

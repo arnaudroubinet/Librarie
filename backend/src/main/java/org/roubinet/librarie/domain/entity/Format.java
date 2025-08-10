@@ -28,7 +28,7 @@ public class Format extends PanacheEntityBase {
     private Book book;
 
     @Column(name = "format_type", nullable = false)
-    private String formatType;
+    private String type;
 
     @Column(name = "file_path", nullable = false)
     private String filePath;
@@ -47,7 +47,6 @@ public class Format extends PanacheEntityBase {
     @Column(name = "updated_at", nullable = false)
     private OffsetDateTime updatedAt;
 
-    // Relationships - As per comment, both one-to-many must be lazy
     @OneToMany(mappedBy = "format", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private Set<ReadingProgress> readingProgress = new HashSet<>();
 
@@ -57,9 +56,9 @@ public class Format extends PanacheEntityBase {
     // Default constructor
     public Format() {}
 
-    public Format(Book book, String formatType, String filePath, Long fileSize) {
+    public Format(Book book, String type, String filePath, Long fileSize) {
         this.book = book;
-        this.formatType = formatType;
+        this.type = type;
         this.filePath = filePath;
         this.fileSize = fileSize;
     }
@@ -81,12 +80,12 @@ public class Format extends PanacheEntityBase {
         this.book = book;
     }
 
-    public String getFormatType() {
-        return formatType;
+    public String getType() {
+        return type;
     }
 
-    public void setFormatType(String formatType) {
-        this.formatType = formatType;
+    public void setType(String type) {
+        this.type = type;
     }
 
     public String getFilePath() {
@@ -162,7 +161,7 @@ public class Format extends PanacheEntityBase {
     public String toString() {
         return "Format{" +
                 "id=" + id +
-                ", formatType='" + formatType + '\'' +
+                ", type='" + type + '\'' +
                 ", filePath='" + filePath + '\'' +
                 ", fileSize=" + fileSize +
                 '}';
