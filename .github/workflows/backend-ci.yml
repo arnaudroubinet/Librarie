@@ -3,14 +3,10 @@ name: Backend CI
 on:
   push:
     paths:
-      - 'src/**'
-      - 'pom.xml'
       - 'backend/**'
       - '.github/workflows/backend-ci.yml'
   pull_request:
     paths:
-      - 'src/**'
-      - 'pom.xml'
       - 'backend/**'
       - '.github/workflows/backend-ci.yml'
 
@@ -38,15 +34,15 @@ jobs:
           path: |
             ~/.m2/repository
             !~/.m2/repository/org/roubinet/librarie
-          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          key: ${{ runner.os }}-maven-${{ hashFiles('backend/**/pom.xml') }}
           restore-keys: |
             ${{ runner.os }}-maven-
 
       - name: Cache Quarkus build cache
         uses: actions/cache@v4
         with:
-          path: target/quarkus-work
-          key: ${{ runner.os }}-quarkus-${{ hashFiles('src/**/*.java', 'src/**/*.properties') }}
+          path: backend/target/quarkus-work
+          key: ${{ runner.os }}-quarkus-${{ hashFiles('backend/src/**/*.java', 'backend/src/**/*.properties') }}
           restore-keys: |
             ${{ runner.os }}-quarkus-
 
@@ -56,17 +52,21 @@ jobs:
           mvn -version
 
       - name: Run tests
-        run: mvn clean test
+        run: |
+          cd backend
+          mvn clean test
 
       - name: Package application
-        run: mvn package -DskipTests
+        run: |
+          cd backend
+          mvn package -DskipTests
 
       - name: Upload test results
         uses: actions/upload-artifact@v4
         if: always()
         with:
           name: test-results-java-${{ matrix.java }}
-          path: target/surefire-reports/
+          path: backend/target/surefire-reports/
           retention-days: 7
 
       - name: Upload coverage reports
@@ -74,5 +74,5 @@ jobs:
         if: always()
         with:
           name: coverage-reports-java-${{ matrix.java }}
-          path: target/site/jacoco/
+          path: backend/target/site/jacoco/
           retention-days: 7

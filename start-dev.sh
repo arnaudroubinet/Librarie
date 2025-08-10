@@ -6,7 +6,7 @@ echo "Starting Librarie development servers..."
 
 # Start Quarkus backend in background
 echo "Starting Quarkus backend on port 8080..."
-mvn quarkus:dev &
+cd backend && mvn quarkus:dev &
 QUARKUS_PID=$!
 
 # Wait a moment for Quarkus to start
@@ -14,7 +14,7 @@ sleep 5
 
 # Start Angular frontend in background
 echo "Starting Angular frontend on port 4200..."
-cd frontend && npm start &
+cd ../frontend && npm start &
 ANGULAR_PID=$!
 
 echo "Both servers are starting..."

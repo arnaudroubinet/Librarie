@@ -3,7 +3,7 @@
 ## Requirements Fulfilled
 
 ✅ **Java compilation and tests run on any branches when backend content is updated**
-- Triggers on changes to `src/`, `pom.xml`, or `backend/` directory
+- Triggers on changes to `backend/` directory
 - No branch restrictions - works on all branches
 - Uses Java 21 SDK as specified
 - Implements Maven dependency caching
@@ -29,9 +29,10 @@
 
 ```
 Librarie/
-├── src/               # Backend Java code (Quarkus)
+├── backend/            # Backend Java code (Quarkus)
+│   ├── src/           # Java source files
+│   └── pom.xml        # Maven configuration (Java 21)
 ├── frontend/          # Frontend Angular code
-├── pom.xml           # Maven configuration (Java 21)
 ├── .github/workflows/ # CI/CD workflows
 ├── test-ci.sh        # Local testing script
 └── verify-ci.sh      # Verification script

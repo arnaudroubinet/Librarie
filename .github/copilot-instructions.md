@@ -17,16 +17,17 @@ Librarie is a dual-module workspace:
 Purpose: Scaffold for a future library management system.
 
 ## 2. Tech & Layout
-Root files: `pom.xml`, `start-dev.sh`, `README.md`, `docs/`, `frontend/`, `src/` (backend), `target/` build output.
+Root files: `start-dev.sh`, `README.md`, `docs/`, `frontend/`, `backend/` (backend).
 Key paths:
-- Backend source: `src/main/java/...`
-- Backend tests: `src/test/java/...`
-- Backend config: `src/main/resources/application*.properties`
+- Backend source: `backend/src/main/java/...`
+- Backend tests: `backend/src/test/java/...`
+- Backend config: `backend/src/main/resources/application*.properties`
+- Backend Maven: `backend/pom.xml`
 - Frontend app: `frontend/src/`
 - Angular config: `frontend/angular.json`, `frontend/package.json`
 - Script to launch both dev servers: `./start-dev.sh`
 - Documentation: `docs/` currently includes `feature-map.md`, `migration-plan.md`, `open-questions.md` – read these to understand the vision, upcoming workstreams, and open questions before adding major features.
-No GitHub Actions workflows yet (`.github/workflows` absent).
+- CI/CD workflows: `.github/workflows` contains backend-ci.yml, frontend-ci.yml, full-ci.yml.
 
 ## 3. Runtimes & Required Versions (ALWAYS honor)
 - Java: 21 (project now sets `maven.compiler.release=21`). Use Temurin/OpenJDK 21.
@@ -36,14 +37,14 @@ No GitHub Actions workflows yet (`.github/workflows` absent).
 - Docker: Needed for Quarkus Dev Services (Keycloak test container) during `mvn test`. Ensure Docker daemon is available or disable OIDC / Dev Services if adding fast unit tests.
 
 ## 4. Build / Run / Test Cheat Sheet
-ALWAYS run `mvn -q -DskipTests clean package` before committing backend changes to ensure compilation & packaging succeed.
+ALWAYS run `cd backend && mvn -q -DskipTests clean package` before committing backend changes to ensure compilation & packaging succeed.
 
 Backend:
-1. Clean & compile (skip tests): `mvn -DskipTests clean package`
-2. Full tests: `mvn test` (pulls Keycloak image first time; adds ~60–120s). Expect warnings: Agroal (no datasource), Hibernate (no entities). Harmless unless adding persistence.
-3. Dev mode: `mvn quarkus:dev` (hot reload, port 8080). Greeting endpoint: `GET http://localhost:8080/hello`.
+1. Clean & compile (skip tests): `cd backend && mvn -DskipTests clean package`
+2. Full tests: `cd backend && mvn test` (pulls Keycloak image first time; adds ~60–120s). Expect warnings: Agroal (no datasource), Hibernate (no entities). Harmless unless adding persistence.
+3. Dev mode: `cd backend && mvn quarkus:dev` (hot reload, port 8080). Greeting endpoint: `GET http://localhost:8080/hello`.
 4. Profiles: dev (default), prod (set with `-Dquarkus.profile=prod`). In prod profile OpenAPI + Swagger UI disabled.
-5. Native build (if ever needed): `mvn -Dnative -DskipTests package` (GraalVM/mandrel required; not currently configured beyond profile skeleton).
+5. Native build (if ever needed): `cd backend && mvn -Dnative -DskipTests package` (GraalVM/mandrel required; not currently configured beyond profile skeleton).
 
 Frontend:
 1. Install deps (ALWAYS after cloning or when `package.json` changes): `cd frontend && npm ci`.
@@ -76,21 +77,21 @@ No frontend tests defined beyond Angular scaffold (Karma default harness auto-ge
 
 ## 8. Adding Backend Features (Guidance)
 Where to put code:
-- New REST resources: `src/main/java/org/roubinet/librarie/` (create packages as domain grows).
+- New REST resources: `backend/src/main/java/org/roubinet/librarie/` (create packages as domain grows).
 - Entities: add JPA @Entity classes then configure datasource (add JDBC driver dependency and `quarkus.datasource.*` properties). Remove current Hibernate warning.
-ALWAYS add corresponding test under parallel package in `src/test/java/...` using `@QuarkusTest`.
+ALWAYS add corresponding test under parallel package in `backend/src/test/java/...` using `@QuarkusTest`.
 
 ## 9. Dependency & Plugin Notes
 - Quarkus BOM manages versions; add extensions via `<dependency>` on `io.quarkus:quarkus-<name>`.
 - Surefire/Failsafe already configured. Integration tests currently skipped (`skipITs=true`) unless native profile used.
-- If adding Flyway migrations place under `src/main/resources/db/migration`.
+- If adding Flyway migrations place under `backend/src/main/resources/db/migration`.
 
 ## 10. Quality / Validation Steps Before Commit
 ALWAYS perform:
-1. Backend compile: `mvn -DskipTests clean package`
-2. Backend tests (if modifying code or config): `mvn test`
+1. Backend compile: `cd backend && mvn -DskipTests clean package`
+2. Backend tests (if modifying code or config): `cd backend && mvn test`
 3. Frontend (if touched): `cd frontend && npm ci && npm run build`
-4. Optional quick manual smoke: start dev (`mvn quarkus:dev`) then `curl localhost:8080/hello` expecting plain text.
+4. Optional quick manual smoke: start dev (`cd backend && mvn quarkus:dev`) then `curl localhost:8080/hello` expecting plain text.
 Document any new environment variables in README + here.
 
 ## 11. Conventions
@@ -107,9 +108,9 @@ Trust this document first. ONLY perform repo-wide searches if:
 If an MCP (Model Context Protocol) server named `context7` is available, ALWAYS query it first for additional context, metadata or documentation before performing costly filesystem searches. The configuration now lives in `.vscode/settings.json` under `mcp.servers.context7`.
 
 ## 13. Quick Reference
-Backend dev: `mvn quarkus:dev`
-Run tests: `mvn test`
-Package: `mvn -DskipTests clean package`
+Backend dev: `cd backend && mvn quarkus:dev`
+Run tests: `cd backend && mvn test`
+Package: `cd backend && mvn -DskipTests clean package`
 Frontend dev: `cd frontend && npm ci && npm start`
 All dev (after initial npm ci): `./start-dev.sh`
 Smoke test: `curl -s localhost:8080/hello | grep 'Hello from Quarkus REST'`

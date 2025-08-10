@@ -25,22 +25,26 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.m2/repository
-          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          key: ${{ runner.os }}-maven-${{ hashFiles('backend/**/pom.xml') }}
           restore-keys: |
             ${{ runner.os }}-maven-
 
       - name: Run backend tests
-        run: mvn clean test
+        run: |
+          cd backend
+          mvn clean test
 
       - name: Package backend
-        run: mvn package -DskipTests
+        run: |
+          cd backend
+          mvn package -DskipTests
 
       - name: Upload backend test results
         uses: actions/upload-artifact@v4
         if: always()
         with:
           name: backend-test-results
-          path: target/surefire-reports/
+          path: backend/target/surefire-reports/
           retention-days: 7
 
   frontend:
@@ -111,7 +115,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.m2/repository
-          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          key: ${{ runner.os }}-maven-${{ hashFiles('backend/**/pom.xml') }}
           restore-keys: |
             ${{ runner.os }}-maven-
 
@@ -121,12 +125,12 @@ jobs:
 
       - name: Build all components
         run: |
-          mvn package -DskipTests
-          cd frontend && npm run build
+          cd backend && mvn package -DskipTests
+          cd ../frontend && npm run build
 
       - name: Start backend for integration tests
         run: |
-          mvn quarkus:dev &
+          cd backend && mvn quarkus:dev &
           sleep 30
 
       - name: Run integration smoke tests

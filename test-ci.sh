@@ -19,11 +19,14 @@ npm -v
 
 echo ""
 echo "=== Building Backend ==="
+cd backend
 echo "Running Maven clean test..."
 mvn clean test
 
 echo "Running Maven package..."
 mvn package -DskipTests
+
+cd ..
 
 echo ""
 echo "=== Building Frontend ==="
