@@ -47,8 +47,8 @@ public class Series extends PanacheEntityBase {
     private OffsetDateTime updatedAt;
 
     // Relationships
-    @OneToMany(mappedBy = "series", fetch = FetchType.LAZY)
-    private Set<Book> books = new HashSet<>();
+    @OneToMany(mappedBy = "series", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private Set<BookSeries> books = new HashSet<>();
 
     // Default constructor
     public Series() {}
@@ -115,11 +115,11 @@ public class Series extends PanacheEntityBase {
         this.updatedAt = updatedAt;
     }
 
-    public Set<Book> getBooks() {
+    public Set<BookSeries> getBooks() {
         return books;
     }
 
-    public void setBooks(Set<Book> books) {
+    public void setBooks(Set<BookSeries> books) {
         this.books = books;
     }
 

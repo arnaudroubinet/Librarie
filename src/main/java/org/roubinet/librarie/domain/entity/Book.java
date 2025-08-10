@@ -81,12 +81,8 @@ public class Book extends PanacheEntityBase {
     @OneToMany(mappedBy = "book", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private Set<BookOriginalWork> originalWorks = new HashSet<>();
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "series_id")
-    private Series series;
-
-    @Column(name = "series_index", precision = 10, scale = 2)
-    private java.math.BigDecimal seriesIndex;
+    @OneToMany(mappedBy = "book", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private Set<BookSeries> series = new HashSet<>();
 
     @OneToMany(mappedBy = "book", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private Set<BookTag> tags = new HashSet<>();
@@ -240,20 +236,12 @@ public class Book extends PanacheEntityBase {
         this.originalWorks = originalWorks;
     }
 
-    public Series getSeries() {
+    public Set<BookSeries> getSeries() {
         return series;
     }
 
-    public void setSeries(Series series) {
+    public void setSeries(Set<BookSeries> series) {
         this.series = series;
-    }
-
-    public java.math.BigDecimal getSeriesIndex() {
-        return seriesIndex;
-    }
-
-    public void setSeriesIndex(java.math.BigDecimal seriesIndex) {
-        this.seriesIndex = seriesIndex;
     }
 
     public Set<BookTag> getTags() {
