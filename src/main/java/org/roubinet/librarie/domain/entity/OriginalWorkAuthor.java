@@ -7,7 +7,7 @@ import java.util.Objects;
 
 /**
  * OriginalWorkAuthor entity representing the many-to-many relationship between original works and authors.
- * Includes role information (author, editor, translator, illustrator) and order for display.
+ * Includes role information (e.g., "author", "editor", "translator", "illustrator", "photographer", etc.) and order for display.
  */
 @Entity
 @Table(name = "original_work_authors")
@@ -25,8 +25,8 @@ public class OriginalWorkAuthor {
     private Author author;
 
     @Id
-    @Column(name = "role", nullable = false, columnDefinition = "text default 'author'")
-    private String role = "author";
+    @Column(name = "role", nullable = false)
+    private String role;
 
     @Column(name = "order_index", nullable = false, columnDefinition = "integer default 0")
     private Integer orderIndex = 0;
