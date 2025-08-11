@@ -80,13 +80,5 @@ public interface BookUseCase {
      */
     CursorPageResult<Book> getBooksByCriteria(BookSearchCriteria criteria, String cursor, int limit);
     
-    /**
-     * Get books by series name.
-     * 
-     * @param seriesName the series name
-     * @param cursor the pagination cursor (null for first page)
-     * @param limit the maximum number of books to return
-     * @return cursor-paginated result containing books in the specified series
-     */
-    CursorPageResult<Book> getBooksBySeries(String seriesName, String cursor, int limit);
+
 }

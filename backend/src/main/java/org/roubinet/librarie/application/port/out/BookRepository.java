@@ -87,16 +87,7 @@ public interface BookRepository {
      */
     long count();
     
-    /**
-     * Find books by series name with cursor pagination.
-     * 
-     * @param seriesName the series name
-     * @param cursor the pagination cursor (null for first page)
-     * @param limit the maximum number of books to return
-     * @return cursor-paginated result containing books in the series
-     */
-    CursorPageResult<Book> findBySeriesName(String seriesName, String cursor, int limit);
-    
+
     /**
      * Search books by multiple criteria (title, author, ISBN, etc.) with cursor pagination.
      * 
@@ -116,35 +107,5 @@ public interface BookRepository {
      * @return cursor-paginated result containing matching books
      */
     CursorPageResult<Book> findByCriteria(BookSearchCriteria criteria, String cursor, int limit);
-    
-    // Legacy offset-based methods (deprecated - use cursor pagination instead)
-    /**
-     * @deprecated Use {@link #findAll(String, int)} instead
-     */
-    @Deprecated
-    List<Book> findAll(int page, int size);
-    
-    /**
-     * @deprecated Use {@link #findByTitleContainingIgnoreCase(String, String, int)} instead
-     */
-    @Deprecated
-    List<Book> findByTitleContainingIgnoreCase(String title, int page, int size);
-    
-    /**
-     * @deprecated Use {@link #findBySeriesName(String, String, int)} instead
-     */
-    @Deprecated
-    List<Book> findBySeriesName(String seriesName, int page, int size);
-    
-    /**
-     * @deprecated Use {@link #searchBooks(String, String, int)} instead
-     */
-    @Deprecated
-    List<Book> searchBooks(String searchQuery, int page, int size);
-    
-    /**
-     * @deprecated Use {@link #findByCriteria(BookSearchCriteria, String, int)} instead
-     */
-    @Deprecated
-    List<Book> findByAuthorName(String authorName, int page, int size);
+
 }

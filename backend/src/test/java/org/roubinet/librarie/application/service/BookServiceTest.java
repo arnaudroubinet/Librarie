@@ -8,6 +8,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.roubinet.librarie.application.port.out.BookRepository;
 import org.roubinet.librarie.application.service.title.TitleSortingService;
 import org.roubinet.librarie.domain.entity.Book;
+import org.roubinet.librarie.infrastructure.adapter.in.rest.dto.pagination.CursorPageResult;
 import org.roubinet.librarie.infrastructure.config.LibrarieConfigProperties;
 
 import java.util.List;
@@ -52,26 +53,38 @@ class BookServiceTest {
     void getAllBooks_WithValidPagination_ShouldReturnBooks() {
         // Given
         List<Book> expectedBooks = List.of(createTestBook("Test Book"));
-        when(bookRepository.findAll(0, 20)).thenReturn(expectedBooks);
+        CursorPageResult<Book> expectedResult = CursorPageResult.<Book>builder()
+            .items(expectedBooks)
+            .limit(20)
+            .hasNext(false)
+            .hasPrevious(false)
+            .build();
+        when(bookRepository.findAll(null, 20)).thenReturn(expectedResult);
         
         // When
-        List<Book> result = bookService.getAllBooks(0, 20);
+        CursorPageResult<Book> result = bookService.getAllBooks(null, 20);
         
         // Then
-        assertEquals(expectedBooks, result);
-        verify(bookRepository).findAll(0, 20);
+        assertEquals(expectedResult, result);
+        verify(bookRepository).findAll(null, 20);
     }
     
     @Test
     void getAllBooks_WithInvalidPagination_ShouldUseDefaults() {
         // Given
-        when(bookRepository.findAll(0, 20)).thenReturn(List.of());
+        CursorPageResult<Book> expectedResult = CursorPageResult.<Book>builder()
+            .items(List.of())
+            .limit(20)
+            .hasNext(false)
+            .hasPrevious(false)
+            .build();
+        when(bookRepository.findAll(null, 20)).thenReturn(expectedResult);
         
         // When
-        bookService.getAllBooks(-1, 0);
+        bookService.getAllBooks(null, -1);
         
         // Then
-        verify(bookRepository).findAll(0, 20); // Should use defaults
+        verify(bookRepository).findAll(null, 20); // Should use defaults
     }
     
     @Test
@@ -146,29 +159,40 @@ class BookServiceTest {
         // Given
         String query = "test query";
         List<Book> expectedBooks = List.of(createTestBook("Test Book"));
-        when(bookRepository.searchBooks(query, 0, 20)).thenReturn(expectedBooks);
+        CursorPageResult<Book> expectedResult = CursorPageResult.<Book>builder()
+            .items(expectedBooks)
+            .limit(20)
+            .hasNext(false)
+            .hasPrevious(false)
+            .build();
+        when(bookRepository.searchBooks(query, null, 20)).thenReturn(expectedResult);
         
         // When
-        List<Book> result = bookService.searchBooks(query, 0, 20);
+        CursorPageResult<Book> result = bookService.searchBooks(query, null, 20);
         
         // Then
-        assertEquals(expectedBooks, result);
-        verify(bookRepository).searchBooks(query, 0, 20);
+        assertEquals(expectedResult, result);
+        verify(bookRepository).searchBooks(query, null, 20);
     }
     
     @Test
     void searchBooks_WithEmptyQuery_ShouldReturnAllBooks() {
         // Given
         List<Book> expectedBooks = List.of(createTestBook("Test Book"));
-        when(bookRepository.findAll(0, 20)).thenReturn(expectedBooks);
+        CursorPageResult<Book> expectedResult = CursorPageResult.<Book>builder()
+            .items(expectedBooks)
+            .limit(20)
+            .hasNext(false)
+            .hasPrevious(false)
+            .build();
+        when(bookRepository.findAll(null, 20)).thenReturn(expectedResult);
         
         // When
-        List<Book> result = bookService.searchBooks("", 0, 20);
+        CursorPageResult<Book> result = bookService.searchBooks("", null, 20);
         
         // Then
-        assertEquals(expectedBooks, result);
-        verify(bookRepository).findAll(0, 20);
-        verify(bookRepository, never()).searchBooks(anyString(), anyInt(), anyInt());
+        assertEquals(expectedResult, result);
+        verify(bookRepository).findAll(null, 20);
     }
     
     @Test

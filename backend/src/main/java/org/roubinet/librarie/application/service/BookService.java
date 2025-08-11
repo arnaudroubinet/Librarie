@@ -163,28 +163,7 @@ public class BookService implements BookUseCase {
         
         return bookRepository.findByCriteria(criteria, cursor, limit);
     }
-    
-    @Override
-    public CursorPageResult<Book> getBooksBySeries(String seriesName, String cursor, int limit) {
-        if (seriesName == null || seriesName.trim().isEmpty()) {
-            return CursorPageResult.<Book>builder()
-                .items(java.util.List.of())
-                .limit(limit)
-                .hasNext(false)
-                .hasPrevious(false)
-                .build();
-        }
-        
-        // Validate pagination parameters using configuration
-        if (limit <= 0) {
-            limit = config.pagination().defaultPageSize();
-        }
-        if (limit > config.pagination().maxPageSize()) {
-            limit = config.pagination().maxPageSize();
-        }
-        
-        return bookRepository.findBySeriesName(seriesName.trim(), cursor, limit);
-    }
+
     
     /**
      * Generate a sortable title using language-specific strategies.

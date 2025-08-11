@@ -62,23 +62,13 @@ public class BookRepositoryAdapter implements BookRepository {
         return buildCursorPageResult(books, limit, cursor);
     }
     
-    @Override
-    public List<Book> findAll(int page, int size) {
-        PanacheQuery<Book> query = Book.findAll(Sort.by("titleSort").ascending());
-        return query.page(Page.of(page, size)).list();
-    }
-    
+
     @Override
     public Optional<Book> findById(UUID id) {
         return Book.findByIdOptional(id);
     }
     
-    @Override
-    public List<Book> findByTitleContainingIgnoreCase(String title, int page, int size) {
-        PanacheQuery<Book> query = Book.find("LOWER(title) LIKE LOWER(?1)", "%" + title + "%");
-        return query.page(Page.of(page, size)).list();
-    }
-    
+
     @Override
     public Optional<Book> findByPath(String path) {
         return Book.find("path", path).firstResultOptional();
@@ -110,74 +100,9 @@ public class BookRepositoryAdapter implements BookRepository {
         return Book.count();
     }
     
-    @Override
-    public List<Book> findByAuthorName(String authorName, int page, int size) {
-        // Join with original works and authors
-        String query = """
-            SELECT DISTINCT b FROM Book b 
-            JOIN b.originalWorks bw 
-            JOIN bw.originalWork w 
-            JOIN w.authors wa 
-            JOIN wa.author a 
-            WHERE LOWER(a.name) LIKE LOWER(?1)
-            ORDER BY b.titleSort
-            """;
-        
-        return Book.getEntityManager()
-            .createQuery(query, Book.class)
-            .setParameter(1, "%" + authorName + "%")
-            .setFirstResult(page * size)
-            .setMaxResults(size)
-            .getResultList();
-    }
-    
-    @Override
-    public List<Book> findBySeriesName(String seriesName, int page, int size) {
-        // Join with book series
-        String query = """
-            SELECT DISTINCT b FROM Book b 
-            JOIN b.series bs 
-            JOIN bs.series s 
-            WHERE LOWER(s.name) LIKE LOWER(?1)
-            ORDER BY b.titleSort
-            """;
-        
-        return Book.getEntityManager()
-            .createQuery(query, Book.class)
-            .setParameter(1, "%" + seriesName + "%")
-            .setFirstResult(page * size)
-            .setMaxResults(size)
-            .getResultList();
-    }
-    
-    @Override
-    public List<Book> searchBooks(String searchQuery, int page, int size) {
-        // Multi-field search across title, authors, and series
-        String query = """
-            SELECT DISTINCT b FROM Book b 
-            LEFT JOIN b.originalWorks bw 
-            LEFT JOIN bw.originalWork w 
-            LEFT JOIN w.authors wa 
-            LEFT JOIN wa.author a 
-            LEFT JOIN b.series bs 
-            LEFT JOIN bs.series s 
-            WHERE LOWER(b.title) LIKE LOWER(?1) 
-            OR LOWER(a.name) LIKE LOWER(?1) 
-            OR LOWER(s.name) LIKE LOWER(?1)
-            OR LOWER(b.isbn) LIKE LOWER(?1)
-            ORDER BY b.titleSort
-            """;
-        
-        String searchPattern = "%" + searchQuery + "%";
-        
-        return Book.getEntityManager()
-            .createQuery(query, Book.class)
-            .setParameter(1, searchPattern)
-            .setFirstResult(page * size)
-            .setMaxResults(size)
-            .getResultList();
-    }
-    
+
+
+
     // New cursor-based pagination methods
     
     @Override
@@ -205,18 +130,7 @@ public class BookRepositoryAdapter implements BookRepository {
         List<Book> books = query.list();
         return buildCursorPageResult(books, limit, cursor);
     }
-    
-    @Override
-    public CursorPageResult<Book> findBySeriesName(String seriesName, String cursor, int limit) {
-        // For now, implement basic version that returns empty result
-        // In a full implementation, this would use proper joins with series tables
-        return CursorPageResult.<Book>builder()
-            .items(List.of())
-            .limit(limit)
-            .hasNext(false)
-            .hasPrevious(cursor != null)
-            .build();
-    }
+
     
     @Override
     public CursorPageResult<Book> searchBooks(String searchQuery, String cursor, int limit) {
