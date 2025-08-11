@@ -89,8 +89,8 @@ The `/backend` directory MUST follow [hexagonal architecture principles](https:/
 
 **Version Installation Requirements:**
 If the development environment does not have the correct JDK or Node.js versions, you MUST install them using SDK:
-- For Java 21: `sdk install java 21.0.1-tem` (using SDKMAN)
-- For Node.js 20: `sdk install node 20.10.0` (using SDKMAN)
+- For Java 21: `sdk install java 21-tem` (using SDKMAN, always latest version)
+- For Node.js 20: `sdk install node 20-lts` (using SDKMAN, always latest LTS version)
 - Always maintain Java 21 compatibility - do not downgrade to accommodate older environments.
 
 ## 4. Build / Run / Test Cheat Sheet
@@ -120,14 +120,14 @@ Combined dev startup: `./start-dev.sh` (spawns Quarkus then Angular). Script ass
 
 ## 6. Configuration Overview
 Files:
-- `application.properties`: base config (port 8080, name, version, PostgreSQL database configuration).
-- `application-dev.properties`: enables OpenAPI & Swagger UI, debug logging, sets OIDC placeholders.
-- `application-prod.properties`: disables OpenAPI/Swagger, info logging.
+- `application.properties`: base config (port 8080, name, version).
+- `application-dev.properties`: enables OpenAPI & Swagger UI, debug logging, sets OIDC placeholders, PostgreSQL database configuration.
+- `application-prod.properties`: disables OpenAPI/Swagger, info logging, PostgreSQL database configuration.
 
 **Database Configuration - CRITICAL:**
 - ALWAYS use PostgreSQL (`quarkus-jdbc-postgresql` dependency).
 - NEVER use H2 database (`quarkus-jdbc-h2`) - it is prohibited in all environments.
-- Database configured with PostgreSQL connection defaults in `application.properties`.
+- PostgreSQL configuration must be in dev/prod profiles, not common application.properties.
 
 Tests rely on config profile overrides to assert OpenAPI flags in dev vs prod.
 

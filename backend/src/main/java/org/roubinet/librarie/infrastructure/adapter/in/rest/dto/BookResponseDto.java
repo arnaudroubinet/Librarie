@@ -6,6 +6,7 @@ import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.Map;
 import java.util.UUID;
+import java.util.List;
 
 /**
  * DTO for book API responses.
@@ -68,6 +69,9 @@ public class BookResponseDto {
     
     @Schema(description = "Book description or summary")
     private String description;
+    
+    @Schema(description = "Available formats for this book", example = "[\"EPUB\", \"PDF\", \"MOBI\"]")
+    private List<String> formats;
     
     // Default constructor
     public BookResponseDto() {}
@@ -215,5 +219,13 @@ public class BookResponseDto {
     
     public void setDescription(String description) {
         this.description = description;
+    }
+    
+    public List<String> getFormats() {
+        return formats;
+    }
+    
+    public void setFormats(List<String> formats) {
+        this.formats = formats;
     }
 }
