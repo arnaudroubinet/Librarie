@@ -81,8 +81,8 @@ import { Book, CursorPageResponse } from '../models/book.model';
                 </div>
                 <mat-card-title>{{ book.title }}</mat-card-title>
                 <mat-card-subtitle>
-                  @if (book.author) {
-                    <span>by {{ book.author }}</span>
+                  @if (book.contributors?.['author']?.length) {
+                    <span>by {{ book.contributors!['author'].join(', ') }}</span>
                   }
                   @if (book.language) {
                     <mat-chip class="language-chip">{{ book.language }}</mat-chip>

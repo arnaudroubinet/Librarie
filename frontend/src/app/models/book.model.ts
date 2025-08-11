@@ -14,7 +14,7 @@ export interface Book {
   language?: string;
   publisher?: string;
   // New fields based on updated DTO
-  author?: string;
+  contributors?: Record<string, string[]>; // Map of role to list of people
   series?: string;
   seriesIndex?: number;
   description?: string;
@@ -60,6 +60,22 @@ export interface CompletionResponse {
   progress: number;
   status: string;
   message: string;
+}
+
+export interface BookSearchCriteria {
+  titleContains?: string;
+  contributorsContain?: string[];
+  seriesContains?: string;
+  languageEquals?: string;
+  publisherContains?: string;
+  publishedAfter?: string; // ISO date string
+  publishedBefore?: string; // ISO date string
+  formatsIn?: string[];
+  descriptionContains?: string;
+  isbnEquals?: string;
+  metadataEquals?: Record<string, any>;
+  sortBy?: string;
+  sortDirection?: 'asc' | 'desc';
 }
 
 export interface LibraryStats {

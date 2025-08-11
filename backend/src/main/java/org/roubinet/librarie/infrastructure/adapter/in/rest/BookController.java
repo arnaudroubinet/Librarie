@@ -1,6 +1,7 @@
 package org.roubinet.librarie.infrastructure.adapter.in.rest;
 
 import org.roubinet.librarie.application.port.in.BookUseCase;
+import org.roubinet.librarie.application.port.in.BookSearchCriteria;
 import org.roubinet.librarie.domain.entity.Book;
 import org.roubinet.librarie.domain.entity.BookSeries;
 import org.roubinet.librarie.infrastructure.adapter.in.rest.dto.BookRequestDto;
@@ -334,6 +335,76 @@ public class BookController {
     }
     
     @POST
+    @Path("/criteria")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    @Operation(summary = "Search books by criteria", description = "Search books using complex criteria with cursor pagination")
+    @APIResponses(value = {
+        @APIResponse(responseCode = "200", description = "Search completed successfully",
+            content = @Content(schema = @Schema(implementation = PageResponseDto.class))),
+        @APIResponse(responseCode = "400", description = "Invalid search criteria")
+    })
+    public Response searchBooksByCriteria(
+            @Parameter(description = "Search criteria", required = true)
+            BookSearchCriteria criteria,
+            @Parameter(description = "Cursor for pagination")
+            @QueryParam("cursor") String cursor,
+            @Parameter(description = "Number of items to return", example = "20")
+            @DefaultValue("20") @QueryParam("limit") int limit) {
+        
+        try {
+            if (criteria == null) {
+                return Response.status(Response.Status.BAD_REQUEST)
+                    .entity("Search criteria is required")
+                    .build();
+            }
+            
+            // Validate and sanitize criteria inputs
+            validateSearchCriteria(criteria);
+            
+            // Validate limit
+            if (limit <= 0) {
+                limit = config.pagination().defaultPageSize();
+            }
+            if (limit > config.pagination().maxPageSize()) {
+                limit = config.pagination().maxPageSize();
+            }
+            
+            // Use cursor pagination with criteria
+            CursorPageResult<Book> pageResult = bookUseCase.getBooksByCriteria(criteria, cursor, limit);
+            
+            List<BookResponseDto> bookDtos = pageResult.getItems().stream()
+                .map(this::toDto)
+                .collect(Collectors.toList());
+            
+            PageResponseDto<BookResponseDto> response = new PageResponseDto<>(
+                bookDtos, 
+                pageResult.getNextCursor(), 
+                pageResult.getPreviousCursor(), 
+                pageResult.getLimit(),
+                pageResult.isHasNext(),
+                pageResult.isHasPrevious(),
+                pageResult.getTotalCount()
+            );
+            
+            return Response.ok(response).build();
+            
+        } catch (SecurityException e) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                .entity("Security validation failed: " + e.getMessage())
+                .build();
+        } catch (IllegalArgumentException e) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                .entity("Invalid search criteria: " + e.getMessage())
+                .build();
+        } catch (Exception e) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                .entity("Internal server error: " + e.getMessage())
+                .build();
+        }
+    }
+    
+    @POST
     @Path("/{id}/completion")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
@@ -397,6 +468,104 @@ public class BookController {
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
                 .entity("Internal server error: " + e.getMessage())
                 .build();
+        }
+    }
+    
+    /**
+     * Validate search criteria with security checks.
+     */
+    private void validateSearchCriteria(BookSearchCriteria criteria) {
+        if (criteria == null) {
+            throw new IllegalArgumentException("Search criteria is required");
+        }
+        
+        // Sanitize text inputs
+        if (criteria.getTitleContains() != null) {
+            String sanitized = sanitizationService.sanitizeSearchQuery(criteria.getTitleContains());
+            if (!sanitized.equals(criteria.getTitleContains())) {
+                throw new SecurityException("Title search contains unsafe characters");
+            }
+        }
+        
+        if (criteria.getSeriesContains() != null) {
+            String sanitized = sanitizationService.sanitizeTextInput(criteria.getSeriesContains());
+            if (!sanitized.equals(criteria.getSeriesContains())) {
+                throw new SecurityException("Series search contains unsafe characters");
+            }
+        }
+        
+        if (criteria.getLanguageEquals() != null) {
+            String sanitized = sanitizationService.sanitizeTextInput(criteria.getLanguageEquals());
+            if (!sanitized.equals(criteria.getLanguageEquals())) {
+                throw new SecurityException("Language search contains unsafe characters");
+            }
+        }
+        
+        if (criteria.getPublisherContains() != null) {
+            String sanitized = sanitizationService.sanitizeTextInput(criteria.getPublisherContains());
+            if (!sanitized.equals(criteria.getPublisherContains())) {
+                throw new SecurityException("Publisher search contains unsafe characters");
+            }
+        }
+        
+        if (criteria.getDescriptionContains() != null) {
+            String sanitized = sanitizationService.sanitizeTextInput(criteria.getDescriptionContains());
+            if (!sanitized.equals(criteria.getDescriptionContains())) {
+                throw new SecurityException("Description search contains unsafe characters");
+            }
+        }
+        
+        if (criteria.getIsbnEquals() != null) {
+            String sanitized = sanitizationService.sanitizeTextInput(criteria.getIsbnEquals());
+            if (!sanitized.equals(criteria.getIsbnEquals())) {
+                throw new SecurityException("ISBN search contains unsafe characters");
+            }
+        }
+        
+        // Validate contributors list
+        if (criteria.getContributorsContain() != null) {
+            for (String contributor : criteria.getContributorsContain()) {
+                if (contributor != null) {
+                    String sanitized = sanitizationService.sanitizeTextInput(contributor);
+                    if (!sanitized.equals(contributor)) {
+                        throw new SecurityException("Contributor search contains unsafe characters");
+                    }
+                }
+            }
+        }
+        
+        // Validate formats list
+        if (criteria.getFormatsIn() != null) {
+            for (String format : criteria.getFormatsIn()) {
+                if (format != null) {
+                    String sanitized = sanitizationService.sanitizeTextInput(format);
+                    if (!sanitized.equals(format)) {
+                        throw new SecurityException("Format search contains unsafe characters");
+                    }
+                }
+            }
+        }
+        
+        // Validate sort parameters
+        if (criteria.getSortBy() != null) {
+            String sanitized = sanitizationService.sanitizeTextInput(criteria.getSortBy());
+            if (!sanitized.equals(criteria.getSortBy())) {
+                throw new SecurityException("Sort field contains unsafe characters");
+            }
+        }
+        
+        if (criteria.getSortDirection() != null) {
+            String sortDir = criteria.getSortDirection().toLowerCase();
+            if (!sortDir.equals("asc") && !sortDir.equals("desc")) {
+                throw new IllegalArgumentException("Sort direction must be 'asc' or 'desc'");
+            }
+        }
+        
+        // Validate date ranges
+        if (criteria.getPublishedAfter() != null && criteria.getPublishedBefore() != null) {
+            if (criteria.getPublishedAfter().isAfter(criteria.getPublishedBefore())) {
+                throw new IllegalArgumentException("Published after date cannot be later than published before date");
+            }
         }
     }
     
