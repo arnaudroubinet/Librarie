@@ -8,8 +8,9 @@
 3. Trust this doc first: only search the repo or explore broadly if information here proves incomplete/incorrect. Thrown an alert if something seem to not match.
 4. Query `context7` first (MCP) when available for extra context/metadata before filesystem searches.
 5. Minimize new dependencies: justify each new library (prefer Quarkus extensions already present); remove unused imports/config.
-6. **Frontend Style Guide Compliance**: ALWAYS ensure the `/frontend` directory and Angular project follows the [Angular Style Guide](https://angular.dev/style-guide) including naming conventions, file organization, and code structure.
-7. **Backend Architecture Compliance**: ALWAYS ensure the `/backend` follows [hexagonal architecture principles](https://scalastic.io/en/hexagonal-architecture-domain) with proper separation of domain, application, and infrastructure layers.
+6. **NEVER use H2 database**: Always use PostgreSQL for all environments. H2 is prohibited.
+7. **Frontend Style Guide Compliance**: ALWAYS ensure the `/frontend` directory and Angular project follows the [Angular Style Guide](https://angular.dev/style-guide) including naming conventions, file organization, and code structure.
+8. **Backend Architecture Compliance**: ALWAYS ensure the `/backend` follows [hexagonal architecture principles](https://scalastic.io/en/hexagonal-architecture-domain) with proper separation of domain, application, and infrastructure layers.
 
 
 ## 1. Repository Summary
@@ -107,15 +108,21 @@ Combined dev startup: `./start-dev.sh` (spawns Quarkus then Angular). Script ass
 ## 5. Common Pitfalls & Mitigations
 - Long test startup: First `mvn test` triggers Docker pulls for Keycloak + Ryuk (~230MB). Subsequent runs faster. Do NOT assume a hang; observe logs.
 - Missing Docker: Tests may fail/time out when Dev Services cannot start Keycloak. If Docker unavailable, you can temporarily disable OIDC tests by removing OIDC extension or setting `-Dquarkus.oidc.enabled=false` (not yet in config) but prefer keeping default.
-- Java version mismatch: If environment supplies Java <21 build may fail or use unsupported features; ensure Java 21 is active (`java -version`).
+- Java version mismatch: If environment supplies Java <21, build may fail or use unsupported features; ensure Java 21 is active (`java -version`).
 - Frontend tests may need system dependencies (Chrome). In minimal containers install `chromium-browser` or adjust Karma config.
 - OpenTelemetry warnings (connection refused to localhost:4317) are benign unless you configure an OTLP collector. Ignore for now.
 
 ## 6. Configuration Overview
 Files:
-- `application.properties`: base config (port 8080, name, version, dev profile hint).
+- `application.properties`: base config (port 8080, name, version, PostgreSQL database configuration).
 - `application-dev.properties`: enables OpenAPI & Swagger UI, debug logging, sets OIDC placeholders.
 - `application-prod.properties`: disables OpenAPI/Swagger, info logging.
+
+**Database Configuration - CRITICAL:**
+- ALWAYS use PostgreSQL (`quarkus-jdbc-postgresql` dependency).
+- NEVER use H2 database (`quarkus-jdbc-h2`) - it is prohibited in all environments.
+- Database configured with PostgreSQL connection defaults in `application.properties`.
+
 Tests rely on config profile overrides to assert OpenAPI flags in dev vs prod.
 
 ## 7. Test Suite Summary
