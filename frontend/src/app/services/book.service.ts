@@ -1,52 +1,56 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { Book, PageResponse } from '../models/book.model';
+import { Book, CursorPageResponse, BookRequest, CompletionRequest, CompletionResponse } from '../models/book.model';
 
 @Injectable({
   providedIn: 'root'
 })
 export class BookService {
-  private readonly baseUrl = 'http://localhost:8080/api/books';
+  private readonly baseUrl = 'http://localhost:8080/v1/books';
 
   constructor(private http: HttpClient) {}
 
-  getAllBooks(page: number = 0, size: number = 20): Observable<PageResponse<Book>> {
-    const params = new HttpParams()
-      .set('page', page.toString())
-      .set('size', size.toString());
+  getAllBooks(cursor?: string, limit: number = 20): Observable<CursorPageResponse<Book>> {
+    let params = new HttpParams().set('limit', limit.toString());
     
-    return this.http.get<PageResponse<Book>>(this.baseUrl, { params });
+    if (cursor) {
+      params = params.set('cursor', cursor);
+    }
+    
+    return this.http.get<CursorPageResponse<Book>>(this.baseUrl, { params });
   }
 
   getBookById(id: string): Observable<Book> {
     return this.http.get<Book>(`${this.baseUrl}/${id}`);
   }
 
-  searchBooks(query: string, page: number = 0, size: number = 20): Observable<PageResponse<Book>> {
-    const params = new HttpParams()
+  createBook(book: BookRequest): Observable<Book> {
+    return this.http.post<Book>(this.baseUrl, book);
+  }
+
+  updateBook(id: string, book: BookRequest): Observable<Book> {
+    return this.http.put<Book>(`${this.baseUrl}/${id}`, book);
+  }
+
+  deleteBook(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/${id}`);
+  }
+
+  searchBooks(query: string, cursor?: string, limit: number = 20): Observable<CursorPageResponse<Book>> {
+    let params = new HttpParams()
       .set('q', query)
-      .set('page', page.toString())
-      .set('size', size.toString());
+      .set('limit', limit.toString());
     
-    return this.http.get<PageResponse<Book>>(`${this.baseUrl}/search`, { params });
+    if (cursor) {
+      params = params.set('cursor', cursor);
+    }
+    
+    return this.http.get<CursorPageResponse<Book>>(`${this.baseUrl}/search`, { params });
   }
 
-  getBooksByAuthor(author: string, page: number = 0, size: number = 20): Observable<PageResponse<Book>> {
-    const params = new HttpParams()
-      .set('author', author)
-      .set('page', page.toString())
-      .set('size', size.toString());
-    
-    return this.http.get<PageResponse<Book>>(`${this.baseUrl}/by-author`, { params });
-  }
-
-  getBooksBySeries(series: string, page: number = 0, size: number = 20): Observable<PageResponse<Book>> {
-    const params = new HttpParams()
-      .set('series', series)
-      .set('page', page.toString())
-      .set('size', size.toString());
-    
-    return this.http.get<PageResponse<Book>>(`${this.baseUrl}/by-series`, { params });
+  updateReadingCompletion(bookId: string, progress: number): Observable<CompletionResponse> {
+    const completionData: CompletionRequest = { progress };
+    return this.http.post<CompletionResponse>(`${this.baseUrl}/${bookId}/completion`, completionData);
   }
 }

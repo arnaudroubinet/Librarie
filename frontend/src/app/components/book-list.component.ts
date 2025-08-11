@@ -4,12 +4,11 @@ import { RouterModule } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { BookService } from '../services/book.service';
-import { Book, PageResponse } from '../models/book.model';
+import { Book, CursorPageResponse } from '../models/book.model';
 
 @Component({
   selector: 'app-book-list',
@@ -20,7 +19,6 @@ import { Book, PageResponse } from '../models/book.model';
     MatCardModule,
     MatButtonModule,
     MatIconModule,
-    MatPaginatorModule,
     MatProgressSpinnerModule,
     MatChipsModule,
     MatSnackBarModule
@@ -88,14 +86,20 @@ import { Book, PageResponse } from '../models/book.model';
             }
           </div>
           
-          <mat-paginator 
-            [length]="totalElements()"
-            [pageSize]="pageSize()"
-            [pageSizeOptions]="[10, 20, 50, 100]"
-            [pageIndex]="currentPage()"
-            (page)="onPageChange($event)"
-            showFirstLastButtons>
-          </mat-paginator>
+          <div class="pagination-controls">
+            @if (previousCursor()) {
+              <button mat-raised-button (click)="loadPrevious()">
+                <mat-icon>chevron_left</mat-icon>
+                Previous
+              </button>
+            }
+            @if (nextCursor()) {
+              <button mat-raised-button (click)="loadNext()">
+                Next
+                <mat-icon>chevron_right</mat-icon>
+              </button>
+            }
+          </div>
         }
       }
     </div>
@@ -165,8 +169,17 @@ import { Book, PageResponse } from '../models/book.model';
       font-size: 14px;
     }
 
-    mat-paginator {
+    .pagination-controls {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
       margin-top: 24px;
+    }
+
+    .pagination-controls button {
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
 
     @media (max-width: 768px) {
@@ -184,9 +197,9 @@ import { Book, PageResponse } from '../models/book.model';
 export class BookListComponent implements OnInit {
   books = signal<Book[]>([]);
   loading = signal(true);
-  currentPage = signal(0);
-  pageSize = signal(20);
-  totalElements = signal(0);
+  nextCursor = signal<string | undefined>(undefined);
+  previousCursor = signal<string | undefined>(undefined);
+  limit = signal(20);
 
   constructor(
     private bookService: BookService,
@@ -197,12 +210,13 @@ export class BookListComponent implements OnInit {
     this.loadBooks();
   }
 
-  loadBooks() {
+  loadBooks(cursor?: string) {
     this.loading.set(true);
-    this.bookService.getAllBooks(this.currentPage(), this.pageSize()).subscribe({
-      next: (response: PageResponse<Book>) => {
+    this.bookService.getAllBooks(cursor, this.limit()).subscribe({
+      next: (response: CursorPageResponse<Book>) => {
         this.books.set(response.content);
-        this.totalElements.set(response.totalElements);
+        this.nextCursor.set(response.nextCursor);
+        this.previousCursor.set(response.previousCursor);
         this.loading.set(false);
       },
       error: (error) => {
@@ -215,10 +229,16 @@ export class BookListComponent implements OnInit {
     });
   }
 
-  onPageChange(event: PageEvent) {
-    this.currentPage.set(event.pageIndex);
-    this.pageSize.set(event.pageSize);
-    this.loadBooks();
+  loadNext() {
+    if (this.nextCursor()) {
+      this.loadBooks(this.nextCursor());
+    }
+  }
+
+  loadPrevious() {
+    if (this.previousCursor()) {
+      this.loadBooks(this.previousCursor());
+    }
   }
 
   formatDate(dateString: string): string {

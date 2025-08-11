@@ -7,12 +7,11 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { BookService } from '../services/book.service';
-import { Book, PageResponse } from '../models/book.model';
+import { Book, CursorPageResponse } from '../models/book.model';
 
 @Component({
   selector: 'app-search',
@@ -26,7 +25,6 @@ import { Book, PageResponse } from '../models/book.model';
     MatIconModule,
     MatInputModule,
     MatFormFieldModule,
-    MatPaginatorModule,
     MatProgressSpinnerModule,
     MatChipsModule,
     MatSnackBarModule
@@ -83,6 +81,9 @@ import { Book, PageResponse } from '../models/book.model';
                 </div>
                 <mat-card-title>{{ book.title }}</mat-card-title>
                 <mat-card-subtitle>
+                  @if (book.author) {
+                    <span>by {{ book.author }}</span>
+                  }
                   @if (book.language) {
                     <mat-chip class="language-chip">{{ book.language }}</mat-chip>
                   }
@@ -90,6 +91,16 @@ import { Book, PageResponse } from '../models/book.model';
               </mat-card-header>
               
               <mat-card-content>
+                @if (book.description) {
+                  <p class="book-description">{{ book.description }}</p>
+                }
+                @if (book.series) {
+                  <p><strong>Series:</strong> {{ book.series }}
+                    @if (book.seriesIndex) {
+                      (#{{ book.seriesIndex }})
+                    }
+                  </p>
+                }
                 @if (book.isbn) {
                   <p><strong>ISBN:</strong> {{ book.isbn }}</p>
                 }
@@ -98,6 +109,14 @@ import { Book, PageResponse } from '../models/book.model';
                 }
                 @if (book.publicationDate) {
                   <p><strong>Published:</strong> {{ formatDate(book.publicationDate) }}</p>
+                }
+                @if (book.formats && book.formats.length > 0) {
+                  <div class="formats">
+                    <strong>Formats:</strong>
+                    @for (format of book.formats; track format) {
+                      <mat-chip class="format-chip">{{ format }}</mat-chip>
+                    }
+                  </div>
                 }
                 @if (book.fileSize) {
                   <p><strong>File Size:</strong> {{ formatFileSize(book.fileSize) }}</p>
@@ -120,16 +139,20 @@ import { Book, PageResponse } from '../models/book.model';
           }
         </div>
         
-        @if (totalElements() > pageSize()) {
-          <mat-paginator 
-            [length]="totalElements()"
-            [pageSize]="pageSize()"
-            [pageSizeOptions]="[10, 20, 50]"
-            [pageIndex]="currentPage()"
-            (page)="onPageChange($event)"
-            showFirstLastButtons>
-          </mat-paginator>
-        }
+        <div class="pagination-controls">
+          @if (previousCursor()) {
+            <button mat-raised-button (click)="loadPrevious()">
+              <mat-icon>chevron_left</mat-icon>
+              Previous
+            </button>
+          }
+          @if (nextCursor()) {
+            <button mat-raised-button (click)="loadNext()">
+              Next
+              <mat-icon>chevron_right</mat-icon>
+            </button>
+          }
+        </div>
       } @else if (hasSearched() && !loading()) {
         <div class="empty-state">
           <mat-icon style="font-size: 64px; height: 64px; width: 64px;">search_off</mat-icon>
@@ -213,10 +236,34 @@ import { Book, PageResponse } from '../models/book.model';
       justify-content: center;
     }
 
-    .language-chip {
+    .language-chip,
+    .format-chip {
       font-size: 12px;
       height: 20px;
       line-height: 20px;
+      margin: 2px;
+    }
+
+    .format-chip {
+      background-color: #e0e0e0;
+    }
+
+    .formats {
+      margin: 8px 0;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .book-description {
+      font-style: italic;
+      color: var(--text-secondary);
+      margin-bottom: 8px;
+      overflow: hidden;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
     }
 
     mat-card-content p {
@@ -224,8 +271,17 @@ import { Book, PageResponse } from '../models/book.model';
       font-size: 14px;
     }
 
-    mat-paginator {
+    .pagination-controls {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
       margin-top: 24px;
+    }
+
+    .pagination-controls button {
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
 
     @media (max-width: 768px) {
@@ -243,6 +299,11 @@ import { Book, PageResponse } from '../models/book.model';
       .search-container {
         padding: 8px;
       }
+
+      .pagination-controls {
+        flex-direction: column;
+        align-items: center;
+      }
     }
   `]
 })
@@ -252,9 +313,9 @@ export class SearchComponent {
   loading = signal(false);
   hasSearched = signal(false);
   lastSearchQuery = signal('');
-  currentPage = signal(0);
-  pageSize = signal(20);
-  totalElements = signal(0);
+  nextCursor = signal<string | undefined>(undefined);
+  previousCursor = signal<string | undefined>(undefined);
+  limit = signal(20);
 
   constructor(
     private bookService: BookService,
@@ -269,12 +330,16 @@ export class SearchComponent {
     this.loading.set(true);
     this.hasSearched.set(true);
     this.lastSearchQuery.set(this.searchQuery);
-    this.currentPage.set(0);
 
-    this.bookService.searchBooks(this.searchQuery, this.currentPage(), this.pageSize()).subscribe({
-      next: (response: PageResponse<Book>) => {
+    this.performSearch();
+  }
+
+  performSearch(cursor?: string) {
+    this.bookService.searchBooks(this.lastSearchQuery(), cursor, this.limit()).subscribe({
+      next: (response: CursorPageResponse<Book>) => {
         this.books.set(response.content);
-        this.totalElements.set(response.totalElements);
+        this.nextCursor.set(response.nextCursor);
+        this.previousCursor.set(response.previousCursor);
         this.loading.set(false);
       },
       error: (error) => {
@@ -287,10 +352,18 @@ export class SearchComponent {
     });
   }
 
-  onPageChange(event: PageEvent) {
-    this.currentPage.set(event.pageIndex);
-    this.pageSize.set(event.pageSize);
-    this.search();
+  loadNext() {
+    if (this.nextCursor()) {
+      this.loading.set(true);
+      this.performSearch(this.nextCursor());
+    }
+  }
+
+  loadPrevious() {
+    if (this.previousCursor()) {
+      this.loading.set(true);
+      this.performSearch(this.previousCursor());
+    }
   }
 
   formatDate(dateString: string): string {
