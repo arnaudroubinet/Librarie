@@ -10,8 +10,8 @@ import { NavigationComponent } from './components/navigation.component';
       <router-outlet />
     </app-navigation>
   `,
-  styleUrl: './app.css'
+  styleUrl: './app.component.css'
 })
-export class App {
+export class AppComponent {
   title = 'Librarie';
 }

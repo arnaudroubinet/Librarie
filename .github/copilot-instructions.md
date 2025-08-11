@@ -8,6 +8,8 @@
 3. Trust this doc first: only search the repo or explore broadly if information here proves incomplete/incorrect. Thrown an alert if something seem to not match.
 4. Query `context7` first (MCP) when available for extra context/metadata before filesystem searches.
 5. Minimize new dependencies: justify each new library (prefer Quarkus extensions already present); remove unused imports/config.
+6. **Frontend Style Guide Compliance**: ALWAYS ensure the `/frontend` directory and Angular project follows the [Angular Style Guide](https://angular.dev/style-guide) including naming conventions, file organization, and code structure.
+7. **Backend Architecture Compliance**: ALWAYS ensure the `/backend` follows [hexagonal architecture principles](https://scalastic.io/en/hexagonal-architecture-domain) with proper separation of domain, application, and infrastructure layers.
 
 
 ## 1. Repository Summary
@@ -28,6 +30,54 @@ Key paths:
 - Script to launch both dev servers: `./start-dev.sh`
 - Documentation: `docs/` currently includes `feature-map.md`, `migration-plan.md`, `open-questions.md` – read these to understand the vision, upcoming workstreams, and open questions before adding major features.
 - CI/CD workflows: `.github/workflows` contains backend-ci.yml, frontend-ci.yml, full-ci.yml.
+
+## 2.1. Frontend Architecture Guidelines (Angular Style Guide)
+The `/frontend` directory MUST follow [Angular Style Guide](https://angular.dev/style-guide):
+
+**File Naming & Organization:**
+- Use kebab-case for file names: `book-list.component.ts`, `user-profile.service.ts`
+- Append type suffix: `.component.ts`, `.service.ts`, `.model.ts`, `.pipe.ts`
+- Place feature files in feature folders: `/components`, `/services`, `/models`, `/pipes`
+
+**Component Structure:**
+- Use standalone components (Angular 17+ pattern)
+- Keep template and styles inline for small components, separate files for larger ones
+- Use OnPush change detection strategy when appropriate
+- Implement lifecycle interfaces explicitly (`OnInit`, `OnDestroy`)
+
+**Service and Dependency Injection:**
+- Use providedIn: 'root' for singleton services
+- Inject dependencies through constructor
+- Use proper typing with TypeScript
+
+**Code Organization:**
+- Export symbols from barrel files (index.ts) when needed
+- Group related functionality in feature modules
+- Keep shared components in `/shared` directory if created
+
+## 2.2. Backend Architecture Guidelines (Hexagonal Architecture)
+The `/backend` directory MUST follow [hexagonal architecture principles](https://scalastic.io/en/hexagonal-architecture-domain):
+
+**Domain Layer** (`/domain`):
+- Contains business entities and domain logic
+- No dependencies on infrastructure or application layers
+- Pure business rules and domain models
+
+**Application Layer** (`/application`):
+- **Ports In** (`/port/in`): Primary ports defining use cases (interfaces that incoming adapters will implement)
+- **Ports Out** (`/port/out`): Secondary ports for outgoing dependencies (interfaces for repositories, external services)
+- **Services** (`/service`): Application services implementing use cases
+
+**Infrastructure Layer** (`/infrastructure`):
+- **Adapters In** (`/adapter/in`): Controllers, REST endpoints, event listeners
+- **Adapters Out** (`/adapter/out`): Repository implementations, external service clients
+- Configuration and framework-specific code
+
+**Key Principles:**
+- Dependencies point inward: Infrastructure → Application → Domain
+- Domain layer has no outward dependencies
+- Use dependency inversion through interfaces (ports)
+- Keep business logic in domain/application layers
 
 ## 3. Runtimes & Required Versions (ALWAYS honor)
 - Java: 21 (project now sets `maven.compiler.release=21`). Use Temurin/OpenJDK 21.
@@ -92,7 +142,17 @@ ALWAYS perform:
 2. Backend tests (if modifying code or config): `cd backend && mvn test`
 3. Frontend (if touched): `cd frontend && npm ci && npm run build`
 4. Optional quick manual smoke: start dev (`cd backend && mvn quarkus:dev`) then `curl localhost:8080/hello` expecting plain text.
+5. **Style Guide Validation**: Before EVERY commit, verify:
+   - **Frontend**: Angular Style Guide compliance (file naming, component structure, service patterns)
+   - **Backend**: Hexagonal architecture compliance (proper layer separation, dependency direction)
+6. **Architecture Review**: Ensure new code follows established patterns:
+   - Frontend components use standalone pattern and proper lifecycle management
+   - Backend maintains clear domain/application/infrastructure boundaries
+   - All new services have corresponding interfaces (ports) when crossing layer boundaries
+
 Document any new environment variables in README + here.
+
+**Each review submission MUST include verification that both Angular Style Guide and Hexagonal Architecture principles are followed.**
 
 ## 11. Conventions
 - Package base: `org.roubinet.librarie`.
