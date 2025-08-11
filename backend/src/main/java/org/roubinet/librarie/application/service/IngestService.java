@@ -4,40 +4,43 @@ import org.roubinet.librarie.application.port.in.IngestUseCase;
 import org.roubinet.librarie.application.port.in.BookUseCase;
 import org.roubinet.librarie.application.port.out.FileStorageService;
 import org.roubinet.librarie.domain.entity.Book;
+import org.roubinet.librarie.infrastructure.config.LibrarieConfigProperties;
+import org.roubinet.librarie.infrastructure.security.SecureFileProcessingService;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Stream;
 
 /**
  * Application service implementing automated book ingest functionality.
- * Based on Calibre-Web-Automated ingest capabilities.
+ * Based on Calibre-Web-Automated ingest capabilities with security enhancements.
  */
 @ApplicationScoped
 public class IngestService implements IngestUseCase {
     
-    // Supported formats based on CWA documentation
-    private static final List<String> SUPPORTED_FORMATS = Arrays.asList(
-        "epub", "mobi", "azw", "azw3", "azw4", "cbz", "cbr", "cb7", "cbc", 
-        "chm", "djvu", "docx", "fb2", "fbz", "html", "htmlz", "lit", "lrf", 
-        "odt", "pdf", "prc", "pdb", "pml", "rb", "rtf", "snb", "tcr", "txtz"
-    );
-    
     private final BookUseCase bookUseCase;
     private final FileStorageService fileStorageService;
+    private final SecureFileProcessingService secureFileProcessingService;
+    private final LibrarieConfigProperties config;
     
     @Inject
-    public IngestService(BookUseCase bookUseCase, FileStorageService fileStorageService) {
+    public IngestService(BookUseCase bookUseCase, 
+                        FileStorageService fileStorageService,
+                        SecureFileProcessingService secureFileProcessingService,
+                        LibrarieConfigProperties config) {
         this.bookUseCase = bookUseCase;
         this.fileStorageService = fileStorageService;
+        this.secureFileProcessingService = secureFileProcessingService;
+        this.config = config;
     }
     
     @Override
@@ -46,8 +49,15 @@ public class IngestService implements IngestUseCase {
             throw new IllegalArgumentException("File does not exist: " + filePath);
         }
         
+        try {
+            // Validate file security before processing
+            secureFileProcessingService.validateFile(filePath);
+        } catch (SecurityException | IOException e) {
+            throw new IllegalArgumentException("File security validation failed: " + e.getMessage(), e);
+        }
+        
         String fileName = filePath.getFileName().toString();
-        String extension = getFileExtension(fileName);
+        String extension = secureFileProcessingService.getFileExtension(fileName);
         
         if (!isSupportedFormat(extension)) {
             throw new IllegalArgumentException("Unsupported format: " + extension);
@@ -97,7 +107,7 @@ public class IngestService implements IngestUseCase {
         
         try (Stream<Path> files = Files.walk(directoryPath)) {
             files.filter(Files::isRegularFile)
-                 .filter(file -> isSupportedFormat(getFileExtension(file.getFileName().toString())))
+                 .filter(file -> isSupportedFormat(secureFileProcessingService.getFileExtension(file.getFileName().toString())))
                  .forEach(file -> {
                      try {
                          String bookId = ingestFile(file);
@@ -126,12 +136,12 @@ public class IngestService implements IngestUseCase {
         if (fileExtension == null) {
             return false;
         }
-        return SUPPORTED_FORMATS.contains(fileExtension.toLowerCase());
+        return secureFileProcessingService.getAllowedExtensions().contains(fileExtension.toLowerCase());
     }
     
     @Override
     public List<String> getSupportedFormats() {
-        return new ArrayList<>(SUPPORTED_FORMATS);
+        return new ArrayList<>(secureFileProcessingService.getAllowedExtensions());
     }
     
     @Override
@@ -139,17 +149,6 @@ public class IngestService implements IngestUseCase {
         // Placeholder for manual library refresh functionality
         // Would scan the configured ingest directory and process any files found
         return 0;
-    }
-    
-    /**
-     * Extract file extension from filename.
-     */
-    private String getFileExtension(String fileName) {
-        int lastDotIndex = fileName.lastIndexOf('.');
-        if (lastDotIndex > 0 && lastDotIndex < fileName.length() - 1) {
-            return fileName.substring(lastDotIndex + 1);
-        }
-        return "";
     }
     
     /**

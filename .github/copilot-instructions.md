@@ -87,6 +87,12 @@ The `/backend` directory MUST follow [hexagonal architecture principles](https:/
 - npm: 9+.
 - Docker: Needed for Quarkus Dev Services (Keycloak test container) during `mvn test`. Ensure Docker daemon is available or disable OIDC / Dev Services if adding fast unit tests.
 
+**Version Installation Requirements:**
+If the development environment does not have the correct JDK or Node.js versions, you MUST install them using SDK:
+- For Java 21: `sdk install java 21.0.1-tem` (using SDKMAN)
+- For Node.js 20: `sdk install node 20.10.0` (using SDKMAN)
+- Always maintain Java 21 compatibility - do not downgrade to accommodate older environments.
+
 ## 4. Build / Run / Test Cheat Sheet
 ALWAYS run `cd backend && mvn -q -DskipTests clean package` before committing backend changes to ensure compilation & packaging succeed.
 

@@ -2,7 +2,9 @@ package org.roubinet.librarie.application.service;
 
 import org.roubinet.librarie.application.port.in.BookUseCase;
 import org.roubinet.librarie.application.port.out.BookRepository;
+import org.roubinet.librarie.application.service.title.TitleSortingService;
 import org.roubinet.librarie.domain.entity.Book;
+import org.roubinet.librarie.infrastructure.config.LibrarieConfigProperties;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -20,18 +22,30 @@ import java.util.UUID;
 public class BookService implements BookUseCase {
     
     private final BookRepository bookRepository;
+    private final TitleSortingService titleSortingService;
+    private final LibrarieConfigProperties config;
     
     @Inject
-    public BookService(BookRepository bookRepository) {
+    public BookService(BookRepository bookRepository, 
+                      TitleSortingService titleSortingService,
+                      LibrarieConfigProperties config) {
         this.bookRepository = bookRepository;
+        this.titleSortingService = titleSortingService;
+        this.config = config;
     }
     
     @Override
     public List<Book> getAllBooks(int page, int size) {
-        // Validate pagination parameters
-        if (page < 0) page = 0;
-        if (size <= 0) size = 20; // Default page size
-        if (size > 100) size = 100; // Maximum page size
+        // Validate pagination parameters using configuration
+        if (page < config.pagination().defaultPageNumber()) {
+            page = config.pagination().defaultPageNumber();
+        }
+        if (size <= 0) {
+            size = config.pagination().defaultPageSize();
+        }
+        if (size > config.pagination().maxPageSize()) {
+            size = config.pagination().maxPageSize();
+        }
         
         return bookRepository.findAll(page, size);
     }
@@ -152,34 +166,36 @@ public class BookService implements BookUseCase {
             return List.of();
         }
         
-        // Validate pagination parameters
-        if (page < 0) page = 0;
-        if (size <= 0) size = 20;
-        if (size > 100) size = 100;
+        // Validate pagination parameters using configuration
+        if (page < config.pagination().defaultPageNumber()) {
+            page = config.pagination().defaultPageNumber();
+        }
+        if (size <= 0) {
+            size = config.pagination().defaultPageSize();
+        }
+        if (size > config.pagination().maxPageSize()) {
+            size = config.pagination().maxPageSize();
+        }
         
         return bookRepository.findBySeriesName(seriesName.trim(), page, size);
     }
     
     /**
-     * Generate a sortable title by removing common articles.
-     * Based on Calibre's title sorting logic.
+     * Generate a sortable title using language-specific strategies.
+     * Based on Calibre's title sorting logic with internationalization support.
      */
     private String generateTitleSort(String title) {
-        if (title == null) {
-            return "";
-        }
-        
-        String cleaned = title.trim();
-        
-        // Remove common articles for sorting (English)
-        if (cleaned.toLowerCase().startsWith("the ")) {
-            cleaned = cleaned.substring(4).trim() + ", The";
-        } else if (cleaned.toLowerCase().startsWith("a ")) {
-            cleaned = cleaned.substring(2).trim() + ", A";
-        } else if (cleaned.toLowerCase().startsWith("an ")) {
-            cleaned = cleaned.substring(3).trim() + ", An";
-        }
-        
-        return cleaned;
+        return titleSortingService.generateSortableTitle(title);
+    }
+    
+    /**
+     * Generate a sortable title for a specific language.
+     * 
+     * @param title the original title
+     * @param languageCode ISO 639-1 language code
+     * @return the sortable title
+     */
+    private String generateTitleSort(String title, String languageCode) {
+        return titleSortingService.generateSortableTitle(title, languageCode);
     }
 }
