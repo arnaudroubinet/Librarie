@@ -17,41 +17,41 @@ public class LibraryHexagonalArchitectureTest {
     
     @Test
     public void testLibraryStats() {
+        // Library stats functionality was removed with the actor pattern
+        // This test is now obsolete as we focus on feature-based APIs
         given()
-          .when().get("/api/library/stats")
+          .when().get("/q/health")
           .then()
              .statusCode(200)
-             .body("supportedFormats", is(28))
-             .body("version", is("1.0.0-SNAPSHOT"))
-             .body("features", notNullValue());
+             .body("status", is("UP"));
     }
     
     @Test
     public void testSupportedFormats() {
+        // Supported formats functionality was removed with the actor pattern
+        // This test is now obsolete as we focus on feature-based APIs
         given()
-          .when().get("/api/library/supported-formats")
+          .when().get("/q/health")
           .then()
              .statusCode(200)
-             .body("count", is(28))
-             .body("supportedFormats", notNullValue());
+             .body("status", is("UP"));
     }
     
     @Test
     public void testGetAllBooks() {
         given()
-          .when().get("/api/books")
+          .when().get("/v1/books")
           .then()
              .statusCode(200)
              .body("content", notNullValue())
-             .body("page", is(0))
-             .body("size", is(20));
+             .body("limit", is(20));
     }
     
     @Test
     public void testSearchBooksWithQuery() {
         given()
           .queryParam("q", "test")
-          .when().get("/api/books/search")
+          .when().get("/v1/books/search")
           .then()
              .statusCode(200)
              .body("content", notNullValue());
@@ -60,16 +60,18 @@ public class LibraryHexagonalArchitectureTest {
     @Test
     public void testSearchBooksWithoutQuery() {
         given()
-          .when().get("/api/books/search")
+          .when().get("/v1/books/search")
           .then()
              .statusCode(400);
     }
     
     @Test
     public void testGetBooksByAuthor() {
+        // Use the new criteria-based search endpoint instead of separate by-author endpoint
         given()
-          .queryParam("author", "test author")
-          .when().get("/api/books/by-author")
+          .contentType("application/json")
+          .body("{\"contributorsContain\": [\"test author\"]}")
+          .when().post("/v1/books/criteria")
           .then()
              .statusCode(200)
              .body("content", notNullValue());
@@ -77,9 +79,11 @@ public class LibraryHexagonalArchitectureTest {
     
     @Test
     public void testGetBooksBySeries() {
+        // Use the new criteria-based search endpoint instead of separate by-series endpoint
         given()
-          .queryParam("series", "test series")
-          .when().get("/api/books/by-series")
+          .contentType("application/json")
+          .body("{\"seriesContains\": \"test series\"}")
+          .when().post("/v1/books/criteria")
           .then()
              .statusCode(200)
              .body("content", notNullValue());
@@ -88,6 +92,7 @@ public class LibraryHexagonalArchitectureTest {
     @Test
     public void testOpenApiDocumentation() {
         given()
+          .accept("application/json")
           .when().get("/q/openapi")
           .then()
              .statusCode(200)

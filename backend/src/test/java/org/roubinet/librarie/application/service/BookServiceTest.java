@@ -39,12 +39,12 @@ class BookServiceTest {
     
     @BeforeEach
     void setUp() {
-        // Mock configuration
+        // Mock configuration with lenient stubbing to avoid unnecessary stubbing errors
         LibrarieConfigProperties.PaginationConfig paginationConfig = mock(LibrarieConfigProperties.PaginationConfig.class);
-        when(config.pagination()).thenReturn(paginationConfig);
-        when(paginationConfig.defaultPageNumber()).thenReturn(0);
-        when(paginationConfig.defaultPageSize()).thenReturn(20);
-        when(paginationConfig.maxPageSize()).thenReturn(100);
+        lenient().when(config.pagination()).thenReturn(paginationConfig);
+        lenient().when(paginationConfig.defaultPageNumber()).thenReturn(0);
+        lenient().when(paginationConfig.defaultPageSize()).thenReturn(20);
+        lenient().when(paginationConfig.maxPageSize()).thenReturn(100);
         
         bookService = new BookService(bookRepository, titleSortingService, config);
     }
@@ -119,8 +119,10 @@ class BookServiceTest {
         Book bookToCreate = createTestBook("A New Book");
         Book savedBook = createTestBook("A New Book");
         savedBook.setId(UUID.randomUUID());
+        savedBook.setTitleSort("New Book, A"); // Set expected title sort
         
         when(bookRepository.findByPath(bookToCreate.getPath())).thenReturn(Optional.empty());
+        when(titleSortingService.generateSortableTitle("A New Book")).thenReturn("New Book, A");
         when(bookRepository.save(bookToCreate)).thenReturn(savedBook);
         
         // When
@@ -130,6 +132,7 @@ class BookServiceTest {
         assertEquals(savedBook, result);
         assertEquals("New Book, A", result.getTitleSort()); // Article should be moved
         verify(bookRepository).findByPath(bookToCreate.getPath());
+        verify(titleSortingService).generateSortableTitle("A New Book");
         verify(bookRepository).save(bookToCreate);
     }
     
