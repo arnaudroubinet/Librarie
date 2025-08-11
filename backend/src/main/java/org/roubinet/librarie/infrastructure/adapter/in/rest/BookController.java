@@ -59,8 +59,8 @@ public class BookController {
             .map(this::toDto)
             .collect(Collectors.toList());
         
-        PageResponseDto<BookResponseDto> response = new PageResponseDto<>(
-            bookDtos, page, size, totalCount
+        PageResponseDto<BookResponseDto> response = new PageResponseDto<BookResponseDto>(
+            bookDtos, null, null, size, totalCount
         );
         
         return Response.ok(response).build();
@@ -125,8 +125,8 @@ public class BookController {
         
         // For search results, we don't have an accurate total count
         // In a real implementation, you might want to add a separate count query
-        PageResponseDto<BookResponseDto> response = new PageResponseDto<>(
-            bookDtos, page, size, bookDtos.size()
+        PageResponseDto<BookResponseDto> response = new PageResponseDto<BookResponseDto>(
+            bookDtos, null, null, size, (long) bookDtos.size()
         );
         
         return Response.ok(response).build();
@@ -159,8 +159,8 @@ public class BookController {
             .map(this::toDto)
             .collect(Collectors.toList());
         
-        PageResponseDto<BookResponseDto> response = new PageResponseDto<>(
-            bookDtos, page, size, bookDtos.size()
+        PageResponseDto<BookResponseDto> response = new PageResponseDto<BookResponseDto>(
+            bookDtos, null, null, size, (long) bookDtos.size()
         );
         
         return Response.ok(response).build();
@@ -193,8 +193,8 @@ public class BookController {
             .map(this::toDto)
             .collect(Collectors.toList());
         
-        PageResponseDto<BookResponseDto> response = new PageResponseDto<>(
-            bookDtos, page, size, bookDtos.size()
+        PageResponseDto<BookResponseDto> response = new PageResponseDto<BookResponseDto>(
+            bookDtos, null, null, size, (long) bookDtos.size()
         );
         
         return Response.ok(response).build();

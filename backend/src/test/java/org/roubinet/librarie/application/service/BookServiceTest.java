@@ -6,7 +6,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.roubinet.librarie.application.port.out.BookRepository;
+import org.roubinet.librarie.application.service.title.TitleSortingService;
 import org.roubinet.librarie.domain.entity.Book;
+import org.roubinet.librarie.infrastructure.config.LibrarieConfigProperties;
 
 import java.util.List;
 import java.util.Optional;
@@ -26,11 +28,24 @@ class BookServiceTest {
     @Mock
     private BookRepository bookRepository;
     
+    @Mock
+    private TitleSortingService titleSortingService;
+    
+    @Mock
+    private LibrarieConfigProperties config;
+    
     private BookService bookService;
     
     @BeforeEach
     void setUp() {
-        bookService = new BookService(bookRepository);
+        // Mock configuration
+        LibrarieConfigProperties.PaginationConfig paginationConfig = mock(LibrarieConfigProperties.PaginationConfig.class);
+        when(config.pagination()).thenReturn(paginationConfig);
+        when(paginationConfig.defaultPageNumber()).thenReturn(0);
+        when(paginationConfig.defaultPageSize()).thenReturn(20);
+        when(paginationConfig.maxPageSize()).thenReturn(100);
+        
+        bookService = new BookService(bookRepository, titleSortingService, config);
     }
     
     @Test

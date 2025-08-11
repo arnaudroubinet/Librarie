@@ -56,6 +56,19 @@ public class BookResponseDto {
     @Schema(description = "Additional metadata as key-value pairs")
     private Map<String, Object> metadata;
     
+    // Simple fields for easier API usage
+    @Schema(description = "Primary author name", example = "F. Scott Fitzgerald")
+    private String author;
+    
+    @Schema(description = "Series name", example = "Harry Potter")
+    private String series;
+    
+    @Schema(description = "Index in series", example = "1")
+    private Integer seriesIndex;
+    
+    @Schema(description = "Book description or summary")
+    private String description;
+    
     // Default constructor
     public BookResponseDto() {}
     
@@ -170,5 +183,37 @@ public class BookResponseDto {
     
     public void setMetadata(Map<String, Object> metadata) {
         this.metadata = metadata;
+    }
+    
+    public String getAuthor() {
+        return author;
+    }
+    
+    public void setAuthor(String author) {
+        this.author = author;
+    }
+    
+    public String getSeries() {
+        return series;
+    }
+    
+    public void setSeries(String series) {
+        this.series = series;
+    }
+    
+    public Integer getSeriesIndex() {
+        return seriesIndex;
+    }
+    
+    public void setSeriesIndex(Integer seriesIndex) {
+        this.seriesIndex = seriesIndex;
+    }
+    
+    public String getDescription() {
+        return description;
+    }
+    
+    public void setDescription(String description) {
+        this.description = description;
     }
 }

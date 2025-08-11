@@ -5,50 +5,56 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import java.util.List;
 
 /**
- * Generic DTO for paginated API responses.
+ * Generic DTO for cursor-based paginated API responses.
+ * Uses keyset pagination for better performance and consistency.
  * 
  * @param <T> the type of content in the page
  */
-@Schema(description = "Paginated response")
+@Schema(description = "Cursor-based paginated response")
 public class PageResponseDto<T> {
     
     @Schema(description = "List of items in this page")
     private List<T> content;
     
-    @Schema(description = "Current page number (0-based)", example = "0")
-    private int page;
+    @Schema(description = "Cursor for the next page (null if no more pages)", example = "eyJpZCI6IjEyMyIsInRpbWVzdGFtcCI6IjIwMjQtMDEtMDFUMTA6MDA6MDBaIn0=")
+    private String nextCursor;
     
-    @Schema(description = "Page size", example = "20")
+    @Schema(description = "Cursor for the previous page (null if first page)", example = "eyJpZCI6IjEwMCIsInRpbWVzdGFtcCI6IjIwMjQtMDEtMDFUMDk6MDA6MDBaIn0=")
+    private String previousCursor;
+    
+    @Schema(description = "Number of items requested", example = "20")
+    private int limit;
+    
+    @Schema(description = "Number of items returned in this page", example = "20")
     private int size;
     
-    @Schema(description = "Total number of items available", example = "156")
-    private long totalElements;
+    @Schema(description = "Whether this is the first page", example = "false")
+    private boolean hasNext;
     
-    @Schema(description = "Total number of pages", example = "8")
-    private int totalPages;
+    @Schema(description = "Whether this is the last page", example = "true")
+    private boolean hasPrevious;
     
-    @Schema(description = "Whether this is the first page", example = "true")
-    private boolean first;
-    
-    @Schema(description = "Whether this is the last page", example = "false")
-    private boolean last;
-    
-    @Schema(description = "Number of items in this page", example = "20")
-    private int numberOfElements;
+    @Schema(description = "Total number of items (estimated or exact if known)", example = "156")
+    private Long totalElements;
     
     // Default constructor
     public PageResponseDto() {}
     
-    // Constructor
-    public PageResponseDto(List<T> content, int page, int size, long totalElements) {
+    // Constructor for cursor-based pagination
+    public PageResponseDto(List<T> content, String nextCursor, String previousCursor, int limit) {
         this.content = content;
-        this.page = page;
-        this.size = size;
+        this.nextCursor = nextCursor;
+        this.previousCursor = previousCursor;
+        this.limit = limit;
+        this.size = content != null ? content.size() : 0;
+        this.hasNext = nextCursor != null;
+        this.hasPrevious = previousCursor != null;
+    }
+    
+    // Constructor with total elements (when available)
+    public PageResponseDto(List<T> content, String nextCursor, String previousCursor, int limit, Long totalElements) {
+        this(content, nextCursor, previousCursor, limit);
         this.totalElements = totalElements;
-        this.totalPages = (int) Math.ceil((double) totalElements / size);
-        this.first = page == 0;
-        this.last = page >= totalPages - 1;
-        this.numberOfElements = content != null ? content.size() : 0;
     }
     
     // Getters and setters
@@ -58,17 +64,33 @@ public class PageResponseDto<T> {
     
     public void setContent(List<T> content) {
         this.content = content;
-        this.numberOfElements = content != null ? content.size() : 0;
+        this.size = content != null ? content.size() : 0;
     }
     
-    public int getPage() {
-        return page;
+    public String getNextCursor() {
+        return nextCursor;
     }
     
-    public void setPage(int page) {
-        this.page = page;
-        this.first = page == 0;
-        this.last = page >= totalPages - 1;
+    public void setNextCursor(String nextCursor) {
+        this.nextCursor = nextCursor;
+        this.hasNext = nextCursor != null;
+    }
+    
+    public String getPreviousCursor() {
+        return previousCursor;
+    }
+    
+    public void setPreviousCursor(String previousCursor) {
+        this.previousCursor = previousCursor;
+        this.hasPrevious = previousCursor != null;
+    }
+    
+    public int getLimit() {
+        return limit;
+    }
+    
+    public void setLimit(int limit) {
+        this.limit = limit;
     }
     
     public int getSize() {
@@ -77,49 +99,29 @@ public class PageResponseDto<T> {
     
     public void setSize(int size) {
         this.size = size;
-        this.totalPages = (int) Math.ceil((double) totalElements / size);
-        this.last = page >= totalPages - 1;
     }
     
-    public long getTotalElements() {
+    public boolean isHasNext() {
+        return hasNext;
+    }
+    
+    public void setHasNext(boolean hasNext) {
+        this.hasNext = hasNext;
+    }
+    
+    public boolean isHasPrevious() {
+        return hasPrevious;
+    }
+    
+    public void setHasPrevious(boolean hasPrevious) {
+        this.hasPrevious = hasPrevious;
+    }
+    
+    public Long getTotalElements() {
         return totalElements;
     }
     
-    public void setTotalElements(long totalElements) {
+    public void setTotalElements(Long totalElements) {
         this.totalElements = totalElements;
-        this.totalPages = (int) Math.ceil((double) totalElements / size);
-        this.last = page >= totalPages - 1;
-    }
-    
-    public int getTotalPages() {
-        return totalPages;
-    }
-    
-    public void setTotalPages(int totalPages) {
-        this.totalPages = totalPages;
-    }
-    
-    public boolean isFirst() {
-        return first;
-    }
-    
-    public void setFirst(boolean first) {
-        this.first = first;
-    }
-    
-    public boolean isLast() {
-        return last;
-    }
-    
-    public void setLast(boolean last) {
-        this.last = last;
-    }
-    
-    public int getNumberOfElements() {
-        return numberOfElements;
-    }
-    
-    public void setNumberOfElements(int numberOfElements) {
-        this.numberOfElements = numberOfElements;
     }
 }
