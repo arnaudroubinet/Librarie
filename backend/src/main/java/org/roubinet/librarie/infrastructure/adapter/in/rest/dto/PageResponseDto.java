@@ -51,9 +51,16 @@ public class PageResponseDto<T> {
         this.hasPrevious = previousCursor != null;
     }
     
-    // Constructor with total elements (when available)
-    public PageResponseDto(List<T> content, String nextCursor, String previousCursor, int limit, Long totalElements) {
-        this(content, nextCursor, previousCursor, limit);
+    // Constructor with full cursor pagination details
+    public PageResponseDto(List<T> content, String nextCursor, String previousCursor, int limit, 
+                          boolean hasNext, boolean hasPrevious, Long totalElements) {
+        this.content = content;
+        this.nextCursor = nextCursor;
+        this.previousCursor = previousCursor;
+        this.limit = limit;
+        this.size = content != null ? content.size() : 0;
+        this.hasNext = hasNext;
+        this.hasPrevious = hasPrevious;
         this.totalElements = totalElements;
     }
     

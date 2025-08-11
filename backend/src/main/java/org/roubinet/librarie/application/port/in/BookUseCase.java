@@ -1,8 +1,8 @@
 package org.roubinet.librarie.application.port.in;
 
 import org.roubinet.librarie.domain.entity.Book;
+import org.roubinet.librarie.infrastructure.adapter.in.rest.dto.pagination.CursorPageResult;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -13,13 +13,13 @@ import java.util.UUID;
 public interface BookUseCase {
     
     /**
-     * Retrieve all books with pagination support.
+     * Retrieve all books with cursor-based pagination support.
      * 
-     * @param page the page number (0-based)
-     * @param size the page size
-     * @return list of books for the requested page
+     * @param cursor the pagination cursor (null for first page)
+     * @param limit the maximum number of books to return
+     * @return cursor-paginated result containing books and navigation info
      */
-    List<Book> getAllBooks(int page, int size);
+    CursorPageResult<Book> getAllBooks(String cursor, int limit);
     
     /**
      * Retrieve a book by its unique identifier.
@@ -30,14 +30,14 @@ public interface BookUseCase {
     Optional<Book> getBookById(UUID id);
     
     /**
-     * Search books by title, author, or other metadata.
+     * Search books by title, author, or other metadata with cursor pagination.
      * 
      * @param query the search query
-     * @param page the page number (0-based)
-     * @param size the page size
-     * @return list of books matching the search criteria
+     * @param cursor the pagination cursor (null for first page)
+     * @param limit the maximum number of books to return
+     * @return cursor-paginated result containing matching books and navigation info
      */
-    List<Book> searchBooks(String query, int page, int size);
+    CursorPageResult<Book> searchBooks(String query, String cursor, int limit);
     
     /**
      * Create a new book in the library.
@@ -70,22 +70,23 @@ public interface BookUseCase {
     long getTotalBooksCount();
     
     /**
-     * Get books by author name.
+     * Get books by complex criteria using a fluent DSL for queries.
+     * Supports filtering by multiple fields, sorting, and cursor pagination.
      * 
-     * @param authorName the author's name
-     * @param page the page number (0-based)
-     * @param size the page size
-     * @return list of books by the specified author
+     * @param criteria the search criteria using DSL
+     * @param cursor the pagination cursor (null for first page)
+     * @param limit the maximum number of books to return
+     * @return cursor-paginated result containing matching books
      */
-    List<Book> getBooksByAuthor(String authorName, int page, int size);
+    CursorPageResult<Book> getBooksByCriteria(BookSearchCriteria criteria, String cursor, int limit);
     
     /**
      * Get books by series name.
      * 
      * @param seriesName the series name
-     * @param page the page number (0-based)
-     * @param size the page size
-     * @return list of books in the specified series
+     * @param cursor the pagination cursor (null for first page)
+     * @param limit the maximum number of books to return
+     * @return cursor-paginated result containing books in the specified series
      */
-    List<Book> getBooksBySeries(String seriesName, int page, int size);
+    CursorPageResult<Book> getBooksBySeries(String seriesName, String cursor, int limit);
 }

@@ -18,16 +18,16 @@ public class BookResponseDto {
     @Schema(description = "Unique identifier of the book", example = "f47ac10b-58cc-4372-a567-0e02b2c3d479")
     private UUID id;
     
-    @Schema(description = "Title of the book", example = "The Great Gatsby")
+    @Schema(description = "Title of the book", example = "The Hobbit")
     private String title;
     
-    @Schema(description = "Sortable title (articles moved to end)", example = "Great Gatsby, The")
+    @Schema(description = "Sortable title (articles moved to end)", example = "Hobbit, The")
     private String titleSort;
     
     @Schema(description = "ISBN of the book", example = "978-0-7432-7356-5")
     private String isbn;
     
-    @Schema(description = "File path in the library", example = "/library/F. Scott Fitzgerald/The Great Gatsby/The Great Gatsby.epub")
+    @Schema(description = "File path in the library", example = "/library/J.R.R. Tolkien/The Hobbit/The Hobbit.epub")
     private String path;
     
     @Schema(description = "File size in bytes", example = "2048576")
@@ -45,23 +45,24 @@ public class BookResponseDto {
     @Schema(description = "When the book was last updated")
     private OffsetDateTime updatedAt;
     
-    @Schema(description = "Publication date of the book", example = "1925-04-10")
+    @Schema(description = "Publication date of the book", example = "1937-09-21")
     private LocalDate publicationDate;
     
     @Schema(description = "Language of the book", example = "English")
     private String language;
     
-    @Schema(description = "Publisher of the book", example = "Charles Scribner's Sons")
+    @Schema(description = "Publisher of the book", example = "George Allen & Unwin")
     private String publisher;
     
     @Schema(description = "Additional metadata as key-value pairs")
     private Map<String, Object> metadata;
     
-    // Simple fields for easier API usage
-    @Schema(description = "Primary author name", example = "F. Scott Fitzgerald")
-    private String author;
+    // Contributor information organized by role
+    @Schema(description = "Contributors organized by role", 
+            example = "{\"author\": [\"J.R.R. Tolkien\"], \"illustrator\": [\"Alan Lee\"], \"translator\": [\"Douglas A. Anderson\"]}")
+    private Map<String, List<String>> contributors;
     
-    @Schema(description = "Series name", example = "Harry Potter")
+    @Schema(description = "Series name", example = "The Lord of the Rings")
     private String series;
     
     @Schema(description = "Index in series", example = "1")
@@ -189,12 +190,12 @@ public class BookResponseDto {
         this.metadata = metadata;
     }
     
-    public String getAuthor() {
-        return author;
+    public Map<String, List<String>> getContributors() {
+        return contributors;
     }
     
-    public void setAuthor(String author) {
-        this.author = author;
+    public void setContributors(Map<String, List<String>> contributors) {
+        this.contributors = contributors;
     }
     
     public String getSeries() {

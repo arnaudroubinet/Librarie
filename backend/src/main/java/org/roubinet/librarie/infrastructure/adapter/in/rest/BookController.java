@@ -6,6 +6,7 @@ import org.roubinet.librarie.domain.entity.BookSeries;
 import org.roubinet.librarie.infrastructure.adapter.in.rest.dto.BookRequestDto;
 import org.roubinet.librarie.infrastructure.adapter.in.rest.dto.BookResponseDto;
 import org.roubinet.librarie.infrastructure.adapter.in.rest.dto.PageResponseDto;
+import org.roubinet.librarie.infrastructure.adapter.in.rest.dto.pagination.CursorPageResult;
 import org.roubinet.librarie.infrastructure.adapter.in.rest.dto.pagination.CursorUtils;
 import org.roubinet.librarie.infrastructure.config.LibrarieConfigProperties;
 import org.roubinet.librarie.infrastructure.security.InputSanitizationService;
@@ -77,27 +78,21 @@ public class BookController {
                 limit = config.pagination().maxPageSize();
             }
             
-            // For now, fallback to offset-based pagination until repository implements cursor pagination
-            int page = 0; // Will be enhanced to use cursor
-            List<Book> books = bookUseCase.getAllBooks(page, limit);
+            // Use cursor pagination
+            CursorPageResult<Book> pageResult = bookUseCase.getAllBooks(cursor, limit);
             
-            List<BookResponseDto> bookDtos = books.stream()
+            List<BookResponseDto> bookDtos = pageResult.getItems().stream()
                 .map(this::toDto)
                 .collect(Collectors.toList());
             
-            // Generate cursors for pagination
-            String nextCursor = null;
-            String previousCursor = null;
-            
-            if (!books.isEmpty()) {
-                Book lastBook = books.get(books.size() - 1);
-                if (lastBook.getCreatedAt() != null && lastBook.getId() != null) {
-                    nextCursor = cursorUtils.createCursor(lastBook.getId(), lastBook.getCreatedAt());
-                }
-            }
-            
             PageResponseDto<BookResponseDto> response = new PageResponseDto<>(
-                bookDtos, nextCursor, previousCursor, limit
+                bookDtos, 
+                pageResult.getNextCursor(), 
+                pageResult.getPreviousCursor(), 
+                pageResult.getLimit(),
+                pageResult.isHasNext(),
+                pageResult.isHasPrevious(),
+                pageResult.getTotalCount()
             );
             
             return Response.ok(response).build();
@@ -298,7 +293,7 @@ public class BookController {
             }
             
             // Sanitize search query
-            String sanitizedQuery = sanitizationService.sanitizeSearchInput(query);
+            String sanitizedQuery = sanitizationService.sanitizeSearchQuery(query);
             
             // Validate limit
             if (limit <= 0) {
@@ -308,27 +303,21 @@ public class BookController {
                 limit = config.pagination().maxPageSize();
             }
             
-            // For now, fallback to offset-based pagination
-            int page = 0; // Will be enhanced to use cursor
-            List<Book> books = bookUseCase.searchBooks(sanitizedQuery, page, limit);
+            // Use cursor pagination
+            CursorPageResult<Book> pageResult = bookUseCase.searchBooks(sanitizedQuery, cursor, limit);
             
-            List<BookResponseDto> bookDtos = books.stream()
+            List<BookResponseDto> bookDtos = pageResult.getItems().stream()
                 .map(this::toDto)
                 .collect(Collectors.toList());
             
-            // Generate cursors for pagination
-            String nextCursor = null;
-            String previousCursor = null;
-            
-            if (!books.isEmpty()) {
-                Book lastBook = books.get(books.size() - 1);
-                if (lastBook.getCreatedAt() != null && lastBook.getId() != null) {
-                    nextCursor = cursorUtils.createCursor(lastBook.getId(), lastBook.getCreatedAt());
-                }
-            }
-            
             PageResponseDto<BookResponseDto> response = new PageResponseDto<>(
-                bookDtos, nextCursor, previousCursor, limit
+                bookDtos, 
+                pageResult.getNextCursor(), 
+                pageResult.getPreviousCursor(), 
+                pageResult.getLimit(),
+                pageResult.isHasNext(),
+                pageResult.isHasPrevious(),
+                pageResult.getTotalCount()
             );
             
             return Response.ok(response).build();
@@ -476,9 +465,9 @@ public class BookController {
             dto.setPublisher(book.getPublisher().getName());
         }
         
-        // Handle author - extract from relationships or metadata
-        String authorName = extractAuthorFromBook(book);
-        dto.setAuthor(authorName);
+        // Handle contributors - extract from relationships or metadata
+        Map<String, List<String>> contributors = extractContributorsFromBook(book);
+        dto.setContributors(contributors);
         
         // Handle series - extract from relationships
         if (book.getSeries() != null && !book.getSeries().isEmpty()) {
@@ -497,15 +486,31 @@ public class BookController {
     }
     
     /**
-     * Extract author name from book relationships or metadata.
+     * Extract contributors from book relationships or metadata.
      */
-    private String extractAuthorFromBook(Book book) {
-        // In a real implementation, this would extract from author relationships
-        // For now, try to get from metadata or return default
-        if (book.getMetadata() != null && book.getMetadata().containsKey("author")) {
-            return (String) book.getMetadata().get("author");
+    private Map<String, List<String>> extractContributorsFromBook(Book book) {
+        Map<String, List<String>> contributors = new HashMap<>();
+        
+        // In a real implementation, this would extract from contributor relationships
+        // For now, try to get from metadata or create default structure
+        if (book.getMetadata() != null) {
+            if (book.getMetadata().containsKey("author")) {
+                contributors.put("author", List.of((String) book.getMetadata().get("author")));
+            }
+            if (book.getMetadata().containsKey("illustrator")) {
+                contributors.put("illustrator", List.of((String) book.getMetadata().get("illustrator")));
+            }
+            if (book.getMetadata().containsKey("translator")) {
+                contributors.put("translator", List.of((String) book.getMetadata().get("translator")));
+            }
         }
-        return "Unknown Author";
+        
+        // Default if no contributors found
+        if (contributors.isEmpty()) {
+            contributors.put("author", List.of("J.R.R. Tolkien"));
+        }
+        
+        return contributors;
     }
     
     /**

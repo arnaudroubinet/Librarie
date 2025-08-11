@@ -1,6 +1,8 @@
 package org.roubinet.librarie.application.port.out;
 
+import org.roubinet.librarie.application.port.in.BookSearchCriteria;
 import org.roubinet.librarie.domain.entity.Book;
+import org.roubinet.librarie.infrastructure.adapter.in.rest.dto.pagination.CursorPageResult;
 
 import java.util.List;
 import java.util.Optional;
@@ -13,13 +15,13 @@ import java.util.UUID;
 public interface BookRepository {
     
     /**
-     * Find all books with pagination.
+     * Find all books with cursor-based pagination.
      * 
-     * @param page the page number (0-based)
-     * @param size the page size
-     * @return list of books
+     * @param cursor the pagination cursor (null for first page)
+     * @param limit the maximum number of books to return
+     * @return cursor-paginated result containing books
      */
-    List<Book> findAll(int page, int size);
+    CursorPageResult<Book> findAll(String cursor, int limit);
     
     /**
      * Find a book by its ID.
@@ -30,14 +32,14 @@ public interface BookRepository {
     Optional<Book> findById(UUID id);
     
     /**
-     * Find books by title containing the search term (case-insensitive).
+     * Find books by title containing the search term (case-insensitive) with cursor pagination.
      * 
      * @param title the title search term
-     * @param page the page number (0-based)
-     * @param size the page size
-     * @return list of matching books
+     * @param cursor the pagination cursor (null for first page)
+     * @param limit the maximum number of books to return
+     * @return cursor-paginated result containing matching books
      */
-    List<Book> findByTitleContainingIgnoreCase(String title, int page, int size);
+    CursorPageResult<Book> findByTitleContainingIgnoreCase(String title, String cursor, int limit);
     
     /**
      * Find books by path (useful for preventing duplicates during ingest).
@@ -86,32 +88,63 @@ public interface BookRepository {
     long count();
     
     /**
-     * Find books by author name (joining through relationships).
-     * 
-     * @param authorName the author's name
-     * @param page the page number (0-based)
-     * @param size the page size
-     * @return list of books by the author
-     */
-    List<Book> findByAuthorName(String authorName, int page, int size);
-    
-    /**
-     * Find books by series name (joining through relationships).
+     * Find books by series name with cursor pagination.
      * 
      * @param seriesName the series name
-     * @param page the page number (0-based)
-     * @param size the page size
-     * @return list of books in the series
+     * @param cursor the pagination cursor (null for first page)
+     * @param limit the maximum number of books to return
+     * @return cursor-paginated result containing books in the series
      */
+    CursorPageResult<Book> findBySeriesName(String seriesName, String cursor, int limit);
+    
+    /**
+     * Search books by multiple criteria (title, author, ISBN, etc.) with cursor pagination.
+     * 
+     * @param searchQuery the search query
+     * @param cursor the pagination cursor (null for first page)
+     * @param limit the maximum number of books to return
+     * @return cursor-paginated result containing matching books
+     */
+    CursorPageResult<Book> searchBooks(String searchQuery, String cursor, int limit);
+    
+    /**
+     * Find books by complex criteria using DSL with cursor pagination.
+     * 
+     * @param criteria the search criteria
+     * @param cursor the pagination cursor (null for first page)
+     * @param limit the maximum number of books to return
+     * @return cursor-paginated result containing matching books
+     */
+    CursorPageResult<Book> findByCriteria(BookSearchCriteria criteria, String cursor, int limit);
+    
+    // Legacy offset-based methods (deprecated - use cursor pagination instead)
+    /**
+     * @deprecated Use {@link #findAll(String, int)} instead
+     */
+    @Deprecated
+    List<Book> findAll(int page, int size);
+    
+    /**
+     * @deprecated Use {@link #findByTitleContainingIgnoreCase(String, String, int)} instead
+     */
+    @Deprecated
+    List<Book> findByTitleContainingIgnoreCase(String title, int page, int size);
+    
+    /**
+     * @deprecated Use {@link #findBySeriesName(String, String, int)} instead
+     */
+    @Deprecated
     List<Book> findBySeriesName(String seriesName, int page, int size);
     
     /**
-     * Search books by multiple criteria (title, author, ISBN, etc.).
-     * 
-     * @param searchQuery the search query
-     * @param page the page number (0-based)
-     * @param size the page size
-     * @return list of matching books
+     * @deprecated Use {@link #searchBooks(String, String, int)} instead
      */
+    @Deprecated
     List<Book> searchBooks(String searchQuery, int page, int size);
+    
+    /**
+     * @deprecated Use {@link #findByCriteria(BookSearchCriteria, String, int)} instead
+     */
+    @Deprecated
+    List<Book> findByAuthorName(String authorName, int page, int size);
 }

@@ -1,16 +1,17 @@
 package org.roubinet.librarie.application.service;
 
 import org.roubinet.librarie.application.port.in.BookUseCase;
+import org.roubinet.librarie.application.port.in.BookSearchCriteria;
 import org.roubinet.librarie.application.port.out.BookRepository;
 import org.roubinet.librarie.application.service.title.TitleSortingService;
 import org.roubinet.librarie.domain.entity.Book;
+import org.roubinet.librarie.infrastructure.adapter.in.rest.dto.pagination.CursorPageResult;
 import org.roubinet.librarie.infrastructure.config.LibrarieConfigProperties;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -35,19 +36,16 @@ public class BookService implements BookUseCase {
     }
     
     @Override
-    public List<Book> getAllBooks(int page, int size) {
+    public CursorPageResult<Book> getAllBooks(String cursor, int limit) {
         // Validate pagination parameters using configuration
-        if (page < config.pagination().defaultPageNumber()) {
-            page = config.pagination().defaultPageNumber();
+        if (limit <= 0) {
+            limit = config.pagination().defaultPageSize();
         }
-        if (size <= 0) {
-            size = config.pagination().defaultPageSize();
-        }
-        if (size > config.pagination().maxPageSize()) {
-            size = config.pagination().maxPageSize();
+        if (limit > config.pagination().maxPageSize()) {
+            limit = config.pagination().maxPageSize();
         }
         
-        return bookRepository.findAll(page, size);
+        return bookRepository.findAll(cursor, limit);
     }
     
     @Override
@@ -59,17 +57,20 @@ public class BookService implements BookUseCase {
     }
     
     @Override
-    public List<Book> searchBooks(String query, int page, int size) {
+    public CursorPageResult<Book> searchBooks(String query, String cursor, int limit) {
         if (query == null || query.trim().isEmpty()) {
-            return getAllBooks(page, size);
+            return getAllBooks(cursor, limit);
         }
         
         // Validate pagination parameters
-        if (page < 0) page = 0;
-        if (size <= 0) size = 20;
-        if (size > 100) size = 100;
+        if (limit <= 0) {
+            limit = config.pagination().defaultPageSize();
+        }
+        if (limit > config.pagination().maxPageSize()) {
+            limit = config.pagination().maxPageSize();
+        }
         
-        return bookRepository.searchBooks(query.trim(), page, size);
+        return bookRepository.searchBooks(query.trim(), cursor, limit);
     }
     
     @Override
@@ -147,37 +148,42 @@ public class BookService implements BookUseCase {
     }
     
     @Override
-    public List<Book> getBooksByAuthor(String authorName, int page, int size) {
-        if (authorName == null || authorName.trim().isEmpty()) {
-            return List.of();
+    public CursorPageResult<Book> getBooksByCriteria(BookSearchCriteria criteria, String cursor, int limit) {
+        if (criteria == null) {
+            return getAllBooks(cursor, limit);
         }
         
         // Validate pagination parameters
-        if (page < 0) page = 0;
-        if (size <= 0) size = 20;
-        if (size > 100) size = 100;
+        if (limit <= 0) {
+            limit = config.pagination().defaultPageSize();
+        }
+        if (limit > config.pagination().maxPageSize()) {
+            limit = config.pagination().maxPageSize();
+        }
         
-        return bookRepository.findByAuthorName(authorName.trim(), page, size);
+        return bookRepository.findByCriteria(criteria, cursor, limit);
     }
     
     @Override
-    public List<Book> getBooksBySeries(String seriesName, int page, int size) {
+    public CursorPageResult<Book> getBooksBySeries(String seriesName, String cursor, int limit) {
         if (seriesName == null || seriesName.trim().isEmpty()) {
-            return List.of();
+            return CursorPageResult.<Book>builder()
+                .items(java.util.List.of())
+                .limit(limit)
+                .hasNext(false)
+                .hasPrevious(false)
+                .build();
         }
         
         // Validate pagination parameters using configuration
-        if (page < config.pagination().defaultPageNumber()) {
-            page = config.pagination().defaultPageNumber();
+        if (limit <= 0) {
+            limit = config.pagination().defaultPageSize();
         }
-        if (size <= 0) {
-            size = config.pagination().defaultPageSize();
-        }
-        if (size > config.pagination().maxPageSize()) {
-            size = config.pagination().maxPageSize();
+        if (limit > config.pagination().maxPageSize()) {
+            limit = config.pagination().maxPageSize();
         }
         
-        return bookRepository.findBySeriesName(seriesName.trim(), page, size);
+        return bookRepository.findBySeriesName(seriesName.trim(), cursor, limit);
     }
     
     /**
