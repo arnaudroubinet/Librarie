@@ -1,0 +1,193 @@
+name: Full CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    name: Backend (Java 21)
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: 21
+          distribution: 'temurin'
+
+      - name: Cache Maven dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.m2/repository
+            !~/.m2/repository/org/roubinet/librarie
+          key: ${{ runner.os }}-maven-${{ hashFiles('backend/**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+
+      - name: Cache Quarkus build cache
+        uses: actions/cache@v4
+        with:
+          path: backend/target/quarkus-work
+          key: ${{ runner.os }}-quarkus-${{ hashFiles('backend/src/**/*.java', 'backend/src/**/*.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-quarkus-
+
+      - name: Verify Maven and Java versions
+        run: |
+          java -version
+          mvn -version
+
+      - name: Run backend tests
+        run: |
+          cd backend
+          mvn clean test
+
+      - name: Package backend application
+        run: |
+          cd backend
+          mvn package -DskipTests
+
+      - name: Upload backend test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: backend-test-results
+          path: backend/target/surefire-reports/
+          retention-days: 7
+
+  frontend:
+    runs-on: ubuntu-latest
+    name: Frontend (Node 20)
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: 'frontend/package-lock.json'
+
+      - name: Verify Node and npm versions
+        run: |
+          node -v
+          npm -v
+
+      - name: Install frontend dependencies
+        working-directory: ./frontend
+        run: npm ci
+
+      - name: Check code formatting with Prettier
+        working-directory: ./frontend
+        run: |
+          if npm list prettier > /dev/null 2>&1; then
+            npx prettier --check "src/**/*.{ts,html,scss,css}" || echo "Prettier check failed - formatting issues found"
+          else
+            echo "Prettier not available, skipping format check"
+          fi
+
+      - name: Run frontend tests
+        working-directory: ./frontend
+        run: npm run test -- --watch=false --browsers=ChromeHeadless --code-coverage
+
+      - name: Build frontend application
+        working-directory: ./frontend
+        run: npm run build
+
+      - name: Upload frontend test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: frontend-test-results
+          path: frontend/coverage/
+          retention-days: 7
+
+      - name: Upload frontend build artifacts
+        uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: frontend-build-artifacts
+          path: frontend/dist/
+          retention-days: 7
+
+  integration:
+    runs-on: ubuntu-latest
+    needs: [backend, frontend]
+    name: Integration Tests
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: 21
+          distribution: 'temurin'
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: 'frontend/package-lock.json'
+
+      - name: Cache Maven dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.m2/repository
+            !~/.m2/repository/org/roubinet/librarie
+          key: ${{ runner.os }}-maven-${{ hashFiles('backend/**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+
+      - name: Install frontend dependencies
+        working-directory: ./frontend
+        run: npm ci
+
+      - name: Build frontend
+        working-directory: ./frontend
+        run: npm run build
+
+      - name: Start backend in dev mode
+        run: |
+          cd backend
+          timeout 120 mvn quarkus:dev -Ddebug=false &
+          echo $! > quarkus.pid
+
+      - name: Wait for backend to be ready
+        run: |
+          for i in {1..30}; do
+            if curl -f http://localhost:8080/q/health > /dev/null 2>&1; then
+              echo "Backend is ready"
+              exit 0
+            fi
+            echo "Waiting for backend... ($i/30)"
+            sleep 2
+          done
+          echo "Backend failed to start"
+          exit 1
+
+      - name: Run API health check
+        run: |
+          curl -f http://localhost:8080/q/health
+          curl -f http://localhost:8080/hello
+
+      - name: Stop backend
+        if: always()
+        run: |
+          if [ -f quarkus.pid ]; then
+            kill $(cat quarkus.pid) || true
+            rm quarkus.pid
+          fi
+          pkill -f quarkus:dev || true
