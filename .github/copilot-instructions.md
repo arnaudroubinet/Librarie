@@ -14,8 +14,11 @@ Librarie is a dual-module workspace:
 
 ## Pull requests
 
-Before asking a review, you must show the proof the backend run with a http://localhost:8080/q/dev-ui/extensions screen capture and a http://localhost:4200/books screen capture.
-If you work on a frontend feature, take a screen capture of this page.
+Before commit always do a `mvn clean install` into the /backend directory, build must be OK and don't have any error.
+Before asking a review always do a `mvn clean install` into the /backend directory, build must be OK and don't have any error. Add any warning in a commentary.
+
+Before asking a review, you must show the proof the backend run with a http://localhost:8080/q/dev-ui/extensions screen capture and a http://localhost:4200/books screenshot.
+If you work on a frontend feature, take a screenshot of this page.
 
 Commit message must match
 {Feature type} - {content of the commit} - java {mvn build time} - angular {npm build time}
