@@ -173,14 +173,4 @@ public class BookService implements BookUseCase {
         return titleSortingService.generateSortableTitle(title);
     }
     
-    /**
-     * Generate a sortable title for a specific language.
-     * 
-     * @param title the original title
-     * @param languageCode ISO 639-1 language code
-     * @return the sortable title
-     */
-    private String generateTitleSort(String title, String languageCode) {
-        return titleSortingService.generateSortableTitle(title, languageCode);
-    }
 }

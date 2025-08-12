@@ -4,7 +4,6 @@ import org.roubinet.librarie.application.port.in.IngestUseCase;
 import org.roubinet.librarie.application.port.in.BookUseCase;
 import org.roubinet.librarie.application.port.out.FileStorageService;
 import org.roubinet.librarie.domain.entity.Book;
-import org.roubinet.librarie.infrastructure.config.LibrarieConfigProperties;
 import org.roubinet.librarie.infrastructure.security.SecureFileProcessingService;
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -17,7 +16,6 @@ import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Stream;
 
 /**
@@ -30,17 +28,14 @@ public class IngestService implements IngestUseCase {
     private final BookUseCase bookUseCase;
     private final FileStorageService fileStorageService;
     private final SecureFileProcessingService secureFileProcessingService;
-    private final LibrarieConfigProperties config;
     
     @Inject
     public IngestService(BookUseCase bookUseCase, 
                         FileStorageService fileStorageService,
-                        SecureFileProcessingService secureFileProcessingService,
-                        LibrarieConfigProperties config) {
+                        SecureFileProcessingService secureFileProcessingService) {
         this.bookUseCase = bookUseCase;
         this.fileStorageService = fileStorageService;
         this.secureFileProcessingService = secureFileProcessingService;
-        this.config = config;
     }
     
     @Override

@@ -4,7 +4,6 @@ import org.roubinet.librarie.application.port.in.BookSearchCriteria;
 import org.roubinet.librarie.domain.entity.Book;
 import org.roubinet.librarie.infrastructure.adapter.in.rest.dto.pagination.CursorPageResult;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 

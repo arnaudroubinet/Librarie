@@ -8,7 +8,6 @@ import org.roubinet.librarie.infrastructure.adapter.in.rest.dto.BookRequestDto;
 import org.roubinet.librarie.infrastructure.adapter.in.rest.dto.BookResponseDto;
 import org.roubinet.librarie.infrastructure.adapter.in.rest.dto.PageResponseDto;
 import org.roubinet.librarie.infrastructure.adapter.in.rest.dto.pagination.CursorPageResult;
-import org.roubinet.librarie.infrastructure.adapter.in.rest.dto.pagination.CursorUtils;
 import org.roubinet.librarie.infrastructure.config.LibrarieConfigProperties;
 import org.roubinet.librarie.infrastructure.security.InputSanitizationService;
 
@@ -44,17 +43,14 @@ public class BookController {
     private final BookUseCase bookUseCase;
     private final InputSanitizationService sanitizationService;
     private final LibrarieConfigProperties config;
-    private final CursorUtils cursorUtils;
     
     @Inject
     public BookController(BookUseCase bookUseCase,
                          InputSanitizationService sanitizationService,
-                         LibrarieConfigProperties config,
-                         CursorUtils cursorUtils) {
+                         LibrarieConfigProperties config) {
         this.bookUseCase = bookUseCase;
         this.sanitizationService = sanitizationService;
         this.config = config;
-        this.cursorUtils = cursorUtils;
     }
     
     @GET

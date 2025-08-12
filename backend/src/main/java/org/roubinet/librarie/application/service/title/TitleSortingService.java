@@ -4,7 +4,6 @@ import jakarta.enterprise.context.ApplicationScoped;
 
 import java.util.List;
 import java.util.Map;
-import java.util.HashMap;
 
 /**
  * Service for handling title sorting with multi-language support.
