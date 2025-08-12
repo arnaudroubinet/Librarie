@@ -78,6 +78,7 @@ CREATE TABLE series (
     name TEXT NOT NULL,
     sort_name TEXT NOT NULL,
     description TEXT,
+    image_path TEXT,
     metadata JSONB DEFAULT '{}',
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
@@ -228,6 +229,7 @@ CREATE INDEX idx_original_work_external_ids_value ON original_work_external_ids(
 
 CREATE UNIQUE INDEX idx_series_name ON series(name);
 CREATE INDEX idx_series_sort ON series USING btree(sort_name);
+CREATE INDEX idx_series_image_path ON series(image_path);
 
 CREATE UNIQUE INDEX idx_tags_name ON tags(name);
 
