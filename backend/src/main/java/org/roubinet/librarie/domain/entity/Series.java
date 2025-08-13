@@ -34,6 +34,12 @@ public class Series extends PanacheEntityBase {
     @Column(name = "description", columnDefinition = "TEXT")
     private String description;
 
+    @Column(name = "image_path")
+    private String imagePath;
+
+    @Column(name = "book_count", nullable = false)
+    private int bookCount = 0;
+
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "metadata", columnDefinition = "jsonb")
     private Map<String, Object> metadata;
@@ -91,6 +97,22 @@ public class Series extends PanacheEntityBase {
         this.description = description;
     }
 
+    public String getImagePath() {
+        return imagePath;
+    }
+
+    public void setImagePath(String imagePath) {
+        this.imagePath = imagePath;
+    }
+
+    public int getBookCount() {
+        return bookCount;
+    }
+
+    public void setBookCount(int bookCount) {
+        this.bookCount = bookCount;
+    }
+
     public Map<String, Object> getMetadata() {
         return metadata;
     }
@@ -121,6 +143,41 @@ public class Series extends PanacheEntityBase {
 
     public void setBooks(Set<BookSeries> books) {
         this.books = books;
+    }
+
+    /**
+     * Increment the book count when a book is added to this series.
+     */
+    public void incrementBookCount() {
+        this.bookCount++;
+    }
+
+    /**
+     * Decrement the book count when a book is removed from this series.
+     */
+    public void decrementBookCount() {
+        if (this.bookCount > 0) {
+            this.bookCount--;
+        }
+    }
+
+    /**
+     * Get the effective image path for this series.
+     * If the series has its own image, return it.
+     * Otherwise, return a fallback path based on books in the series.
+     */
+    public String getEffectiveImagePath(String defaultCoverPath) {
+        if (imagePath != null && !imagePath.trim().isEmpty()) {
+            return imagePath;
+        }
+        
+        // Find first book with a cover, ordered by series index
+        return books.stream()
+            .filter(bookSeries -> bookSeries.getBook() != null && bookSeries.getBook().getHasCover())
+            .sorted((bs1, bs2) -> bs1.getSeriesIndex().compareTo(bs2.getSeriesIndex()))
+            .map(bookSeries -> bookSeries.getBook().getPath() + "/cover")
+            .findFirst()
+            .orElse(defaultCoverPath);
     }
 
     @Override

@@ -43,6 +43,12 @@ Key paths:
 - Frontend tests may need system dependencies (Chrome). In minimal containers install `chromium-browser` or adjust Karma config.
 - OpenTelemetry warnings (connection refused to localhost:4317) are benign unless you configure an OTLP collector. Ignore for now.
 
+## Database Migrations
+- Use app versions in migration filenames instead of simple V1, V2, etc (e.g., V1.0.0__Initial_schema.sql)
+- Always update existing schema files instead of creating new migration files when possible
+- Include all related schema changes in a single migration file to maintain consistency
+- Add appropriate indexes for new columns as part of the same migration
+
 ## Before Commit
 Document any new environment variables in README + here.
 

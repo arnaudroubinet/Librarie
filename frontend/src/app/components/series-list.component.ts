@@ -9,11 +9,11 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatRippleModule } from '@angular/material/core';
 import { MatBadgeModule } from '@angular/material/badge';
-import { BookService } from '../services/book.service';
-import { Book, CursorPageResponse } from '../models/book.model';
+import { SeriesService } from '../services/series.service';
+import { Series, SeriesPageResponse } from '../models/series.model';
 
 @Component({
-  selector: 'app-book-list',
+  selector: 'app-series-list',
   standalone: true,
   imports: [
     CommonModule,
@@ -32,13 +32,13 @@ import { Book, CursorPageResponse } from '../models/book.model';
       <div class="library-header">
         <div class="header-content">
           <h1 class="library-title">
-            <mat-icon class="title-icon">library_books</mat-icon>
-            Books Library
-            @if (books().length > 0) {
-              <span class="book-count">{{ books().length }} books</span>
+            <mat-icon class="title-icon">collections_bookmark</mat-icon>
+            Series Library
+            @if (series().length > 0) {
+              <span class="series-count">{{ series().length }} series</span>
             }
           </h1>
-          <p class="library-subtitle">Discover and explore your digital book collection</p>
+          <p class="library-subtitle">Explore your book series collections</p>
         </div>
         <div class="header-actions">
           <button mat-fab color="accent" routerLink="/search" class="fab-search">
@@ -51,17 +51,17 @@ import { Book, CursorPageResponse } from '../models/book.model';
         <div class="loading-section">
           <div class="loading-content">
             <mat-spinner diameter="60" color="accent"></mat-spinner>
-            <h3>Loading your library...</h3>
-            <p>Gathering your books from the digital shelves</p>
+            <h3>Loading your series...</h3>
+            <p>Gathering your series from the digital shelves</p>
           </div>
         </div>
       } @else {
-        @if (books().length === 0) {
+        @if (series().length === 0) {
           <div class="empty-library">
             <div class="empty-content">
-              <mat-icon class="empty-icon">library_books</mat-icon>
-              <h2>Your library awaits</h2>
-              <p>No books found in your collection. Start building your digital library by scanning your book directory.</p>
+              <mat-icon class="empty-icon">collections_bookmark</mat-icon>
+              <h2>No series found</h2>
+              <p>No series found in your collection. Series are automatically created when books with series information are imported.</p>
               <button mat-raised-button color="accent" routerLink="/library" class="cta-button">
                 <mat-icon>add</mat-icon>
                 Manage Library
@@ -69,52 +69,46 @@ import { Book, CursorPageResponse } from '../models/book.model';
             </div>
           </div>
         } @else {
-          <div class="books-grid">
-            @for (book of books(); track book.id) {
-              <div class="book-poster" matRipple [routerLink]="['/books', book.id]">
+          <div class="series-grid">
+            @for (seriesItem of series(); track seriesItem.id) {
+              <div class="series-poster" matRipple [routerLink]="['/series', seriesItem.id]">
                 <div class="poster-container">
-                  <div class="book-cover">
-                    @if (book.hasCover) {
-                      <img [src]="'/api/books/' + book.id + '/cover'" 
-                           [alt]="book.title + ' cover'"
+                  <div class="series-cover">
+                    @if (getEffectiveImagePath(seriesItem)) {
+                      <img [src]="getEffectiveImagePath(seriesItem)" 
+                           [alt]="seriesItem.name + ' series'"
                            class="cover-image"
                            (error)="onImageError($event)">
                     } @else {
                       <div class="cover-placeholder">
-                        <mat-icon>book</mat-icon>
-                        <span class="title-text">{{ getShortTitle(book.title) }}</span>
+                        <mat-icon>collections_bookmark</mat-icon>
+                        <span class="title-text">{{ getShortTitle(seriesItem.name) }}</span>
                       </div>
                     }
                     <div class="cover-overlay">
                       <mat-icon class="play-icon">visibility</mat-icon>
                     </div>
+                    
+                    <!-- Book count badge -->
+                    <div class="book-count-badge">
+                      {{ seriesItem.bookCount }}
+                    </div>
                   </div>
                   
-                  <div class="book-info">
-                    <h3 class="book-title" [title]="book.title">{{ book.title }}</h3>
-                    @if (book.contributors?.['author']?.length) {
-                      <p class="book-author">{{ book.contributors!['author'][0] }}</p>
+                  <div class="series-info">
+                    <h3 class="series-title" [title]="seriesItem.name">{{ seriesItem.name }}</h3>
+                    @if (seriesItem.description) {
+                      <p class="series-description">{{ getShortDescription(seriesItem.description) }}</p>
                     }
-                    @if (book.publicationDate) {
-                      <p class="book-year">{{ getYear(book.publicationDate) }}</p>
-                    }
-                    
-                    <div class="book-metadata">
-                      @if (book.language) {
-                        <mat-chip class="metadata-chip language-chip">{{ book.language }}</mat-chip>
-                      }
-                      @if (book.formats && book.formats.length > 0) {
-                        <mat-chip class="metadata-chip format-chip">{{ book.formats[0] }}</mat-chip>
-                      }
-                    </div>
+                    <p class="series-book-count">{{ seriesItem.bookCount }} {{ seriesItem.bookCount === 1 ? 'book' : 'books' }}</p>
                   </div>
                 </div>
                 
-                <div class="book-actions">
-                  <button mat-icon-button class="action-btn" (click)="toggleFavorite(book, $event)">
+                <div class="series-actions">
+                  <button mat-icon-button class="action-btn" (click)="toggleFavorite(seriesItem, $event)">
                     <mat-icon>favorite_border</mat-icon>
                   </button>
-                  <button mat-icon-button class="action-btn" (click)="viewDetails(book, $event)">
+                  <button mat-icon-button class="action-btn" (click)="viewDetails(seriesItem, $event)">
                     <mat-icon>info</mat-icon>
                   </button>
                 </div>
@@ -173,7 +167,7 @@ import { Book, CursorPageResponse } from '../models/book.model';
       left: 0;
       right: 0;
       bottom: 0;
-      background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="books" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse"><rect width="20" height="20" fill="none"/><rect x="2" y="5" width="3" height="12" fill="rgba(229,160,13,0.1)"/><rect x="6" y="3" width="3" height="14" fill="rgba(229,160,13,0.08)"/><rect x="10" y="6" width="3" height="11" fill="rgba(229,160,13,0.06)"/><rect x="14" y="4" width="3" height="13" fill="rgba(229,160,13,0.04)"/></pattern></defs><rect width="100" height="100" fill="url(%23books)"/></svg>') repeat;
+      background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="series" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse"><rect width="20" height="20" fill="none"/><rect x="2" y="2" width="16" height="4" fill="rgba(229,160,13,0.1)"/><rect x="2" y="7" width="16" height="4" fill="rgba(229,160,13,0.08)"/><rect x="2" y="12" width="16" height="4" fill="rgba(229,160,13,0.06)"/></pattern></defs><rect width="100" height="100" fill="url(%23series)"/></svg>') repeat;
       opacity: 0.1;
       z-index: 0;
     }
@@ -199,7 +193,7 @@ import { Book, CursorPageResponse } from '../models/book.model';
       color: #e5a00d;
     }
 
-    .book-count {
+    .series-count {
       font-size: 1rem;
       color: #888;
       font-weight: 400;
@@ -283,14 +277,14 @@ import { Book, CursorPageResponse } from '../models/book.model';
       font-weight: 600;
     }
 
-    .books-grid {
+    .series-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
       gap: 24px;
       padding: 32px;
     }
 
-    .book-poster {
+    .series-poster {
       cursor: pointer;
       transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
       position: relative;
@@ -298,7 +292,7 @@ import { Book, CursorPageResponse } from '../models/book.model';
       overflow: hidden;
     }
 
-    .book-poster:hover {
+    .series-poster:hover {
       transform: scale(1.05) translateY(-8px);
       z-index: 10;
     }
@@ -307,7 +301,7 @@ import { Book, CursorPageResponse } from '../models/book.model';
       position: relative;
     }
 
-    .book-cover {
+    .series-cover {
       position: relative;
       width: 100%;
       aspect-ratio: 2/3;
@@ -365,7 +359,7 @@ import { Book, CursorPageResponse } from '../models/book.model';
       transition: opacity 0.3s ease;
     }
 
-    .book-poster:hover .cover-overlay {
+    .series-poster:hover .cover-overlay {
       opacity: 1;
     }
 
@@ -376,11 +370,26 @@ import { Book, CursorPageResponse } from '../models/book.model';
       color: #e5a00d;
     }
 
-    .book-info {
+    .book-count-badge {
+      position: absolute;
+      bottom: 8px;
+      right: 8px;
+      background: rgba(229, 160, 13, 0.9);
+      color: #000;
+      border-radius: 12px;
+      padding: 4px 8px;
+      font-size: 12px;
+      font-weight: 600;
+      min-width: 20px;
+      text-align: center;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    }
+
+    .series-info {
       padding: 12px 0;
     }
 
-    .book-title {
+    .series-title {
       font-size: 14px;
       font-weight: 600;
       margin: 0 0 4px 0;
@@ -390,46 +399,24 @@ import { Book, CursorPageResponse } from '../models/book.model';
       text-overflow: ellipsis;
     }
 
-    .book-author {
+    .series-description {
       font-size: 12px;
       color: #ccc;
       margin: 0 0 4px 0;
-      white-space: nowrap;
+      line-height: 1.3;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
       overflow: hidden;
-      text-overflow: ellipsis;
     }
 
-    .book-year {
+    .series-book-count {
       font-size: 11px;
       color: #888;
-      margin: 0 0 8px 0;
+      margin: 0;
     }
 
-    .book-metadata {
-      display: flex;
-      gap: 4px;
-      flex-wrap: wrap;
-    }
-
-    .metadata-chip {
-      font-size: 10px;
-      height: 18px;
-      line-height: 18px;
-      padding: 0 6px;
-      border-radius: 9px;
-    }
-
-    .language-chip {
-      background: rgba(229, 160, 13, 0.2);
-      color: #e5a00d;
-    }
-
-    .format-chip {
-      background: rgba(255, 255, 255, 0.1);
-      color: #ccc;
-    }
-
-    .book-actions {
+    .series-actions {
       position: absolute;
       top: 8px;
       right: 8px;
@@ -439,8 +426,8 @@ import { Book, CursorPageResponse } from '../models/book.model';
       transition: opacity 0.3s ease;
     }
 
-    .book-poster:hover .book-actions,
-    .book-poster:focus-within .book-actions {
+    .series-poster:hover .series-actions,
+    .series-poster:focus-within .series-actions {
       opacity: 1;
     }
 
@@ -527,13 +514,13 @@ import { Book, CursorPageResponse } from '../models/book.model';
         font-size: 2rem;
       }
 
-      .books-grid {
-        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      .series-grid {
+        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
         gap: 16px;
         padding: 16px;
       }
 
-      .book-actions {
+      .series-actions {
         opacity: 1; /* Always visible on mobile for touch devices */
         position: static;
         margin-top: 8px;
@@ -559,8 +546,8 @@ import { Book, CursorPageResponse } from '../models/book.model';
     }
 
     @media (max-width: 480px) {
-      .books-grid {
-        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+      .series-grid {
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
         gap: 12px;
         padding: 12px;
       }
@@ -577,8 +564,8 @@ import { Book, CursorPageResponse } from '../models/book.model';
     }
   `]
 })
-export class BookListComponent implements OnInit {
-  books = signal<Book[]>([]);
+export class SeriesListComponent implements OnInit {
+  series = signal<Series[]>([]);
   loading = signal(true);
   nextCursor = signal<string | undefined>(undefined);
   previousCursor = signal<string | undefined>(undefined);
@@ -586,26 +573,26 @@ export class BookListComponent implements OnInit {
   currentPage = 1;
 
   constructor(
-    private bookService: BookService,
+    private seriesService: SeriesService,
     private snackBar: MatSnackBar
   ) {}
 
   ngOnInit() {
-    this.loadBooks();
+    this.loadSeries();
   }
 
-  loadBooks(cursor?: string) {
+  loadSeries(cursor?: string) {
     this.loading.set(true);
-    this.bookService.getAllBooks(cursor, this.limit()).subscribe({
-      next: (response: CursorPageResponse<Book>) => {
-        this.books.set(response.content);
+    this.seriesService.getAllSeries(cursor, this.limit()).subscribe({
+      next: (response: SeriesPageResponse) => {
+        this.series.set(response.content);
         this.nextCursor.set(response.nextCursor);
         this.previousCursor.set(response.previousCursor);
         this.loading.set(false);
       },
       error: (error) => {
-        console.error('Error loading books:', error);
-        this.snackBar.open('Failed to load books. Please try again.', 'Close', {
+        console.error('Error loading series:', error);
+        this.snackBar.open('Failed to load series. Please try again.', 'Close', {
           duration: 3000
         });
         this.loading.set(false);
@@ -616,23 +603,27 @@ export class BookListComponent implements OnInit {
   loadNext() {
     if (this.nextCursor()) {
       this.currentPage++;
-      this.loadBooks(this.nextCursor());
+      this.loadSeries(this.nextCursor());
     }
   }
 
   loadPrevious() {
     if (this.previousCursor()) {
       this.currentPage--;
-      this.loadBooks(this.previousCursor());
+      this.loadSeries(this.previousCursor());
     }
   }
 
-  getYear(dateString: string): string {
-    return new Date(dateString).getFullYear().toString();
+  getShortTitle(title: string): string {
+    return title.length > 25 ? title.substring(0, 25) + '...' : title;
   }
 
-  getShortTitle(title: string): string {
-    return title.length > 30 ? title.substring(0, 30) + '...' : title;
+  getShortDescription(description: string): string {
+    return description.length > 100 ? description.substring(0, 100) + '...' : description;
+  }
+
+  getEffectiveImagePath(series: Series): string | null {
+    return series.imagePath || series.fallbackImagePath || null;
   }
 
   onImageError(event: any) {
@@ -640,7 +631,7 @@ export class BookListComponent implements OnInit {
     event.target.style.display = 'none';
   }
 
-  toggleFavorite(book: Book, event: Event) {
+  toggleFavorite(series: Series, event: Event) {
     event.stopPropagation();
     event.preventDefault();
     // TODO: Implement favorite functionality
@@ -649,10 +640,10 @@ export class BookListComponent implements OnInit {
     });
   }
 
-  viewDetails(book: Book, event: Event) {
+  viewDetails(series: Series, event: Event) {
     event.stopPropagation();
     event.preventDefault();
-    // Navigate to book details
-    window.location.href = `/books/${book.id}`;
+    // Navigate to series details
+    window.location.href = `/series/${series.id}`;
   }
 }

@@ -11,6 +11,10 @@ export const routes: Routes = [
     loadComponent: () => import('./components/book-detail.component').then(c => c.BookDetailComponent)
   },
   { 
+    path: 'series', 
+    loadComponent: () => import('./components/series-list.component').then(c => c.SeriesListComponent)
+  },
+  { 
     path: 'search', 
     loadComponent: () => import('./components/search.component').then(c => c.SearchComponent)
   },

@@ -78,6 +78,8 @@ CREATE TABLE series (
     name TEXT NOT NULL,
     sort_name TEXT NOT NULL,
     description TEXT,
+    image_path TEXT,
+    book_count INTEGER NOT NULL DEFAULT 0,
     metadata JSONB DEFAULT '{}',
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()

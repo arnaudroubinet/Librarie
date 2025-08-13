@@ -25,6 +25,11 @@ public interface LibrarieConfigProperties {
      */
     SecurityConfig security();
     
+    /**
+     * Demo configuration properties.
+     */
+    DemoConfig demo();
+    
     interface PaginationConfig {
         /**
          * Default page size for pagination.
@@ -69,6 +74,12 @@ public interface LibrarieConfigProperties {
          */
         @WithDefault("false")
         boolean enableVirusScanning();
+        
+        /**
+         * Default cover image path when no cover is available.
+         */
+        @WithDefault("/api/v1/assets/default-cover.jpg")
+        String defaultCoverPath();
     }
     
     interface SecurityConfig {
@@ -95,5 +106,13 @@ public interface LibrarieConfigProperties {
          */
         @WithDefault("100")
         int maxRequestsPerMinute();
+    }
+    
+    interface DemoConfig {
+        /**
+         * Enable demo mode with sample data population.
+         */
+        @WithDefault("false")
+        boolean enabled();
     }
 }
