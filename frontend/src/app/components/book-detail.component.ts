@@ -54,6 +54,18 @@ import { Book } from '../models/book.model';
             </mat-card-header>
 
             <mat-card-content>
+              <!-- Description Section (if available) -->
+              @if (book()!.description) {
+                <div class="description-section">
+                  <h3>
+                    <mat-icon>description</mat-icon>
+                    Description
+                  </h3>
+                  <p class="book-description">{{ book()!.description }}</p>
+                </div>
+                <mat-divider></mat-divider>
+              }
+
               <div class="book-info-grid">
                 <!-- Basic Information -->
                 <div class="info-section">
@@ -90,6 +102,61 @@ import { Book } from '../models/book.model';
                     </div>
                   }
                 </div>
+
+                <!-- Contributors -->
+                @if (book()!.contributors && hasContributors()) {
+                  <div class="info-section">
+                    <h3>
+                      <mat-icon>people</mat-icon>
+                      Contributors
+                    </h3>
+                    @for (contributor of getContributorEntries(); track contributor.role) {
+                      <div class="info-item">
+                        <strong>{{ contributor.role }}:</strong>
+                        <div class="contributors-list">
+                          @for (person of contributor.people; track person) {
+                            <mat-chip class="contributor-chip">{{ person }}</mat-chip>
+                          }
+                        </div>
+                      </div>
+                    }
+                  </div>
+                }
+
+                <!-- Series Information -->
+                @if (book()!.series) {
+                  <div class="info-section">
+                    <h3>
+                      <mat-icon>library_books</mat-icon>
+                      Series
+                    </h3>
+                    <div class="info-item">
+                      <strong>Series Name:</strong>
+                      <span>{{ book()!.series }}</span>
+                    </div>
+                    @if (book()!.seriesIndex) {
+                      <div class="info-item">
+                        <strong>Series Index:</strong>
+                        <mat-chip class="series-index-chip">#{{ book()!.seriesIndex }}</mat-chip>
+                      </div>
+                    }
+                  </div>
+                }
+
+                <!-- Formats -->
+                @if (book()!.formats?.length) {
+                  <div class="info-section">
+                    <h3>
+                      <mat-icon>file_copy</mat-icon>
+                      Available Formats
+                    </h3>
+                    <div class="formats-container">
+                      @for (format of book()!.formats; track format) {
+                        <mat-chip class="format-chip">{{ format.toUpperCase() }}</mat-chip>
+                      }
+                    </div>
+                  </div>
+                }
 
                 <!-- File Information -->
                 <div class="info-section">
@@ -221,6 +288,29 @@ import { Book } from '../models/book.model';
       color: var(--text-primary);
     }
 
+    .description-section {
+      margin-bottom: 24px;
+    }
+
+    .description-section h3 {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0 0 16px 0;
+      color: var(--primary-color);
+      font-size: 18px;
+    }
+
+    .book-description {
+      color: var(--text-primary);
+      line-height: 1.6;
+      margin: 0;
+      padding: 16px;
+      background-color: #f9f9f9;
+      border-radius: 8px;
+      border-left: 4px solid var(--primary-color);
+    }
+
     .back-button {
       margin-bottom: 16px;
     }
@@ -309,6 +399,47 @@ import { Book } from '../models/book.model';
       line-height: 24px;
     }
 
+    .contributors-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 4px;
+    }
+
+    .contributor-chip {
+      font-size: 12px;
+      height: 28px;
+      line-height: 28px;
+      background-color: #e3f2fd;
+      color: #1976d2;
+    }
+
+    .series-index-chip {
+      font-size: 12px;
+      height: 24px;
+      line-height: 24px;
+      background-color: #f3e5f5;
+      color: #7b1fa2;
+      font-weight: bold;
+    }
+
+    .formats-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .format-chip {
+      font-size: 11px;
+      height: 26px;
+      line-height: 26px;
+      background-color: #e8f5e8;
+      color: #2e7d32;
+      font-weight: bold;
+      letter-spacing: 0.5px;
+    }
+
     .metadata-container {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -340,6 +471,15 @@ import { Book } from '../models/book.model';
       .book-detail-container {
         padding: 8px;
       }
+
+      .description-section {
+        margin-bottom: 16px;
+      }
+
+      .book-description {
+        padding: 12px;
+        font-size: 14px;
+      }
       
       .book-info-grid {
         grid-template-columns: 1fr;
@@ -355,6 +495,40 @@ import { Book } from '../models/book.model';
       .info-item span {
         max-width: 100%;
         text-align: left;
+      }
+
+      .contributors-list {
+        margin-top: 8px;
+        gap: 6px;
+      }
+
+      .contributor-chip {
+        font-size: 11px;
+        height: 26px;
+        line-height: 26px;
+      }
+
+      .formats-container {
+        gap: 6px;
+      }
+
+      .format-chip {
+        font-size: 10px;
+        height: 24px;
+        line-height: 24px;
+      }
+    }
+
+    /* Tablet-specific styles */
+    @media (min-width: 769px) and (max-width: 1024px) {
+      .book-detail-container {
+        max-width: 800px;
+        padding: 12px;
+      }
+
+      .book-info-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 20px;
       }
     }
   `]
@@ -426,5 +600,22 @@ export class BookDetailComponent implements OnInit {
       key,
       value: typeof value === 'object' ? JSON.stringify(value) : String(value)
     }));
+  }
+
+  hasContributors(): boolean {
+    return !!this.book()?.contributors && Object.keys(this.book()!.contributors!).length > 0;
+  }
+
+  getContributorEntries(): Array<{role: string, people: string[]}> {
+    if (!this.book()?.contributors) return [];
+    return Object.entries(this.book()!.contributors!).map(([role, people]) => ({
+      role: this.formatRole(role),
+      people
+    }));
+  }
+
+  private formatRole(role: string): string {
+    // Format role names to be more readable
+    return role.charAt(0).toUpperCase() + role.slice(1).toLowerCase().replace(/_/g, ' ');
   }
 }
