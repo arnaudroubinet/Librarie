@@ -551,7 +551,6 @@ export class AuthorListComponent implements OnInit {
     event.stopPropagation();
     // Router navigation will be handled by the template
   }
-
   openWebsite(event: Event, url: string) {
     event.stopPropagation();
     window.open(url, '_blank');
