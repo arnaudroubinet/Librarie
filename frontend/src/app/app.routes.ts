@@ -19,8 +19,8 @@ export const routes: Routes = [
     loadComponent: () => import('./components/search.component').then(c => c.SearchComponent)
   },
   { 
-    path: 'library', 
-    loadComponent: () => import('./components/library-management.component').then(c => c.LibraryManagementComponent)
+    path: 'settings', 
+    loadComponent: () => import('./components/settings.component').then(c => c.SettingsComponent)
   },
   { path: '**', redirectTo: '/books' }
 ];
