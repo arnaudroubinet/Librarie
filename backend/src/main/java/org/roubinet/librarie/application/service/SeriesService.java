@@ -54,6 +54,17 @@ public class SeriesService implements SeriesUseCase {
             .map(this::toSeriesData);
     }
     
+    @Override
+    public List<SeriesData> searchSeries(String query) {
+        if (query == null || query.trim().isEmpty()) {
+            return List.of();
+        }
+        
+        return seriesRepository.findByNameContainingIgnoreCase(query.trim()).stream()
+            .map(this::toSeriesData)
+            .collect(Collectors.toList());
+    }
+    
     /**
      * Convert Series entity to SeriesData domain model with computed properties.
      */

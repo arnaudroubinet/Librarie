@@ -3,6 +3,7 @@ package org.roubinet.librarie.application.port.in;
 import org.roubinet.librarie.domain.model.SeriesData;
 import org.roubinet.librarie.infrastructure.adapter.in.rest.dto.pagination.CursorPageResult;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -27,4 +28,12 @@ public interface SeriesUseCase {
      * @return Optional containing the series data if found
      */
     Optional<SeriesData> getSeriesById(UUID id);
+    
+    /**
+     * Search series by name.
+     * 
+     * @param query Search query for series name
+     * @return List of matching series
+     */
+    List<SeriesData> searchSeries(String query);
 }

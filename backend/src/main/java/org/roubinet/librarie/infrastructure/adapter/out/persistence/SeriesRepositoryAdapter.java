@@ -98,4 +98,9 @@ public class SeriesRepositoryAdapter implements SeriesRepository {
     public long getTotalCount() {
         return Series.count();
     }
+    
+    @Override
+    public List<Series> findByNameContainingIgnoreCase(String name) {
+        return Series.find("LOWER(name) LIKE LOWER(?1) OR LOWER(sortName) LIKE LOWER(?1)", "%" + name + "%").list();
+    }
 }
