@@ -74,6 +74,12 @@ public interface LibrarieConfigProperties {
          */
         @WithDefault("false")
         boolean enableVirusScanning();
+        
+        /**
+         * Default cover image path when no cover is available.
+         */
+        @WithDefault("/api/v1/assets/default-cover.jpg")
+        String defaultCoverPath();
     }
     
     interface SecurityConfig {

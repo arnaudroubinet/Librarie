@@ -32,4 +32,14 @@ public class SeriesService implements SeriesUseCase {
     public Optional<Series> getSeriesById(UUID id) {
         return seriesRepository.findById(id);
     }
+    
+    @Override
+    public int getBookCountForSeries(UUID seriesId) {
+        return seriesRepository.getBookCountForSeries(seriesId);
+    }
+    
+    @Override
+    public Optional<String> getFallbackImageForSeries(UUID seriesId) {
+        return seriesRepository.getFallbackImageForSeries(seriesId);
+    }
 }

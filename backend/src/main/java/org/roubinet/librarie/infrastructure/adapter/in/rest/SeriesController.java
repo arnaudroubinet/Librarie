@@ -2,8 +2,6 @@ package org.roubinet.librarie.infrastructure.adapter.in.rest;
 
 import org.roubinet.librarie.application.port.in.SeriesUseCase;
 import org.roubinet.librarie.domain.entity.Series;
-import org.roubinet.librarie.domain.entity.BookSeries;
-import org.roubinet.librarie.domain.entity.Book;
 import org.roubinet.librarie.infrastructure.adapter.in.rest.dto.SeriesResponseDto;
 import org.roubinet.librarie.infrastructure.adapter.in.rest.dto.PageResponseDto;
 import org.roubinet.librarie.infrastructure.adapter.in.rest.dto.pagination.CursorPageResult;
@@ -18,8 +16,6 @@ import org.eclipse.microprofile.openapi.annotations.responses.APIResponses;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 import jakarta.inject.Inject;
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.Query;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
@@ -40,15 +36,12 @@ public class SeriesController {
     
     private final SeriesUseCase seriesUseCase;
     private final LibrarieConfigProperties config;
-    private final EntityManager entityManager;
     
     @Inject
     public SeriesController(SeriesUseCase seriesUseCase,
-                           LibrarieConfigProperties config,
-                           EntityManager entityManager) {
+                           LibrarieConfigProperties config) {
         this.seriesUseCase = seriesUseCase;
         this.config = config;
-        this.entityManager = entityManager;
     }
     
     @GET
@@ -169,46 +162,13 @@ public class SeriesController {
      * Get the number of books in a series.
      */
     private int getBookCountForSeries(UUID seriesId) {
-        try {
-            Query query = entityManager.createQuery(
-                "SELECT COUNT(bs) FROM BookSeries bs WHERE bs.series.id = :seriesId"
-            );
-            query.setParameter("seriesId", seriesId);
-            Long count = (Long) query.getSingleResult();
-            return count.intValue();
-        } catch (Exception e) {
-            return 0;
-        }
+        return seriesUseCase.getBookCountForSeries(seriesId);
     }
     
     /**
-     * Get the image path from the book with the lowest series index.
+     * Get fallback image for a series from its books.
      */
     private String getFallbackImageForSeries(UUID seriesId) {
-        try {
-            Query query = entityManager.createQuery(
-                "SELECT b.path FROM BookSeries bs " +
-                "JOIN bs.book b " +
-                "WHERE bs.series.id = :seriesId " +
-                "AND b.hasCover = true " +
-                "ORDER BY bs.seriesIndex ASC"
-            );
-            query.setParameter("seriesId", seriesId);
-            query.setMaxResults(1);
-            
-            @SuppressWarnings("unchecked")
-            List<String> results = query.getResultList();
-            
-            if (!results.isEmpty()) {
-                // Return the cover path for the first book
-                String bookPath = results.get(0);
-                // Assuming cover path follows a pattern like /books/{id}/cover
-                return bookPath + "/cover";
-            }
-            
-            return null;
-        } catch (Exception e) {
-            return null;
-        }
+        return seriesUseCase.getFallbackImageForSeries(seriesId).orElse(null);
     }
 }

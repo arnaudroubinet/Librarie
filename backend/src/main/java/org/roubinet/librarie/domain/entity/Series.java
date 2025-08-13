@@ -134,6 +134,13 @@ public class Series extends PanacheEntityBase {
         this.books = books;
     }
 
+    /**
+     * Get the count of books in this series.
+     */
+    public int getBookCount() {
+        return books != null ? books.size() : 0;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

@@ -4,6 +4,7 @@ import org.roubinet.librarie.application.port.out.SeriesRepository;
 import org.roubinet.librarie.domain.entity.Series;
 import org.roubinet.librarie.infrastructure.adapter.in.rest.dto.pagination.CursorPageResult;
 import org.roubinet.librarie.infrastructure.adapter.in.rest.dto.pagination.CursorUtils;
+import org.roubinet.librarie.infrastructure.config.LibrarieConfigProperties;
 
 import io.quarkus.hibernate.orm.panache.PanacheQuery;
 import io.quarkus.panache.common.Page;
@@ -11,6 +12,8 @@ import io.quarkus.panache.common.Sort;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.Query;
 
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -25,10 +28,15 @@ import java.util.UUID;
 public class SeriesRepositoryAdapter implements SeriesRepository {
     
     private final CursorUtils cursorUtils;
+    private final EntityManager entityManager;
+    private final LibrarieConfigProperties config;
     
     @Inject
-    public SeriesRepositoryAdapter(CursorUtils cursorUtils) {
+    public SeriesRepositoryAdapter(CursorUtils cursorUtils, EntityManager entityManager, 
+                                 LibrarieConfigProperties config) {
         this.cursorUtils = cursorUtils;
+        this.entityManager = entityManager;
+        this.config = config;
     }
     
     @Override
@@ -97,5 +105,51 @@ public class SeriesRepositoryAdapter implements SeriesRepository {
     @Override
     public long getTotalCount() {
         return Series.count();
+    }
+    
+    @Override
+    public int getBookCountForSeries(UUID seriesId) {
+        try {
+            Query query = entityManager.createQuery(
+                "SELECT COUNT(bs) FROM BookSeries bs WHERE bs.series.id = :seriesId"
+            );
+            query.setParameter("seriesId", seriesId);
+            Long count = (Long) query.getSingleResult();
+            return count.intValue();
+        } catch (Exception e) {
+            return 0;
+        }
+    }
+    
+    @Override
+    public Optional<String> getFallbackImageForSeries(UUID seriesId) {
+        try {
+            // First, try to get books with covers ordered by series index
+            Query query = entityManager.createQuery(
+                "SELECT b.path FROM BookSeries bs " +
+                "JOIN bs.book b " +
+                "WHERE bs.series.id = :seriesId " +
+                "AND b.hasCover = true " +
+                "ORDER BY bs.seriesIndex ASC"
+            );
+            query.setParameter("seriesId", seriesId);
+            
+            @SuppressWarnings("unchecked")
+            List<String> results = query.getResultList();
+            
+            // Try each book until we find one with a cover
+            for (String bookPath : results) {
+                if (bookPath != null && !bookPath.trim().isEmpty()) {
+                    // Assuming cover path follows a pattern like /books/{id}/cover
+                    return Optional.of(bookPath + "/cover");
+                }
+            }
+            
+            // If no book has a cover, return the default cover
+            return Optional.of(config.fileProcessing().defaultCoverPath());
+        } catch (Exception e) {
+            // In case of error, return the default cover
+            return Optional.of(config.fileProcessing().defaultCoverPath());
+        }
     }
 }

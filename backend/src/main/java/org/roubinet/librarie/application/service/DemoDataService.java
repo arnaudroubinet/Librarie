@@ -60,23 +60,26 @@ public class DemoDataService {
         Map<String, Language> languages = new HashMap<>();
         
         String[][] languageData = {
-            {"en", "English", "false"},
-            {"fr", "French", "false"},
-            {"es", "Spanish", "false"},
-            {"de", "German", "false"},
-            {"it", "Italian", "false"},
-            {"pt", "Portuguese", "false"},
-            {"ru", "Russian", "false"},
-            {"ja", "Japanese", "false"},
-            {"zh", "Chinese", "false"},
-            {"ar", "Arabic", "true"}
+            {"en-US", "English (United States)", "false"},
+            {"en-GB", "English (United Kingdom)", "false"},
+            {"fr-FR", "French (France)", "false"},
+            {"fr-CA", "French (Canada)", "false"},
+            {"es-ES", "Spanish (Spain)", "false"},
+            {"de-DE", "German (Germany)", "false"},
+            {"it-IT", "Italian (Italy)", "false"},
+            {"pt-BR", "Portuguese (Brazil)", "false"},
+            {"ru-RU", "Russian (Russia)", "false"},
+            {"ja-JP", "Japanese (Japan)", "false"},
+            {"zh-CN", "Chinese (Simplified)", "false"},
+            {"ar-SA", "Arabic (Saudi Arabia)", "true"}
         };
         
-        for (String[] data : languageData) {
-            Language language = new Language(data[0], data[1], Boolean.parseBoolean(data[2]));
-            entityManager.persist(language);
-            languages.put(data[0], language);
-        }
+        Arrays.stream(languageData)
+            .forEach(data -> {
+                Language language = new Language(data[0], data[1], Boolean.parseBoolean(data[2]));
+                entityManager.persist(language);
+                languages.put(data[0], language);
+            });
         
         return languages;
     }

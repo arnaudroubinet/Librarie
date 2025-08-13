@@ -27,4 +27,20 @@ public interface SeriesUseCase {
      * @return Optional containing the series if found
      */
     Optional<Series> getSeriesById(UUID id);
+    
+    /**
+     * Get the count of books in a series.
+     * 
+     * @param seriesId Series ID
+     * @return Number of books in the series
+     */
+    int getBookCountForSeries(UUID seriesId);
+    
+    /**
+     * Get fallback image for a series from its books.
+     * 
+     * @param seriesId Series ID
+     * @return Optional containing the cover path if found
+     */
+    Optional<String> getFallbackImageForSeries(UUID seriesId);
 }
