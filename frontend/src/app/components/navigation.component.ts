@@ -25,14 +25,14 @@ import { MatBadgeModule } from '@angular/material/badge';
     <div class="plex-container">
       <nav class="plex-sidebar">
         <div class="plex-logo">
-          <mat-icon class="logo-icon">auto_stories</mat-icon>
+          <mat-icon class="logo-icon">collections</mat-icon>
           <span class="logo-text">Librarie</span>
         </div>
         
         <div class="nav-section">
           <div class="section-title">LIBRARY</div>
           <a mat-button class="nav-item" routerLink="/books" routerLinkActive="active">
-            <mat-icon>auto_stories</mat-icon>
+            <mat-icon>collections</mat-icon>
             <span>All Books</span>
           </a>
           <a mat-button class="nav-item" routerLink="/series" routerLinkActive="active">
