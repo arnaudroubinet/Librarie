@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, switchMap } from 'rxjs';
 import { Series, SeriesPageResponse } from '../models/series.model';
 import { environment } from '../../environments/environment';
 
@@ -24,5 +24,22 @@ export class SeriesService {
 
   getSeriesById(id: string): Observable<Series> {
     return this.http.get<Series>(`${this.baseUrl}/${id}`);
+  }
+
+  getSeriesBooks(seriesName: string, cursor?: string, limit: number = 20): Observable<any> {
+    // Use the books search endpoint with series criteria
+    let params = new HttpParams().set('limit', limit.toString());
+    
+    if (cursor) {
+      params = params.set('cursor', cursor);
+    }
+    
+    const criteria = {
+      seriesContains: seriesName,
+      sortBy: 'seriesIndex',
+      sortDirection: 'asc'
+    };
+    
+    return this.http.post<any>(`${environment.apiUrl}/v1/books/criteria`, criteria, { params });
   }
 }

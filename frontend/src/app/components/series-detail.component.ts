@@ -1,0 +1,650 @@
+import { Component, OnInit, signal } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
+import { MatCardModule } from '@angular/material/card';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatChipsModule } from '@angular/material/chips';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatDividerModule } from '@angular/material/divider';
+import { MatGridListModule } from '@angular/material/grid-list';
+import { SeriesService } from '../services/series.service';
+import { Series } from '../models/series.model';
+import { Book, CursorPageResponse } from '../models/book.model';
+
+@Component({
+  selector: 'app-series-detail',
+  standalone: true,
+  imports: [
+    CommonModule,
+    RouterModule,
+    MatCardModule,
+    MatButtonModule,
+    MatIconModule,
+    MatProgressSpinnerModule,
+    MatChipsModule,
+    MatSnackBarModule,
+    MatDividerModule,
+    MatGridListModule
+  ],
+  template: `
+    <div class="series-detail-container">
+      @if (loading()) {
+        <div class="loading-container">
+          <mat-spinner diameter="50"></mat-spinner>
+          <p>Loading series details...</p>
+        </div>
+      } @else if (series()) {
+        <div class="series-detail">
+          <div class="back-button">
+            <button mat-button (click)="goBack()">
+              <mat-icon>arrow_back</mat-icon>
+              Back to Series
+            </button>
+          </div>
+
+          <!-- Series layout inspired by book detail -->
+          <div class="series-layout">
+            <!-- Series Cover -->
+            <div class="series-cover-container">
+              @if (getEffectiveImagePath(series()!)) {
+                <img [src]="getEffectiveImagePath(series()!)" 
+                     [alt]="series()!.name + ' series'"
+                     class="series-cover" 
+                     (error)="onImageError($event)">
+              } @else {
+                <div class="series-cover-placeholder">
+                  <div class="placeholder-content">
+                    <div class="placeholder-icon">📚</div>
+                    <div class="placeholder-text">{{ getShortTitle(series()!.name) }}</div>
+                  </div>
+                </div>
+              }
+              
+              <!-- Book count badge -->
+              <div class="book-count-badge">
+                {{ series()!.bookCount }} {{ series()!.bookCount === 1 ? 'book' : 'books' }}
+              </div>
+            </div>
+
+            <!-- Series Information -->
+            <div class="series-info-container">
+              <!-- Title Section -->
+              <div class="title-section">
+                <h1 class="series-title">{{ series()!.name }}</h1>
+                @if (series()!.sortName && series()!.sortName !== series()!.name) {
+                  <div class="series-subtitle">({{ series()!.sortName }})</div>
+                }
+              </div>
+
+              <!-- Details List -->
+              <div class="details-list">
+                @if (series()!.description) {
+                  <div class="detail-item synopsis">
+                    <span class="detail-label">Summary:</span>
+                    <span class="detail-value">{{ series()!.description }}</span>
+                  </div>
+                }
+
+                <div class="detail-item">
+                  <span class="detail-label">Book Count:</span>
+                  <span class="detail-value">{{ series()!.bookCount }} {{ series()!.bookCount === 1 ? 'book' : 'books' }}</span>
+                </div>
+
+                @if (series()!.createdAt) {
+                  <div class="detail-item">
+                    <span class="detail-label">Added to Library:</span>
+                    <span class="detail-value">{{ formatDate(series()!.createdAt!) }}</span>
+                  </div>
+                }
+
+                @if (series()!.updatedAt) {
+                  <div class="detail-item">
+                    <span class="detail-label">Last Updated:</span>
+                    <span class="detail-value">{{ formatDate(series()!.updatedAt!) }}</span>
+                  </div>
+                }
+              </div>
+            </div>
+          </div>
+
+          <!-- Books in this Series -->
+          @if (booksLoading()) {
+            <div class="section-loading">
+              <mat-spinner diameter="30"></mat-spinner>
+              <p>Loading books in series...</p>
+            </div>
+          } @else {
+            <div class="books-section">
+              <h2 class="section-title">
+                <mat-icon>collections</mat-icon>
+                Books in this Series
+                @if (books().length > 0) {
+                  <span class="item-count">({{ books().length }})</span>
+                }
+              </h2>
+              
+              @if (books().length > 0) {
+                <div class="books-grid">
+                  @for (book of books(); track book.id) {
+                    <div class="book-card" [routerLink]="['/books', book.id]">
+                      <div class="book-cover">
+                        @if (book.hasCover) {
+                          <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIwIiBoZWlnaHQ9IjE4MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0iIzM0NDk1ZSIvPgo8dGV4dCB4PSI1MCUiIHk9IjUwJSIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjEwIiBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9IjAuM2VtIj5Db3ZlcjwvdGV4dD4KPHN2Zz4K" 
+                               alt="Book Cover"
+                               class="cover-image">
+                        } @else {
+                          <div class="cover-placeholder">
+                            <mat-icon>book</mat-icon>
+                          </div>
+                        }
+                      </div>
+                      <div class="book-info">
+                        <h3 class="book-title">{{ book.title }}</h3>
+                        @if (book.seriesIndex) {
+                          <p class="book-index">Book {{ book.seriesIndex }}</p>
+                        }
+                        @if (getBookAuthors(book).length > 0) {
+                          <p class="book-authors">{{ getBookAuthors(book).join(', ') }}</p>
+                        }
+                        @if (book.publicationDate) {
+                          <p class="book-date">{{ formatDate(book.publicationDate!) }}</p>
+                        }
+                      </div>
+                    </div>
+                  }
+                </div>
+              } @else {
+                <div class="empty-state">
+                  <mat-icon>library_books</mat-icon>
+                  <p>No books found in this series</p>
+                </div>
+              }
+            </div>
+          }
+
+          <!-- Contributors Section -->
+          @if (getAllContributors().length > 0) {
+            <div class="contributors-section">
+              <h2 class="section-title">
+                <mat-icon>people</mat-icon>
+                People who worked on this series
+                <span class="item-count">({{ getAllContributors().length }})</span>
+              </h2>
+              
+              <div class="contributors-grid">
+                @for (contributor of getAllContributors(); track contributor.name) {
+                  <div class="contributor-card">
+                    <div class="contributor-info">
+                      <h3 class="contributor-name">{{ contributor.name }}</h3>
+                      <p class="contributor-roles">{{ contributor.roles.join(', ') }}</p>
+                      <p class="contributor-count">{{ contributor.bookCount }} {{ contributor.bookCount === 1 ? 'book' : 'books' }}</p>
+                    </div>
+                  </div>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      } @else {
+        <div class="error-state">
+          <mat-icon>error</mat-icon>
+          <h2>Series not found</h2>
+          <p>The series you are looking for could not be found.</p>
+          <button mat-raised-button color="primary" (click)="goBack()">
+            Back to Series
+          </button>
+        </div>
+      }
+    </div>
+  `,
+  styles: [`
+    .series-detail-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: #f8f9fa;
+      min-height: 100vh;
+    }
+
+    .loading-container, .error-state, .section-loading {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 400px;
+      text-align: center;
+    }
+
+    .section-loading {
+      min-height: 200px;
+    }
+
+    .loading-container p, .error-state p, .section-loading p {
+      margin-top: 16px;
+      color: #666;
+    }
+
+    .error-state h2 {
+      margin: 16px 0;
+      color: #333;
+    }
+
+    .back-button {
+      margin-bottom: 20px;
+    }
+
+    /* Series layout */
+    .series-layout {
+      display: flex;
+      gap: 30px;
+      align-items: flex-start;
+      margin-bottom: 40px;
+    }
+
+    /* Series Cover */
+    .series-cover-container {
+      flex: 0 0 200px;
+      position: relative;
+    }
+
+    .series-cover {
+      width: 200px;
+      height: 300px;
+      border: 1px solid #e0e0e0;
+      border-radius: 3px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      object-fit: cover;
+    }
+
+    .series-cover-placeholder {
+      width: 200px;
+      height: 300px;
+      border: 1px solid #e0e0e0;
+      border-radius: 3px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      color: white;
+    }
+
+    .placeholder-content {
+      text-align: center;
+    }
+
+    .placeholder-icon {
+      font-size: 48px;
+      margin-bottom: 8px;
+    }
+
+    .placeholder-text {
+      font-size: 12px;
+      font-weight: 500;
+      padding: 0 10px;
+      word-wrap: break-word;
+    }
+
+    .book-count-badge {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: rgba(0,0,0,0.8);
+      color: white;
+      padding: 4px 8px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    /* Series Information */
+    .series-info-container {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .title-section {
+      margin-bottom: 24px;
+    }
+
+    .series-title {
+      font-size: 26px;
+      font-weight: 600;
+      color: #333;
+      margin: 0 0 8px 0;
+      line-height: 1.3;
+    }
+
+    .series-subtitle {
+      font-size: 18px;
+      color: #666;
+      font-weight: 400;
+      margin: 0;
+    }
+
+    /* Details List */
+    .details-list {
+      background-color: #ffffff;
+      border-radius: 8px;
+      padding: 16px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .detail-item {
+      display: flex;
+      padding: 10px 0;
+      border-bottom: 1px solid #f0f0f0;
+      align-items: flex-start;
+    }
+
+    .detail-item:last-child {
+      border-bottom: none;
+    }
+
+    .detail-label {
+      min-width: 140px;
+      font-weight: 600;
+      color: #555;
+      margin-right: 16px;
+      flex-shrink: 0;
+    }
+
+    .detail-value {
+      color: #333;
+      flex: 1;
+    }
+
+    .synopsis .detail-value {
+      line-height: 1.6;
+    }
+
+    /* Sections */
+    .books-section, .contributors-section {
+      margin-top: 40px;
+    }
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 20px;
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 20px;
+    }
+
+    .item-count {
+      color: #666;
+      font-weight: 400;
+    }
+
+    /* Books Grid */
+    .books-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 20px;
+    }
+
+    .book-card {
+      background: white;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      transition: transform 0.2s, box-shadow 0.2s;
+      cursor: pointer;
+      text-decoration: none;
+      color: inherit;
+    }
+
+    .book-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+    }
+
+    .book-cover {
+      height: 180px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .cover-image {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .cover-placeholder {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+
+    .cover-placeholder mat-icon {
+      font-size: 48px;
+      width: 48px;
+      height: 48px;
+    }
+
+    .book-info {
+      padding: 12px;
+    }
+
+    .book-title {
+      font-size: 14px;
+      font-weight: 600;
+      margin: 0 0 8px 0;
+      line-height: 1.3;
+      color: #333;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .book-index, .book-authors, .book-date {
+      font-size: 12px;
+      color: #666;
+      margin: 4px 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .book-index {
+      font-weight: 500;
+      color: #007bff;
+    }
+
+    /* Contributors Grid */
+    .contributors-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 16px;
+    }
+
+    .contributor-card {
+      background: white;
+      border-radius: 8px;
+      padding: 16px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .contributor-name {
+      font-size: 16px;
+      font-weight: 600;
+      margin: 0 0 8px 0;
+      color: #333;
+    }
+
+    .contributor-roles {
+      font-size: 14px;
+      color: #666;
+      margin: 4px 0;
+      font-style: italic;
+    }
+
+    .contributor-count {
+      font-size: 12px;
+      color: #999;
+      margin: 4px 0 0 0;
+    }
+
+    /* Empty State */
+    .empty-state {
+      text-align: center;
+      padding: 40px;
+      color: #666;
+    }
+
+    .empty-state mat-icon {
+      font-size: 48px;
+      width: 48px;
+      height: 48px;
+      margin-bottom: 16px;
+      opacity: 0.5;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .series-layout {
+        flex-direction: column;
+        gap: 20px;
+      }
+      
+      .series-cover-container {
+        flex: none;
+        align-self: center;
+      }
+      
+      .books-grid {
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        gap: 16px;
+      }
+      
+      .contributors-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  `]
+})
+export class SeriesDetailComponent implements OnInit {
+  series = signal<Series | null>(null);
+  books = signal<Book[]>([]);
+  loading = signal(true);
+  booksLoading = signal(true);
+
+  constructor(
+    private route: ActivatedRoute,
+    private router: Router,
+    private seriesService: SeriesService,
+    private snackBar: MatSnackBar
+  ) {}
+
+  ngOnInit() {
+    const id = this.route.snapshot.paramMap.get('id');
+    if (id) {
+      this.loadSeriesDetails(id);
+    } else {
+      this.loading.set(false);
+    }
+  }
+
+  loadSeriesDetails(id: string) {
+    this.loading.set(true);
+    this.seriesService.getSeriesById(id).subscribe({
+      next: (series) => {
+        this.series.set(series);
+        this.loading.set(false);
+        this.loadSeriesBooks(series.name);
+      },
+      error: (error) => {
+        console.error('Error loading series details:', error);
+        this.snackBar.open('Failed to load series details.', 'Close', {
+          duration: 3000
+        });
+        this.loading.set(false);
+      }
+    });
+  }
+
+  loadSeriesBooks(seriesName: string) {
+    this.booksLoading.set(true);
+    this.seriesService.getSeriesBooks(seriesName).subscribe({
+      next: (response: CursorPageResponse<Book>) => {
+        this.books.set(response.content || []);
+        this.booksLoading.set(false);
+      },
+      error: (error) => {
+        console.error('Error loading series books:', error);
+        this.snackBar.open('Failed to load books in series.', 'Close', {
+          duration: 3000
+        });
+        this.booksLoading.set(false);
+      }
+    });
+  }
+
+  goBack() {
+    this.router.navigate(['/series']);
+  }
+
+  getEffectiveImagePath(series: Series): string | null {
+    if (series.imagePath) {
+      return series.imagePath;
+    }
+    if (series.fallbackImagePath) {
+      return series.fallbackImagePath;
+    }
+    return null;
+  }
+
+  onImageError(event: any) {
+    // Hide the image if it fails to load
+    event.target.style.display = 'none';
+  }
+
+  getShortTitle(title: string): string {
+    return title.length > 20 ? title.substring(0, 20) + '...' : title;
+  }
+
+  formatDate(dateString: string): string {
+    return new Date(dateString).toLocaleDateString();
+  }
+
+  getBookAuthors(book: Book): string[] {
+    if (!book.contributors) return [];
+    return book.contributors['author'] || [];
+  }
+
+  getAllContributors(): Array<{name: string, roles: string[], bookCount: number}> {
+    const contributorMap = new Map<string, {roles: Set<string>, bookCount: number}>();
+    
+    this.books().forEach(book => {
+      if (book.contributors) {
+        Object.entries(book.contributors).forEach(([role, names]) => {
+          names.forEach(name => {
+            if (!contributorMap.has(name)) {
+              contributorMap.set(name, { roles: new Set(), bookCount: 0 });
+            }
+            const contributor = contributorMap.get(name)!;
+            contributor.roles.add(role);
+            contributor.bookCount++;
+          });
+        });
+      }
+    });
+
+    return Array.from(contributorMap.entries()).map(([name, data]) => ({
+      name,
+      roles: Array.from(data.roles).map(role => 
+        role.charAt(0).toUpperCase() + role.slice(1)
+      ),
+      bookCount: data.bookCount
+    })).sort((a, b) => b.bookCount - a.bookCount);
+  }
+}
