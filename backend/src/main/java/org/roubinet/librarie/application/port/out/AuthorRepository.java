@@ -41,6 +41,14 @@ public interface AuthorRepository {
     CursorPageResult<Author> findByNameContainingIgnoreCase(String name, String cursor, int limit);
     
     /**
+     * Find authors by name containing the search term (case-insensitive) - simple version.
+     * 
+     * @param name the name search term
+     * @return list of matching authors (limited for performance)
+     */
+    List<Author> findByNameContainingIgnoreCase(String name);
+    
+    /**
      * Save an author (create or update).
      * 
      * @param author the author to save
