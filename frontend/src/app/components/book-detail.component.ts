@@ -40,214 +40,196 @@ import { Book } from '../models/book.model';
             </button>
           </div>
 
-          <mat-card class="book-card">
-            <mat-card-header>
-              <div mat-card-avatar class="book-avatar">
-                <mat-icon>book</mat-icon>
-              </div>
-              <mat-card-title>{{ book()!.title }}</mat-card-title>
-              <mat-card-subtitle>
-                @if (book()!.titleSort && book()!.titleSort !== book()!.title) {
-                  <span>Sort Title: {{ book()!.titleSort }}</span>
+          <!-- ISBNdb-style layout: two columns with cover on left, details on right -->
+          <div class="book-layout">
+            <!-- Book Cover Column -->
+            <div class="book-cover-section">
+              <div class="book-cover">
+                @if (book()!.hasCover) {
+                  <div class="cover-placeholder">
+                    <mat-icon>image</mat-icon>
+                    <span>Cover Available</span>
+                  </div>
+                } @else {
+                  <div class="cover-placeholder no-cover">
+                    <mat-icon>book</mat-icon>
+                    <span>No Cover</span>
+                  </div>
                 }
-              </mat-card-subtitle>
-            </mat-card-header>
+              </div>
+            </div>
 
-            <mat-card-content>
-              <!-- Description Section (if available) -->
-              @if (book()!.description) {
-                <div class="description-section">
-                  <h3>
-                    <mat-icon>description</mat-icon>
-                    Description
-                  </h3>
-                  <p class="book-description">{{ book()!.description }}</p>
-                </div>
-                <mat-divider></mat-divider>
+            <!-- Book Details Column -->
+            <div class="book-details-section">
+              <h1 class="book-title">{{ book()!.title }}</h1>
+              @if (book()!.titleSort && book()!.titleSort !== book()!.title) {
+                <h2 class="book-subtitle">({{ book()!.titleSort }})</h2>
               }
 
-              <div class="book-info-grid">
-                <!-- Basic Information -->
-                <div class="info-section">
-                  <h3>
-                    <mat-icon>info</mat-icon>
-                    Basic Information
-                  </h3>
-                  <div class="info-item">
-                    <strong>Book ID:</strong>
-                    <span class="book-id">{{ book()!.id }}</span>
-                  </div>
-                  @if (book()!.isbn) {
-                    <div class="info-item">
-                      <strong>ISBN:</strong>
-                      <span>{{ book()!.isbn }}</span>
-                    </div>
-                  }
-                  @if (book()!.language) {
-                    <div class="info-item">
-                      <strong>Language:</strong>
-                      <mat-chip class="language-chip">{{ book()!.language }}</mat-chip>
-                    </div>
-                  }
-                  @if (book()!.publisher) {
-                    <div class="info-item">
-                      <strong>Publisher:</strong>
-                      <span>{{ book()!.publisher }}</span>
-                    </div>
-                  }
-                  @if (book()!.publicationDate) {
-                    <div class="info-item">
-                      <strong>Publication Date:</strong>
-                      <span>{{ formatDate(book()!.publicationDate!) }}</span>
-                    </div>
-                  }
+              <div class="book-metadata">
+                <!-- Full Title -->
+                <div class="metadata-row">
+                  <span class="metadata-label">Full Title:</span>
+                  <span class="metadata-value">{{ book()!.title }}</span>
                 </div>
 
-                <!-- Contributors -->
-                @if (book()!.contributors && hasContributors()) {
-                  <div class="info-section">
-                    <h3>
-                      <mat-icon>people</mat-icon>
-                      Contributors
-                    </h3>
-                    @for (contributor of getContributorEntries(); track contributor.role) {
-                      <div class="info-item">
-                        <strong>{{ contributor.role }}:</strong>
-                        <div class="contributors-list">
-                          @for (person of contributor.people; track person) {
-                            <mat-chip class="contributor-chip">{{ person }}</mat-chip>
-                          }
-                        </div>
-                      </div>
-                    }
+                <!-- ISBN -->
+                @if (book()!.isbn) {
+                  <div class="metadata-row">
+                    <span class="metadata-label">ISBN:</span>
+                    <span class="metadata-value">{{ book()!.isbn }}</span>
                   </div>
                 }
 
-                <!-- Series Information -->
+                <!-- ISBN13 (derived from ISBN if available) -->
+                @if (book()!.isbn) {
+                  <div class="metadata-row">
+                    <span class="metadata-label">ISBN13:</span>
+                    <span class="metadata-value">{{ formatISBN13(book()!.isbn!) }}</span>
+                  </div>
+                }
+
+                <!-- Authors -->
+                @if (getAuthors().length > 0) {
+                  <div class="metadata-row">
+                    <span class="metadata-label">{{ getAuthors().length > 1 ? 'Authors:' : 'Author:' }}</span>
+                    <span class="metadata-value">{{ getAuthors().join(', ') }}</span>
+                  </div>
+                }
+
+                <!-- Publisher -->
+                @if (book()!.publisher) {
+                  <div class="metadata-row">
+                    <span class="metadata-label">Publisher:</span>
+                    <span class="metadata-value">{{ book()!.publisher }}</span>
+                  </div>
+                }
+
+                <!-- Edition -->
+                @if (getEdition()) {
+                  <div class="metadata-row">
+                    <span class="metadata-label">Edition:</span>
+                    <span class="metadata-value">{{ getEdition() }}</span>
+                  </div>
+                }
+
+                <!-- Publish Date -->
+                @if (book()!.publicationDate) {
+                  <div class="metadata-row">
+                    <span class="metadata-label">Publish Date:</span>
+                    <span class="metadata-value">{{ formatDate(book()!.publicationDate!) }}</span>
+                  </div>
+                }
+
+                <!-- Binding -->
+                @if (getBinding()) {
+                  <div class="metadata-row">
+                    <span class="metadata-label">Binding:</span>
+                    <span class="metadata-value">{{ getBinding() }}</span>
+                  </div>
+                }
+
+                <!-- Pages -->
+                @if (getPages()) {
+                  <div class="metadata-row">
+                    <span class="metadata-label">Pages:</span>
+                    <span class="metadata-value">{{ getPages() }}</span>
+                  </div>
+                }
+
+                <!-- Description/Synopsis -->
+                @if (book()!.description) {
+                  <div class="metadata-row">
+                    <span class="metadata-label">Synopsis:</span>
+                    <span class="metadata-value">{{ book()!.description }}</span>
+                  </div>
+                }
+
+                <!-- Language -->
+                @if (book()!.language) {
+                  <div class="metadata-row">
+                    <span class="metadata-label">Language:</span>
+                    <span class="metadata-value">{{ book()!.language }}</span>
+                  </div>
+                }
+
+                <!-- Series -->
                 @if (book()!.series) {
-                  <div class="info-section">
-                    <h3>
-                      <mat-icon>library_books</mat-icon>
-                      Series
-                    </h3>
-                    <div class="info-item">
-                      <strong>Series Name:</strong>
-                      <span>{{ book()!.series }}</span>
-                    </div>
-                    @if (book()!.seriesIndex) {
-                      <div class="info-item">
-                        <strong>Series Index:</strong>
-                        <mat-chip class="series-index-chip">#{{ book()!.seriesIndex }}</mat-chip>
-                      </div>
-                    }
+                  <div class="metadata-row">
+                    <span class="metadata-label">Series:</span>
+                    <span class="metadata-value">{{ book()!.series }}{{ book()!.seriesIndex ? ' #' + book()!.seriesIndex : '' }}</span>
                   </div>
                 }
 
                 <!-- Formats -->
-                @if (book()!.formats?.length) {
-                  <div class="info-section">
-                    <h3>
-                      <mat-icon>file_copy</mat-icon>
-                      Available Formats
-                    </h3>
-                    <div class="formats-container">
-                      @for (format of book()!.formats; track format) {
-                        <mat-chip class="format-chip">{{ format.toUpperCase() }}</mat-chip>
-                      }
+                @if (book()!.formats && book()!.formats!.length > 0) {
+                  <div class="metadata-row">
+                    <span class="metadata-label">Formats:</span>
+                    <span class="metadata-value">{{ book()!.formats!.join(', ') }}</span>
+                  </div>
+                }
+
+                <!-- Contributors (other than authors) -->
+                @if (getOtherContributors().length > 0) {
+                  @for (contributor of getOtherContributors(); track contributor.role) {
+                    <div class="metadata-row">
+                      <span class="metadata-label">{{ contributor.role }}:</span>
+                      <span class="metadata-value">{{ contributor.names.join(', ') }}</span>
                     </div>
+                  }
+                }
+
+                <!-- Dimensions -->
+                @if (getDimensions()) {
+                  <div class="metadata-row">
+                    <span class="metadata-label">Dimensions:</span>
+                    <span class="metadata-value">{{ getDimensions() }}</span>
+                  </div>
+                }
+
+                <!-- Weight -->
+                @if (getWeight()) {
+                  <div class="metadata-row">
+                    <span class="metadata-label">Weight:</span>
+                    <span class="metadata-value">{{ getWeight() }}</span>
                   </div>
                 }
 
                 <!-- File Information -->
-                <div class="info-section">
-                  <h3>
-                    <mat-icon>folder</mat-icon>
-                    File Information
-                  </h3>
-                  @if (book()!.path) {
-                    <div class="info-item">
-                      <strong>File Path:</strong>
-                      <span class="file-path">{{ book()!.path }}</span>
-                    </div>
-                  }
-                  @if (book()!.fileSize) {
-                    <div class="info-item">
-                      <strong>File Size:</strong>
-                      <span>{{ formatFileSize(book()!.fileSize!) }}</span>
-                    </div>
-                  }
-                  @if (book()!.fileHash) {
-                    <div class="info-item">
-                      <strong>File Hash:</strong>
-                      <span class="hash">{{ book()!.fileHash }}</span>
-                    </div>
-                  }
-                  <div class="info-item">
-                    <strong>Has Cover:</strong>
-                    <mat-chip [style.background-color]="book()!.hasCover ? '#4caf50' : '#f44336'" 
-                              [style.color]="'white'">
-                      {{ book()!.hasCover ? 'Yes' : 'No' }}
-                    </mat-chip>
+                @if (book()!.path) {
+                  <div class="metadata-row">
+                    <span class="metadata-label">File Path:</span>
+                    <span class="metadata-value file-path">{{ book()!.path }}</span>
                   </div>
-                </div>
+                }
 
-                <!-- Timestamps -->
-                <div class="info-section">
-                  <h3>
-                    <mat-icon>schedule</mat-icon>
-                    Timestamps
-                  </h3>
-                  @if (book()!.createdAt) {
-                    <div class="info-item">
-                      <strong>Added to Library:</strong>
-                      <span>{{ formatDateTime(book()!.createdAt!) }}</span>
-                    </div>
-                  }
-                  @if (book()!.updatedAt) {
-                    <div class="info-item">
-                      <strong>Last Updated:</strong>
-                      <span>{{ formatDateTime(book()!.updatedAt!) }}</span>
-                    </div>
-                  }
-                </div>
-
-                <!-- Metadata -->
-                @if (book()!.metadata && hasMetadata()) {
-                  <div class="info-section full-width">
-                    <h3>
-                      <mat-icon>data_object</mat-icon>
-                      Additional Metadata
-                    </h3>
-                    <div class="metadata-container">
-                      @for (entry of getMetadataEntries(); track entry.key) {
-                        <div class="metadata-item">
-                          <strong>{{ entry.key }}:</strong>
-                          <span>{{ entry.value }}</span>
-                        </div>
-                      }
-                    </div>
+                @if (book()!.fileSize) {
+                  <div class="metadata-row">
+                    <span class="metadata-label">File Size:</span>
+                    <span class="metadata-value">{{ formatFileSize(book()!.fileSize!) }}</span>
                   </div>
                 }
               </div>
-            </mat-card-content>
+            </div>
+          </div>
 
-            <mat-card-actions>
-              <button mat-raised-button color="primary" disabled>
-                <mat-icon>download</mat-icon>
-                Download
-              </button>
-              @if (book()!.hasCover) {
-                <button mat-button disabled>
-                  <mat-icon>image</mat-icon>
-                  View Cover
-                </button>
-              }
+          <!-- Actions -->
+          <div class="book-actions">
+            <button mat-raised-button color="primary" disabled>
+              <mat-icon>download</mat-icon>
+              Download
+            </button>
+            @if (book()!.hasCover) {
               <button mat-button disabled>
-                <mat-icon>edit</mat-icon>
-                Edit Metadata
+                <mat-icon>image</mat-icon>
+                View Cover
               </button>
-            </mat-card-actions>
-          </mat-card>
+            }
+            <button mat-button disabled>
+              <mat-icon>edit</mat-icon>
+              Edit Metadata
+            </button>
+          </div>
         </div>
       } @else {
         <div class="error-state">
@@ -264,9 +246,10 @@ import { Book } from '../models/book.model';
   `,
   styles: [`
     .book-detail-container {
-      max-width: 900px;
+      max-width: 1200px;
       margin: 0 auto;
-      padding: 16px;
+      padding: 20px;
+      font-family: Arial, sans-serif;
     }
 
     .loading-container, .error-state {
@@ -288,247 +271,189 @@ import { Book } from '../models/book.model';
       color: var(--text-primary);
     }
 
-    .description-section {
-      margin-bottom: 24px;
-    }
-
-    .description-section h3 {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin: 0 0 16px 0;
-      color: var(--primary-color);
-      font-size: 18px;
-    }
-
-    .book-description {
-      color: var(--text-primary);
-      line-height: 1.6;
-      margin: 0;
-      padding: 16px;
-      background-color: #f9f9f9;
-      border-radius: 8px;
-      border-left: 4px solid var(--primary-color);
-    }
-
     .back-button {
-      margin-bottom: 16px;
+      margin-bottom: 20px;
     }
 
-    .book-card {
-      max-width: 100%;
-    }
-
-    .book-avatar {
-      background-color: var(--primary-color);
-      color: white;
+    /* ISBNdb-style layout */
+    .book-layout {
       display: flex;
-      align-items: center;
-      justify-content: center;
+      gap: 40px;
+      margin-bottom: 30px;
     }
 
-    .book-info-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-      gap: 24px;
-      margin-top: 16px;
+    /* Book Cover Section */
+    .book-cover-section {
+      flex: 0 0 200px;
     }
 
-    .info-section {
-      padding: 16px;
-      background-color: #fafafa;
-      border-radius: 8px;
-    }
-
-    .info-section.full-width {
-      grid-column: 1 / -1;
-    }
-
-    .info-section h3 {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin: 0 0 16px 0;
-      color: var(--primary-color);
-      font-size: 16px;
-    }
-
-    .info-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 12px;
-      padding: 8px 0;
-      border-bottom: 1px solid #e0e0e0;
-    }
-
-    .info-item:last-child {
-      border-bottom: none;
-      margin-bottom: 0;
-    }
-
-    .info-item strong {
-      color: var(--text-primary);
-      min-width: 120px;
-      text-align: left;
-    }
-
-    .info-item span {
-      color: var(--text-secondary);
-      text-align: right;
-      word-break: break-all;
-      max-width: 60%;
-    }
-
-    .book-id, .hash {
-      font-family: monospace;
-      font-size: 12px;
-      background-color: #f5f5f5;
-      padding: 4px 8px;
+    .book-cover {
+      width: 200px;
+      height: 300px;
+      border: 1px solid #ddd;
       border-radius: 4px;
+      overflow: hidden;
     }
 
-    .file-path {
-      font-family: monospace;
-      font-size: 12px;
-    }
-
-    .language-chip {
-      font-size: 12px;
-      height: 24px;
-      line-height: 24px;
-    }
-
-    .contributors-list {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin-top: 4px;
-    }
-
-    .contributor-chip {
-      font-size: 12px;
-      height: 28px;
-      line-height: 28px;
-      background-color: #e3f2fd;
-      color: #1976d2;
-    }
-
-    .series-index-chip {
-      font-size: 12px;
-      height: 24px;
-      line-height: 24px;
-      background-color: #f3e5f5;
-      color: #7b1fa2;
-      font-weight: bold;
-    }
-
-    .formats-container {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin-top: 8px;
-    }
-
-    .format-chip {
-      font-size: 11px;
-      height: 26px;
-      line-height: 26px;
-      background-color: #e8f5e8;
-      color: #2e7d32;
-      font-weight: bold;
-      letter-spacing: 0.5px;
-    }
-
-    .metadata-container {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-      gap: 12px;
-    }
-
-    .metadata-item {
+    .cover-placeholder {
+      width: 100%;
+      height: 100%;
       display: flex;
       flex-direction: column;
-      gap: 4px;
-      padding: 8px;
-      background-color: white;
-      border-radius: 4px;
-      border: 1px solid #e0e0e0;
+      align-items: center;
+      justify-content: center;
+      background-color: #f5f5f5;
+      color: #666;
+      text-align: center;
     }
 
-    .metadata-item strong {
-      color: var(--primary-color);
+    .cover-placeholder.no-cover {
+      background-color: #e0e0e0;
+    }
+
+    .cover-placeholder mat-icon {
+      font-size: 48px;
+      width: 48px;
+      height: 48px;
+      margin-bottom: 8px;
+    }
+
+    .cover-placeholder span {
       font-size: 12px;
-      text-transform: uppercase;
+      font-weight: 500;
     }
 
-    .metadata-item span {
-      color: var(--text-primary);
-      word-break: break-word;
+    /* Book Details Section */
+    .book-details-section {
+      flex: 1;
     }
 
+    .book-title {
+      font-size: 28px;
+      font-weight: 600;
+      color: #333;
+      margin: 0 0 8px 0;
+      line-height: 1.2;
+    }
+
+    .book-subtitle {
+      font-size: 20px;
+      font-weight: 400;
+      color: #666;
+      margin: 0 0 24px 0;
+      line-height: 1.2;
+    }
+
+    /* Metadata Rows */
+    .book-metadata {
+      background-color: #fff;
+    }
+
+    .metadata-row {
+      display: flex;
+      padding: 8px 0;
+      border-bottom: 1px solid #f0f0f0;
+      align-items: flex-start;
+    }
+
+    .metadata-row:last-child {
+      border-bottom: none;
+    }
+
+    .metadata-label {
+      flex: 0 0 140px;
+      font-weight: 600;
+      color: #555;
+      font-size: 14px;
+      padding-right: 16px;
+    }
+
+    .metadata-value {
+      flex: 1;
+      color: #333;
+      font-size: 14px;
+      line-height: 1.4;
+      word-wrap: break-word;
+    }
+
+    .metadata-value.file-path {
+      font-family: monospace;
+      font-size: 12px;
+      background-color: #f8f8f8;
+      padding: 2px 4px;
+      border-radius: 3px;
+    }
+
+    /* Actions */
+    .book-actions {
+      display: flex;
+      gap: 12px;
+      padding: 20px 0;
+      border-top: 1px solid #e0e0e0;
+      margin-top: 20px;
+    }
+
+    /* Responsive Design */
     @media (max-width: 768px) {
       .book-detail-container {
-        padding: 8px;
-      }
-
-      .description-section {
-        margin-bottom: 16px;
-      }
-
-      .book-description {
-        padding: 12px;
-        font-size: 14px;
+        padding: 16px;
       }
       
-      .book-info-grid {
-        grid-template-columns: 1fr;
-        gap: 16px;
-      }
-      
-      .info-item {
+      .book-layout {
         flex-direction: column;
-        align-items: flex-start;
-        gap: 4px;
+        gap: 20px;
       }
       
-      .info-item span {
-        max-width: 100%;
-        text-align: left;
+      .book-cover-section {
+        flex: none;
+        align-self: center;
       }
-
-      .contributors-list {
-        margin-top: 8px;
-        gap: 6px;
+      
+      .book-cover {
+        width: 160px;
+        height: 240px;
       }
-
-      .contributor-chip {
-        font-size: 11px;
-        height: 26px;
-        line-height: 26px;
+      
+      .book-title {
+        font-size: 24px;
+        text-align: center;
       }
-
-      .formats-container {
-        gap: 6px;
+      
+      .book-subtitle {
+        font-size: 18px;
+        text-align: center;
       }
-
-      .format-chip {
-        font-size: 10px;
-        height: 24px;
-        line-height: 24px;
+      
+      .metadata-row {
+        flex-direction: column;
+        gap: 4px;
+        padding: 12px 0;
+      }
+      
+      .metadata-label {
+        flex: none;
+        font-weight: 600;
+        margin-bottom: 4px;
+      }
+      
+      .metadata-value {
+        padding-left: 0;
       }
     }
 
-    /* Tablet-specific styles */
-    @media (min-width: 769px) and (max-width: 1024px) {
-      .book-detail-container {
-        max-width: 800px;
-        padding: 12px;
+    /* Tablet breakpoint */
+    @media (max-width: 1024px) and (min-width: 769px) {
+      .book-layout {
+        gap: 30px;
       }
-
-      .book-info-grid {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 20px;
+      
+      .book-cover-section {
+        flex: 0 0 160px;
+      }
+      
+      .book-cover {
+        width: 160px;
+        height: 240px;
       }
     }
   `]
@@ -590,6 +515,59 @@ export class BookDetailComponent implements OnInit {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   }
 
+  formatISBN13(isbn: string): string {
+    // Simple ISBN-13 formatter - in real app this would be more sophisticated
+    if (isbn.length === 13) return isbn;
+    if (isbn.length === 10) {
+      // Simple conversion for display purposes
+      return '978' + isbn.substring(0, 9);
+    }
+    return isbn;
+  }
+
+  getAuthors(): string[] {
+    if (!this.book()?.contributors) return [];
+    return this.book()!.contributors!['author'] || [];
+  }
+
+  getOtherContributors(): Array<{role: string, names: string[]}> {
+    if (!this.book()?.contributors) return [];
+    
+    const result: Array<{role: string, names: string[]}> = [];
+    const contributors = this.book()!.contributors!;
+    
+    for (const [role, names] of Object.entries(contributors)) {
+      if (role !== 'author' && names.length > 0) {
+        // Capitalize first letter of role
+        const displayRole = role.charAt(0).toUpperCase() + role.slice(1);
+        result.push({ role: displayRole, names });
+      }
+    }
+    
+    return result;
+  }
+
+  getEdition(): string | null {
+    return this.book()?.metadata?.['edition'] || null;
+  }
+
+  getBinding(): string | null {
+    return this.book()?.metadata?.['binding'] || null;
+  }
+
+  getPages(): string | null {
+    const pages = this.book()?.metadata?.['pages'];
+    return pages ? pages.toString() : null;
+  }
+
+  getDimensions(): string | null {
+    return this.book()?.metadata?.['dimensions'] || null;
+  }
+
+  getWeight(): string | null {
+    return this.book()?.metadata?.['weight'] || null;
+  }
+
   hasMetadata(): boolean {
     return !!this.book()?.metadata && Object.keys(this.book()!.metadata!).length > 0;
   }
@@ -600,22 +578,5 @@ export class BookDetailComponent implements OnInit {
       key,
       value: typeof value === 'object' ? JSON.stringify(value) : String(value)
     }));
-  }
-
-  hasContributors(): boolean {
-    return !!this.book()?.contributors && Object.keys(this.book()!.contributors!).length > 0;
-  }
-
-  getContributorEntries(): Array<{role: string, people: string[]}> {
-    if (!this.book()?.contributors) return [];
-    return Object.entries(this.book()!.contributors!).map(([role, people]) => ({
-      role: this.formatRole(role),
-      people
-    }));
-  }
-
-  private formatRole(role: string): string {
-    // Format role names to be more readable
-    return role.charAt(0).toUpperCase() + role.slice(1).toLowerCase().replace(/_/g, ' ');
   }
 }
