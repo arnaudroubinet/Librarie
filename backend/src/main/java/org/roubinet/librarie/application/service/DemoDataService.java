@@ -562,6 +562,10 @@ public class DemoDataService {
         // Link book to series
         BookSeries bookSeries = new BookSeries(book, seriesEntity, seriesIndex);
         entityManager.persist(bookSeries);
+        
+        // Update series book count
+        seriesEntity.incrementBookCount();
+        entityManager.persist(seriesEntity);
     }
     
     private void createStandaloneBook(String title, String titleSort, Author author, Publisher publisher,

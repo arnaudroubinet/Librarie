@@ -37,6 +37,9 @@ public class Series extends PanacheEntityBase {
     @Column(name = "image_path")
     private String imagePath;
 
+    @Column(name = "book_count", nullable = false)
+    private int bookCount = 0;
+
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "metadata", columnDefinition = "jsonb")
     private Map<String, Object> metadata;
@@ -102,6 +105,14 @@ public class Series extends PanacheEntityBase {
         this.imagePath = imagePath;
     }
 
+    public int getBookCount() {
+        return bookCount;
+    }
+
+    public void setBookCount(int bookCount) {
+        this.bookCount = bookCount;
+    }
+
     public Map<String, Object> getMetadata() {
         return metadata;
     }
@@ -135,10 +146,38 @@ public class Series extends PanacheEntityBase {
     }
 
     /**
-     * Get the count of books in this series.
+     * Increment the book count when a book is added to this series.
      */
-    public int getBookCount() {
-        return books != null ? books.size() : 0;
+    public void incrementBookCount() {
+        this.bookCount++;
+    }
+
+    /**
+     * Decrement the book count when a book is removed from this series.
+     */
+    public void decrementBookCount() {
+        if (this.bookCount > 0) {
+            this.bookCount--;
+        }
+    }
+
+    /**
+     * Get the effective image path for this series.
+     * If the series has its own image, return it.
+     * Otherwise, return a fallback path based on books in the series.
+     */
+    public String getEffectiveImagePath(String defaultCoverPath) {
+        if (imagePath != null && !imagePath.trim().isEmpty()) {
+            return imagePath;
+        }
+        
+        // Find first book with a cover, ordered by series index
+        return books.stream()
+            .filter(bookSeries -> bookSeries.book() != null && bookSeries.book().getHasCover())
+            .sorted((bs1, bs2) -> bs1.seriesIndex().compareTo(bs2.seriesIndex()))
+            .map(bookSeries -> bookSeries.book().getPath() + "/cover")
+            .findFirst()
+            .orElse(defaultCoverPath);
     }
 
     @Override

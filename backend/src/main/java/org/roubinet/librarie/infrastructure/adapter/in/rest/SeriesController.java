@@ -1,7 +1,7 @@
 package org.roubinet.librarie.infrastructure.adapter.in.rest;
 
 import org.roubinet.librarie.application.port.in.SeriesUseCase;
-import org.roubinet.librarie.domain.entity.Series;
+import org.roubinet.librarie.domain.model.SeriesData;
 import org.roubinet.librarie.infrastructure.adapter.in.rest.dto.SeriesResponseDto;
 import org.roubinet.librarie.infrastructure.adapter.in.rest.dto.PageResponseDto;
 import org.roubinet.librarie.infrastructure.adapter.in.rest.dto.pagination.CursorPageResult;
@@ -20,7 +20,6 @@ import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -67,7 +66,7 @@ public class SeriesController {
             }
             
             // Use cursor pagination
-            CursorPageResult<Series> pageResult = seriesUseCase.getAllSeries(cursor, limit);
+            CursorPageResult<SeriesData> pageResult = seriesUseCase.getAllSeries(cursor, limit);
             
             List<SeriesResponseDto> seriesDtos = pageResult.getItems().stream()
                 .map(this::toDto)
@@ -107,10 +106,10 @@ public class SeriesController {
         
         try {
             UUID seriesId = UUID.fromString(id);
-            Optional<Series> series = seriesUseCase.getSeriesById(seriesId);
+            Optional<SeriesData> seriesData = seriesUseCase.getSeriesById(seriesId);
             
-            if (series.isPresent()) {
-                return Response.ok(toDto(series.get())).build();
+            if (seriesData.isPresent()) {
+                return Response.ok(toDto(seriesData.get())).build();
             } else {
                 return Response.status(Response.Status.NOT_FOUND)
                     .entity("Series not found")
@@ -128,47 +127,29 @@ public class SeriesController {
     }
     
     /**
-     * Convert Series entity to DTO with book count and fallback image.
+     * Convert SeriesData domain model to DTO.
      */
-    private SeriesResponseDto toDto(Series series) {
-        if (series == null) {
+    private SeriesResponseDto toDto(SeriesData seriesData) {
+        if (seriesData == null) {
             return null;
         }
         
         SeriesResponseDto dto = new SeriesResponseDto();
-        dto.setId(series.getId());
-        dto.setName(series.getName());
-        dto.setSortName(series.getSortName());
-        dto.setDescription(series.getDescription());
-        dto.setImagePath(series.getImagePath());
-        dto.setMetadata(series.getMetadata());
-        dto.setCreatedAt(series.getCreatedAt());
-        dto.setUpdatedAt(series.getUpdatedAt());
+        dto.setId(seriesData.getId());
+        dto.setName(seriesData.getName());
+        dto.setSortName(seriesData.getSortName());
+        dto.setDescription(seriesData.getDescription());
+        dto.setImagePath(seriesData.getImagePath());
+        dto.setMetadata(seriesData.getMetadata());
+        dto.setCreatedAt(seriesData.getCreatedAt());
+        dto.setUpdatedAt(seriesData.getUpdatedAt());
+        dto.setBookCount(seriesData.getBookCount());
         
-        // Calculate book count and get fallback image
-        int bookCount = getBookCountForSeries(series.getId());
-        dto.setBookCount(bookCount);
-        
-        // If series doesn't have its own image, get the image from the book with lowest index
-        if (series.getImagePath() == null || series.getImagePath().trim().isEmpty()) {
-            String fallbackImage = getFallbackImageForSeries(series.getId());
-            dto.setFallbackImagePath(fallbackImage);
+        // Set fallback image if the series doesn't have its own image
+        if (seriesData.getImagePath() == null || seriesData.getImagePath().trim().isEmpty()) {
+            dto.setFallbackImagePath(seriesData.getEffectiveImagePath());
         }
         
         return dto;
-    }
-    
-    /**
-     * Get the number of books in a series.
-     */
-    private int getBookCountForSeries(UUID seriesId) {
-        return seriesUseCase.getBookCountForSeries(seriesId);
-    }
-    
-    /**
-     * Get fallback image for a series from its books.
-     */
-    private String getFallbackImageForSeries(UUID seriesId) {
-        return seriesUseCase.getFallbackImageForSeries(seriesId).orElse(null);
     }
 }

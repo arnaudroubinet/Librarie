@@ -1,6 +1,6 @@
 package org.roubinet.librarie.application.port.in;
 
-import org.roubinet.librarie.domain.entity.Series;
+import org.roubinet.librarie.domain.model.SeriesData;
 import org.roubinet.librarie.infrastructure.adapter.in.rest.dto.pagination.CursorPageResult;
 
 import java.util.Optional;
@@ -16,31 +16,15 @@ public interface SeriesUseCase {
      * 
      * @param cursor Cursor for pagination
      * @param limit Maximum number of items to return
-     * @return Paginated result of series
+     * @return Paginated result of series data
      */
-    CursorPageResult<Series> getAllSeries(String cursor, int limit);
+    CursorPageResult<SeriesData> getAllSeries(String cursor, int limit);
     
     /**
      * Get a series by its ID.
      * 
      * @param id Series ID
-     * @return Optional containing the series if found
+     * @return Optional containing the series data if found
      */
-    Optional<Series> getSeriesById(UUID id);
-    
-    /**
-     * Get the count of books in a series.
-     * 
-     * @param seriesId Series ID
-     * @return Number of books in the series
-     */
-    int getBookCountForSeries(UUID seriesId);
-    
-    /**
-     * Get fallback image for a series from its books.
-     * 
-     * @param seriesId Series ID
-     * @return Optional containing the cover path if found
-     */
-    Optional<String> getFallbackImageForSeries(UUID seriesId);
+    Optional<SeriesData> getSeriesById(UUID id);
 }

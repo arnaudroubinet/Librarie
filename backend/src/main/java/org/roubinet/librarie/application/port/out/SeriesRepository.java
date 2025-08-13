@@ -34,21 +34,4 @@ public interface SeriesRepository {
      * @return Total number of series
      */
     long getTotalCount();
-    
-    /**
-     * Get the count of books in a series.
-     * 
-     * @param seriesId Series ID
-     * @return Number of books in the series
-     */
-    int getBookCountForSeries(UUID seriesId);
-    
-    /**
-     * Get fallback image for a series from its books.
-     * Tries to find a book with a cover, starting with the lowest series index.
-     * 
-     * @param seriesId Series ID
-     * @return Optional containing the cover path if found
-     */
-    Optional<String> getFallbackImageForSeries(UUID seriesId);
 }
