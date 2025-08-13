@@ -15,6 +15,10 @@ export const routes: Routes = [
     loadComponent: () => import('./components/series-list.component').then(c => c.SeriesListComponent)
   },
   { 
+    path: 'series/:id', 
+    loadComponent: () => import('./components/series-detail.component').then(c => c.SeriesDetailComponent)
+  },
+  { 
     path: 'authors', 
     loadComponent: () => import('./components/author-list.component').then(c => c.AuthorListComponent)
   },
