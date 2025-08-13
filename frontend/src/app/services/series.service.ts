@@ -36,7 +36,17 @@ export class SeriesService {
         );
         
         // Sort by series index
-        filteredBooks.sort((a: any, b: any) => {
+  getSeriesBooks(seriesName: string, cursor?: string, limit: number = 20): Observable<SeriesPageResponse> {
+    // Since the criteria search isn't working, let's get all books and filter client-side
+    // This is a temporary workaround - in production you'd want to fix the backend search
+    return this.http.get<SeriesPageResponse>(`${environment.apiUrl}/v1/books?limit=100`).pipe(
+      map((response: SeriesPageResponse) => {
+        const filteredBooks = response.content.filter((book: Series) => 
+          book.series && book.series === seriesName
+        );
+        
+        // Sort by series index
+        filteredBooks.sort((a: Series, b: Series) => {
           const aIndex = a.seriesIndex || 0;
           const bIndex = b.seriesIndex || 0;
           return aIndex - bIndex;
