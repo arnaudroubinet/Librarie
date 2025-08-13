@@ -1,6 +1,7 @@
 package org.roubinet.librarie.application.port.out;
 
 import org.roubinet.librarie.domain.entity.Author;
+import org.roubinet.librarie.infrastructure.adapter.in.rest.dto.pagination.CursorPageResult;
 
 import java.util.List;
 import java.util.Optional;
@@ -13,11 +14,13 @@ import java.util.UUID;
 public interface AuthorRepository {
     
     /**
-     * Find all authors.
+     * Find all authors with cursor-based pagination.
      * 
-     * @return list of all authors
+     * @param cursor the pagination cursor (null for first page)
+     * @param limit the maximum number of authors to return
+     * @return cursor-paginated result containing authors
      */
-    List<Author> findAll();
+    CursorPageResult<Author> findAll(String cursor, int limit);
     
     /**
      * Find an author by its ID.
@@ -28,12 +31,14 @@ public interface AuthorRepository {
     Optional<Author> findById(UUID id);
     
     /**
-     * Find authors by name containing the search term (case-insensitive).
+     * Find authors by name containing the search term (case-insensitive) with cursor pagination.
      * 
      * @param name the name search term
-     * @return list of matching authors
+     * @param cursor the pagination cursor (null for first page)
+     * @param limit the maximum number of authors to return
+     * @return cursor-paginated result containing matching authors
      */
-    List<Author> findByNameContainingIgnoreCase(String name);
+    CursorPageResult<Author> findByNameContainingIgnoreCase(String name, String cursor, int limit);
     
     /**
      * Save an author (create or update).

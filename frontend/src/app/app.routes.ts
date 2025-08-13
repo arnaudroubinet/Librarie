@@ -15,6 +15,14 @@ export const routes: Routes = [
     loadComponent: () => import('./components/series-list.component').then(c => c.SeriesListComponent)
   },
   { 
+    path: 'authors', 
+    loadComponent: () => import('./components/author-list.component').then(c => c.AuthorListComponent)
+  },
+  { 
+    path: 'authors/:id', 
+    loadComponent: () => import('./components/author-detail.component').then(c => c.AuthorDetailComponent)
+  },
+  { 
     path: 'search', 
     loadComponent: () => import('./components/search.component').then(c => c.SearchComponent)
   },
