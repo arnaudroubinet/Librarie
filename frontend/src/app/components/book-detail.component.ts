@@ -40,195 +40,137 @@ import { Book } from '../models/book.model';
             </button>
           </div>
 
-          <!-- ISBNdb-style layout: two columns with cover on left, details on right -->
-          <div class="book-layout">
-            <!-- Book Cover Column -->
-            <div class="book-cover-section">
-              <div class="book-cover">
-                @if (book()!.hasCover) {
-                  <div class="cover-placeholder">
-                    <mat-icon>image</mat-icon>
-                    <span>Cover Available</span>
+          <!-- ISBNdb-inspired layout -->
+          <div class="isbndb-layout">
+            <!-- Book Cover -->
+            <div class="book-cover-container">
+              @if (book()!.hasCover) {
+                <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0iIzM0NDk1ZSIvPgo8dGV4dCB4PSI1MCUiIHk9IjUwJSIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjE0IiBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9IjAuM2VtIj5Db3ZlciBBdmFpbGFibGU8L3RleHQ+Cjwvc3ZnPg==" 
+                     alt="Book Cover" 
+                     class="book-cover" />
+              } @else {
+                <div class="book-cover-placeholder">
+                  <div class="placeholder-content">
+                    <div class="placeholder-icon">📖</div>
+                    <div class="placeholder-text">No Image Available</div>
                   </div>
-                } @else {
-                  <div class="cover-placeholder no-cover">
-                    <mat-icon>book</mat-icon>
-                    <span>No Cover</span>
-                  </div>
-                }
-              </div>
+                </div>
+              }
             </div>
 
-            <!-- Book Details Column -->
-            <div class="book-details-section">
-              <h1 class="book-title">{{ book()!.title }}</h1>
-              @if (book()!.titleSort && book()!.titleSort !== book()!.title) {
-                <h2 class="book-subtitle">({{ book()!.titleSort }})</h2>
-              }
+            <!-- Book Information -->
+            <div class="book-info-container">
+              <!-- Title Section -->
+              <div class="title-section">
+                <h1 class="book-title">{{ book()!.title }}</h1>
+                @if (book()!.titleSort && book()!.titleSort !== book()!.title) {
+                  <div class="book-subtitle">({{ book()!.titleSort }})</div>
+                }
+              </div>
 
-              <div class="book-metadata">
-                <!-- Full Title -->
-                <div class="metadata-row">
-                  <span class="metadata-label">Full Title:</span>
-                  <span class="metadata-value">{{ book()!.title }}</span>
+              <!-- Details List -->
+              <div class="details-list">
+                <div class="detail-item">
+                  <span class="detail-label">Full Title:</span>
+                  <span class="detail-value">{{ book()!.title }}</span>
                 </div>
 
-                <!-- ISBN -->
                 @if (book()!.isbn) {
-                  <div class="metadata-row">
-                    <span class="metadata-label">ISBN:</span>
-                    <span class="metadata-value">{{ book()!.isbn }}</span>
+                  <div class="detail-item">
+                    <span class="detail-label">ISBN:</span>
+                    <span class="detail-value">{{ book()!.isbn }}</span>
                   </div>
                 }
 
-                <!-- ISBN13 (derived from ISBN if available) -->
                 @if (book()!.isbn) {
-                  <div class="metadata-row">
-                    <span class="metadata-label">ISBN13:</span>
-                    <span class="metadata-value">{{ formatISBN13(book()!.isbn!) }}</span>
+                  <div class="detail-item">
+                    <span class="detail-label">ISBN13:</span>
+                    <span class="detail-value">{{ formatISBN13(book()!.isbn!) }}</span>
                   </div>
                 }
 
-                <!-- Authors -->
                 @if (getAuthors().length > 0) {
-                  <div class="metadata-row">
-                    <span class="metadata-label">{{ getAuthors().length > 1 ? 'Authors:' : 'Author:' }}</span>
-                    <span class="metadata-value">{{ getAuthors().join(', ') }}</span>
+                  <div class="detail-item">
+                    <span class="detail-label">Authors:</span>
+                    <span class="detail-value author-links">
+                      @for (author of getAuthors(); track author; let last = $last) {
+                        <span class="author-link">{{ author }}</span>@if (!last) {<span>, </span>}
+                      }
+                    </span>
                   </div>
                 }
 
-                <!-- Publisher -->
                 @if (book()!.publisher) {
-                  <div class="metadata-row">
-                    <span class="metadata-label">Publisher:</span>
-                    <span class="metadata-value">{{ book()!.publisher }}</span>
+                  <div class="detail-item">
+                    <span class="detail-label">Publisher:</span>
+                    <span class="detail-value">{{ book()!.publisher }}</span>
                   </div>
                 }
 
-                <!-- Edition -->
                 @if (getEdition()) {
-                  <div class="metadata-row">
-                    <span class="metadata-label">Edition:</span>
-                    <span class="metadata-value">{{ getEdition() }}</span>
+                  <div class="detail-item">
+                    <span class="detail-label">Edition:</span>
+                    <span class="detail-value">{{ getEdition() }}</span>
                   </div>
                 }
 
-                <!-- Publish Date -->
                 @if (book()!.publicationDate) {
-                  <div class="metadata-row">
-                    <span class="metadata-label">Publish Date:</span>
-                    <span class="metadata-value">{{ formatDate(book()!.publicationDate!) }}</span>
+                  <div class="detail-item">
+                    <span class="detail-label">Publish Date:</span>
+                    <span class="detail-value">{{ formatDate(book()!.publicationDate!) }}</span>
                   </div>
                 }
 
-                <!-- Binding -->
                 @if (getBinding()) {
-                  <div class="metadata-row">
-                    <span class="metadata-label">Binding:</span>
-                    <span class="metadata-value">{{ getBinding() }}</span>
+                  <div class="detail-item">
+                    <span class="detail-label">Binding:</span>
+                    <span class="detail-value">{{ getBinding() }}</span>
                   </div>
                 }
 
-                <!-- Pages -->
                 @if (getPages()) {
-                  <div class="metadata-row">
-                    <span class="metadata-label">Pages:</span>
-                    <span class="metadata-value">{{ getPages() }}</span>
+                  <div class="detail-item">
+                    <span class="detail-label">Pages:</span>
+                    <span class="detail-value">{{ getPages() }}</span>
                   </div>
                 }
 
-                <!-- Description/Synopsis -->
                 @if (book()!.description) {
-                  <div class="metadata-row">
-                    <span class="metadata-label">Synopsis:</span>
-                    <span class="metadata-value">{{ book()!.description }}</span>
+                  <div class="detail-item synopsis">
+                    <span class="detail-label">Synopsis:</span>
+                    <span class="detail-value">{{ book()!.description }}</span>
                   </div>
                 }
 
-                <!-- Language -->
                 @if (book()!.language) {
-                  <div class="metadata-row">
-                    <span class="metadata-label">Language:</span>
-                    <span class="metadata-value">{{ book()!.language }}</span>
+                  <div class="detail-item">
+                    <span class="detail-label">Language:</span>
+                    <span class="detail-value">{{ book()!.language }}</span>
                   </div>
                 }
 
-                <!-- Series -->
-                @if (book()!.series) {
-                  <div class="metadata-row">
-                    <span class="metadata-label">Series:</span>
-                    <span class="metadata-value">{{ book()!.series }}{{ book()!.seriesIndex ? ' #' + book()!.seriesIndex : '' }}</span>
-                  </div>
-                }
-
-                <!-- Formats -->
-                @if (book()!.formats && book()!.formats!.length > 0) {
-                  <div class="metadata-row">
-                    <span class="metadata-label">Formats:</span>
-                    <span class="metadata-value">{{ book()!.formats!.join(', ') }}</span>
-                  </div>
-                }
-
-                <!-- Contributors (other than authors) -->
-                @if (getOtherContributors().length > 0) {
-                  @for (contributor of getOtherContributors(); track contributor.role) {
-                    <div class="metadata-row">
-                      <span class="metadata-label">{{ contributor.role }}:</span>
-                      <span class="metadata-value">{{ contributor.names.join(', ') }}</span>
-                    </div>
-                  }
-                }
-
-                <!-- Dimensions -->
                 @if (getDimensions()) {
-                  <div class="metadata-row">
-                    <span class="metadata-label">Dimensions:</span>
-                    <span class="metadata-value">{{ getDimensions() }}</span>
+                  <div class="detail-item">
+                    <span class="detail-label">Dimensions:</span>
+                    <span class="detail-value">{{ getDimensions() }}</span>
                   </div>
                 }
 
-                <!-- Weight -->
                 @if (getWeight()) {
-                  <div class="metadata-row">
-                    <span class="metadata-label">Weight:</span>
-                    <span class="metadata-value">{{ getWeight() }}</span>
+                  <div class="detail-item">
+                    <span class="detail-label">Weight:</span>
+                    <span class="detail-value">{{ getWeight() }}</span>
                   </div>
                 }
 
-                <!-- File Information -->
-                @if (book()!.path) {
-                  <div class="metadata-row">
-                    <span class="metadata-label">File Path:</span>
-                    <span class="metadata-value file-path">{{ book()!.path }}</span>
-                  </div>
-                }
-
-                @if (book()!.fileSize) {
-                  <div class="metadata-row">
-                    <span class="metadata-label">File Size:</span>
-                    <span class="metadata-value">{{ formatFileSize(book()!.fileSize!) }}</span>
+                @if (getSubjects().length > 0) {
+                  <div class="detail-item">
+                    <span class="detail-label">Subjects:</span>
+                    <span class="detail-value">{{ getSubjects().join(', ') }}</span>
                   </div>
                 }
               </div>
             </div>
-          </div>
-
-          <!-- Actions -->
-          <div class="book-actions">
-            <button mat-raised-button color="primary" disabled>
-              <mat-icon>download</mat-icon>
-              Download
-            </button>
-            @if (book()!.hasCover) {
-              <button mat-button disabled>
-                <mat-icon>image</mat-icon>
-                View Cover
-              </button>
-            }
-            <button mat-button disabled>
-              <mat-icon>edit</mat-icon>
-              Edit Metadata
-            </button>
           </div>
         </div>
       } @else {
@@ -246,10 +188,11 @@ import { Book } from '../models/book.model';
   `,
   styles: [`
     .book-detail-container {
-      max-width: 1200px;
+      max-width: 1000px;
       margin: 0 auto;
       padding: 20px;
       font-family: Arial, sans-serif;
+      background-color: #ffffff;
     }
 
     .loading-container, .error-state {
@@ -263,134 +206,144 @@ import { Book } from '../models/book.model';
 
     .loading-container p, .error-state p {
       margin-top: 16px;
-      color: var(--text-secondary);
+      color: #666;
     }
 
     .error-state h2 {
       margin: 16px 0;
-      color: var(--text-primary);
+      color: #333;
     }
 
     .back-button {
       margin-bottom: 20px;
     }
 
-    /* ISBNdb-style layout */
-    .book-layout {
+    /* ISBNdb-inspired layout */
+    .isbndb-layout {
       display: flex;
-      gap: 40px;
-      margin-bottom: 30px;
+      gap: 30px;
+      align-items: flex-start;
     }
 
-    /* Book Cover Section */
-    .book-cover-section {
+    /* Book Cover */
+    .book-cover-container {
       flex: 0 0 200px;
     }
 
     .book-cover {
       width: 200px;
       height: 300px;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-      overflow: hidden;
+      border: 1px solid #e0e0e0;
+      border-radius: 3px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
 
-    .cover-placeholder {
-      width: 100%;
-      height: 100%;
+    .book-cover-placeholder {
+      width: 200px;
+      height: 300px;
+      border: 1px solid #e0e0e0;
+      border-radius: 3px;
       display: flex;
-      flex-direction: column;
       align-items: center;
       justify-content: center;
-      background-color: #f5f5f5;
-      color: #666;
+      background-color: #f8f9fa;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .placeholder-content {
       text-align: center;
+      color: #6c757d;
     }
 
-    .cover-placeholder.no-cover {
-      background-color: #e0e0e0;
-    }
-
-    .cover-placeholder mat-icon {
+    .placeholder-icon {
       font-size: 48px;
-      width: 48px;
-      height: 48px;
       margin-bottom: 8px;
     }
 
-    .cover-placeholder span {
+    .placeholder-text {
       font-size: 12px;
       font-weight: 500;
     }
 
-    /* Book Details Section */
-    .book-details-section {
+    /* Book Information */
+    .book-info-container {
       flex: 1;
+      min-width: 0;
+    }
+
+    .title-section {
+      margin-bottom: 24px;
     }
 
     .book-title {
-      font-size: 28px;
+      font-size: 26px;
       font-weight: 600;
       color: #333;
       margin: 0 0 8px 0;
-      line-height: 1.2;
+      line-height: 1.3;
     }
 
     .book-subtitle {
-      font-size: 20px;
-      font-weight: 400;
+      font-size: 18px;
       color: #666;
-      margin: 0 0 24px 0;
-      line-height: 1.2;
+      font-weight: 400;
+      margin: 0;
     }
 
-    /* Metadata Rows */
-    .book-metadata {
-      background-color: #fff;
+    /* Details List - ISBNdb style */
+    .details-list {
+      background-color: #ffffff;
     }
 
-    .metadata-row {
+    .detail-item {
       display: flex;
-      padding: 8px 0;
+      padding: 10px 0;
       border-bottom: 1px solid #f0f0f0;
       align-items: flex-start;
     }
 
-    .metadata-row:last-child {
-      border-bottom: none;
+    .detail-item:first-child {
+      padding-top: 0;
     }
 
-    .metadata-label {
-      flex: 0 0 140px;
+    .detail-item:last-child {
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+
+    .detail-item.synopsis {
+      align-items: flex-start;
+    }
+
+    .detail-item.synopsis .detail-value {
+      margin-top: 0;
+    }
+
+    .detail-label {
+      flex: 0 0 120px;
       font-weight: 600;
       color: #555;
       font-size: 14px;
       padding-right: 16px;
     }
 
-    .metadata-value {
+    .detail-value {
       flex: 1;
       color: #333;
       font-size: 14px;
-      line-height: 1.4;
+      line-height: 1.5;
       word-wrap: break-word;
     }
 
-    .metadata-value.file-path {
-      font-family: monospace;
-      font-size: 12px;
-      background-color: #f8f8f8;
-      padding: 2px 4px;
-      border-radius: 3px;
+    /* Author links styling */
+    .author-links .author-link {
+      color: #0066cc;
+      text-decoration: none;
+      cursor: pointer;
     }
 
-    /* Actions */
-    .book-actions {
-      display: flex;
-      gap: 12px;
-      padding: 20px 0;
-      border-top: 1px solid #e0e0e0;
-      margin-top: 20px;
+    .author-links .author-link:hover {
+      text-decoration: underline;
     }
 
     /* Responsive Design */
@@ -399,59 +352,63 @@ import { Book } from '../models/book.model';
         padding: 16px;
       }
       
-      .book-layout {
+      .isbndb-layout {
         flex-direction: column;
         gap: 20px;
+        align-items: center;
       }
       
-      .book-cover-section {
+      .book-cover-container {
         flex: none;
-        align-self: center;
       }
       
-      .book-cover {
+      .book-cover, .book-cover-placeholder {
         width: 160px;
         height: 240px;
       }
       
+      .book-info-container {
+        width: 100%;
+      }
+      
       .book-title {
-        font-size: 24px;
+        font-size: 22px;
         text-align: center;
       }
       
       .book-subtitle {
-        font-size: 18px;
+        font-size: 16px;
         text-align: center;
       }
       
-      .metadata-row {
+      .detail-item {
         flex-direction: column;
         gap: 4px;
         padding: 12px 0;
       }
       
-      .metadata-label {
+      .detail-label {
         flex: none;
         font-weight: 600;
         margin-bottom: 4px;
       }
       
-      .metadata-value {
+      .detail-value {
         padding-left: 0;
       }
     }
 
     /* Tablet breakpoint */
     @media (max-width: 1024px) and (min-width: 769px) {
-      .book-layout {
-        gap: 30px;
+      .isbndb-layout {
+        gap: 24px;
       }
       
-      .book-cover-section {
+      .book-cover-container {
         flex: 0 0 160px;
       }
       
-      .book-cover {
+      .book-cover, .book-cover-placeholder {
         width: 160px;
         height: 240px;
       }
@@ -578,5 +535,16 @@ export class BookDetailComponent implements OnInit {
       key,
       value: typeof value === 'object' ? JSON.stringify(value) : String(value)
     }));
+  }
+
+  getSubjects(): string[] {
+    const subjects = this.book()?.metadata?.['subjects'];
+    if (Array.isArray(subjects)) {
+      return subjects;
+    }
+    if (typeof subjects === 'string') {
+      return [subjects];
+    }
+    return [];
   }
 }
