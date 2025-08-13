@@ -4,11 +4,7 @@ import java.time.OffsetDateTime;
 import java.util.Map;
 import java.util.UUID;
 
-/**
- * Domain model for Series data with computed properties.
- * This represents series data with business logic computed values,
- * following clean architecture principles.
- */
+
 public class SeriesData {
     
     private final UUID id;
@@ -20,7 +16,7 @@ public class SeriesData {
     private final OffsetDateTime createdAt;
     private final OffsetDateTime updatedAt;
     private final int bookCount;
-    private final String effectiveImagePath; // Series image or fallback from books
+    private final String effectiveImagePath;
     
     public SeriesData(UUID id, String name, String sortName, String description, 
                      String imagePath, Map<String, Object> metadata, 

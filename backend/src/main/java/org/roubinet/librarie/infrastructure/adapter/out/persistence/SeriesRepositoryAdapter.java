@@ -85,7 +85,7 @@ public class SeriesRepositoryAdapter implements SeriesRepository {
             .hasNext(hasNext)
             .hasPrevious(hasPrevious)
             .limit(limit)
-            .totalCount(null) // Count would require separate query for performance
+            .totalCount(Series.count())
             .build();
     }
     

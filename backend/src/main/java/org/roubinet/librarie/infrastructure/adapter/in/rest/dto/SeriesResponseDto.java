@@ -18,11 +18,10 @@ public class SeriesResponseDto {
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
     private int bookCount;
-    private String fallbackImagePath; // From the book with lowest index
+    private String fallbackImagePath;
     
     public SeriesResponseDto() {}
     
-    // Getters and setters
     public UUID getId() {
         return id;
     }
@@ -103,9 +102,7 @@ public class SeriesResponseDto {
         this.fallbackImagePath = fallbackImagePath;
     }
     
-    /**
-     * Get the effective image path - series image if available, otherwise fallback
-     */
+
     public String getEffectiveImagePath() {
         return imagePath != null ? imagePath : fallbackImagePath;
     }
