@@ -32,7 +32,7 @@ import { Book, CursorPageResponse } from '../models/book.model';
       <div class="library-header">
         <div class="header-content">
           <h1 class="library-title">
-            <mat-icon class="title-icon">library_books</mat-icon>
+            <mat-icon class="title-icon">collections</mat-icon>
             Books Library
             @if (books().length > 0) {
               <span class="book-count">{{ books().length }} books</span>
@@ -59,7 +59,7 @@ import { Book, CursorPageResponse } from '../models/book.model';
         @if (books().length === 0) {
           <div class="empty-library">
             <div class="empty-content">
-              <mat-icon class="empty-icon">library_books</mat-icon>
+              <mat-icon class="empty-icon">collections</mat-icon>
               <h2>Your library awaits</h2>
               <p>No books found in your collection. Start building your digital library by scanning your book directory.</p>
               <button mat-raised-button color="accent" routerLink="/library" class="cta-button">

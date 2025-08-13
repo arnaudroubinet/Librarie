@@ -3,11 +3,13 @@
 /* Angular Material theme */
 @import '@angular/material/prebuilt-themes/azure-blue.css';
 
+/* Google Fonts imported in index.html */
+
 /* Global styles */
 html, body { 
   height: 100%; 
   margin: 0; 
-  font-family: 'Roboto', sans-serif;
+  font-family: 'Poppins', 'Inter', 'Roboto', sans-serif;
 }
 
 /* Custom theme variables */
@@ -18,6 +20,8 @@ html, body {
   --surface-color: #ffffff;
   --text-primary: rgba(0, 0, 0, 0.87);
   --text-secondary: rgba(0, 0, 0, 0.54);
+  --font-family-primary: 'Poppins', 'Inter', 'Roboto', sans-serif;
+  --font-family-display: 'Inter', 'Poppins', 'Roboto', sans-serif;
 }
 
 /* Utility classes */

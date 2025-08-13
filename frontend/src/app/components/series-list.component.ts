@@ -32,7 +32,7 @@ import { Series, SeriesPageResponse } from '../models/series.model';
       <div class="library-header">
         <div class="header-content">
           <h1 class="library-title">
-            <mat-icon class="title-icon">collections_bookmark</mat-icon>
+            <mat-icon class="title-icon">library_books</mat-icon>
             Series Library
             @if (series().length > 0) {
               <span class="series-count">{{ series().length }} series</span>
@@ -59,7 +59,7 @@ import { Series, SeriesPageResponse } from '../models/series.model';
         @if (series().length === 0) {
           <div class="empty-library">
             <div class="empty-content">
-              <mat-icon class="empty-icon">collections_bookmark</mat-icon>
+              <mat-icon class="empty-icon">library_books</mat-icon>
               <h2>No series found</h2>
               <p>No series found in your collection. Series are automatically created when books with series information are imported.</p>
               <button mat-raised-button color="accent" routerLink="/library" class="cta-button">
@@ -81,7 +81,7 @@ import { Series, SeriesPageResponse } from '../models/series.model';
                            (error)="onImageError($event)">
                     } @else {
                       <div class="cover-placeholder">
-                        <mat-icon>collections_bookmark</mat-icon>
+                        <mat-icon>library_books</mat-icon>
                         <span class="title-text">{{ getShortTitle(seriesItem.name) }}</span>
                       </div>
                     }
