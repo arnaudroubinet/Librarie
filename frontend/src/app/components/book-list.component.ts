@@ -1,5 +1,5 @@
-import { Component, OnInit, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, OnDestroy, signal } from '@angular/core';
+import { CommonModule, Location } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
@@ -123,7 +123,7 @@ import { Book, CursorPageResponse } from '../models/book.model';
           </div>
           
           <div class="pagination-section">
-            @if (previousCursor() || nextCursor()) {
+            @if (previousCursor() || nextCursor() || (currentPage > 1)) {
               <div class="pagination-controls">
                 @if (previousCursor()) {
                   <button mat-raised-button class="nav-button" (click)="loadPrevious()">
@@ -138,6 +138,11 @@ import { Book, CursorPageResponse } from '../models/book.model';
                   <button mat-raised-button class="nav-button" (click)="loadNext()">
                     Next
                     <mat-icon>chevron_right</mat-icon>
+                  </button>
+                } @else if (previousCursor() || currentPage > 1) {
+                  <button mat-raised-button class="nav-button back-button" (click)="goBack()">
+                    <mat-icon>arrow_back</mat-icon>
+                    Back
                   </button>
                 }
               </div>
@@ -515,6 +520,17 @@ import { Book, CursorPageResponse } from '../models/book.model';
       font-size: 14px;
     }
 
+    .back-button {
+      background: linear-gradient(135deg, rgba(229, 160, 13, 0.3) 0%, rgba(204, 144, 0, 0.3) 100%);
+      border-color: #e5a00d;
+      color: #e5a00d;
+    }
+
+    .back-button:hover {
+      background: linear-gradient(135deg, rgba(229, 160, 13, 0.5) 0%, rgba(204, 144, 0, 0.5) 100%);
+      box-shadow: 0 4px 12px rgba(229, 160, 13, 0.4);
+    }
+
     @media (max-width: 768px) {
       .library-header {
         padding: 24px 16px;
@@ -577,21 +593,52 @@ import { Book, CursorPageResponse } from '../models/book.model';
     }
   `]
 })
-export class BookListComponent implements OnInit {
+export class BookListComponent implements OnInit, OnDestroy {
   books = signal<Book[]>([]);
   loading = signal(true);
   nextCursor = signal<string | undefined>(undefined);
   previousCursor = signal<string | undefined>(undefined);
   limit = signal(20);
   currentPage = 1;
+  private pageHistory: string[] = [];
+  private popstateListener?: () => void;
 
   constructor(
     private bookService: BookService,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
+    private location: Location
   ) {}
 
   ngOnInit() {
     this.loadBooks();
+    this.setupBrowserBackSupport();
+  }
+
+  ngOnDestroy() {
+    if (this.popstateListener) {
+      window.removeEventListener('popstate', this.popstateListener);
+    }
+  }
+
+  private setupBrowserBackSupport() {
+    this.popstateListener = () => {
+      // Handle browser back/forward navigation
+      const state = window.history.state;
+      if (state && state.bookListPage && state.cursor !== undefined) {
+        this.currentPage = state.bookListPage;
+        this.loadBooks(state.cursor);
+      }
+    };
+    window.addEventListener('popstate', this.popstateListener);
+  }
+
+  private updateBrowserHistory(cursor?: string) {
+    const state = {
+      bookListPage: this.currentPage,
+      cursor: cursor
+    };
+    const url = `/books${cursor ? `?cursor=${encodeURIComponent(cursor)}` : ''}`;
+    window.history.pushState(state, '', url);
   }
 
   loadBooks(cursor?: string) {
@@ -616,6 +663,8 @@ export class BookListComponent implements OnInit {
   loadNext() {
     if (this.nextCursor()) {
       this.currentPage++;
+      this.pageHistory.push(this.nextCursor()!);
+      this.updateBrowserHistory(this.nextCursor());
       this.loadBooks(this.nextCursor());
     }
   }
@@ -623,8 +672,14 @@ export class BookListComponent implements OnInit {
   loadPrevious() {
     if (this.previousCursor()) {
       this.currentPage--;
+      this.pageHistory.pop(); // Remove current page from history
+      this.updateBrowserHistory(this.previousCursor());
       this.loadBooks(this.previousCursor());
     }
+  }
+
+  goBack() {
+    this.location.back();
   }
 
   getYear(dateString: string): string {
