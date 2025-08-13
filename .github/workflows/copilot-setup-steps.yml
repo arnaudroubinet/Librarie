@@ -60,6 +60,7 @@ jobs:
           npm -v
 
       - name: Install JavaScript dependencies
+        working-directory: ./frontend
         run: npm ci
 
       - name: Build application
