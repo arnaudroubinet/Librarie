@@ -173,9 +173,9 @@ public class Series extends PanacheEntityBase {
         
         // Find first book with a cover, ordered by series index
         return books.stream()
-            .filter(bookSeries -> bookSeries.book() != null && bookSeries.book().getHasCover())
-            .sorted((bs1, bs2) -> bs1.seriesIndex().compareTo(bs2.seriesIndex()))
-            .map(bookSeries -> bookSeries.book().getPath() + "/cover")
+            .filter(bookSeries -> bookSeries.getBook() != null && bookSeries.getBook().getHasCover())
+            .sorted((bs1, bs2) -> bs1.getSeriesIndex().compareTo(bs2.getSeriesIndex()))
+            .map(bookSeries -> bookSeries.getBook().getPath() + "/cover")
             .findFirst()
             .orElse(defaultCoverPath);
     }

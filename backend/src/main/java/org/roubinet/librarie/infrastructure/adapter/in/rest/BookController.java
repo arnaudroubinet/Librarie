@@ -637,9 +637,9 @@ public class BookController {
         // Handle series - extract from relationships
         if (book.getSeries() != null && !book.getSeries().isEmpty()) {
             BookSeries firstSeries = book.getSeries().iterator().next();
-            if (firstSeries.series() != null) {
-                dto.setSeries(firstSeries.series().getName());
-                dto.setSeriesIndex(firstSeries.seriesIndex().intValue());
+            if (firstSeries.getSeries() != null) {
+                dto.setSeries(firstSeries.getSeries().getName());
+                dto.setSeriesIndex(firstSeries.getSeriesIndex().intValue());
             }
         }
         

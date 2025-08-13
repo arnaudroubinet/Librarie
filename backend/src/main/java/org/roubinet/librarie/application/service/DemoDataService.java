@@ -580,15 +580,13 @@ public class DemoDataService {
         book.persist();
         
         // Link book to original work
-        // TODO: Fix BookOriginalWork entity for proper JPA compatibility
-        // BookOriginalWork bookOriginalWork = new BookOriginalWork(book, originalWork, 
-        //                                                          BookOriginalWorkRelationType.PRIMARY, 0);
-        // entityManager.persist(bookOriginalWork);
+        BookOriginalWork bookOriginalWork = new BookOriginalWork(book, originalWork, 
+                                                                  BookOriginalWorkRelationType.PRIMARY, 0);
+        entityManager.persist(bookOriginalWork);
         
         // Link book to series  
-        // TODO: Fix BookSeries entity for proper JPA compatibility
-        // BookSeries bookSeries = new BookSeries(book, seriesEntity, seriesIndex);
-        // entityManager.persist(bookSeries);
+        BookSeries bookSeries = new BookSeries(book, seriesEntity, seriesIndex);
+        entityManager.persist(bookSeries);
         
         // Update series book count
         seriesEntity.incrementBookCount();
@@ -624,10 +622,9 @@ public class DemoDataService {
         book.persist();
         
         // Link book to original work
-        // TODO: Fix BookOriginalWork entity for proper JPA compatibility
-        // BookOriginalWork bookOriginalWork = new BookOriginalWork(book, originalWork, 
-        //                                                          BookOriginalWorkRelationType.PRIMARY, 0);
-        // entityManager.persist(bookOriginalWork);
+        BookOriginalWork bookOriginalWork = new BookOriginalWork(book, originalWork, 
+                                                                  BookOriginalWorkRelationType.PRIMARY, 0);
+        entityManager.persist(bookOriginalWork);
     }
     
     private String generateRandomHash() {
