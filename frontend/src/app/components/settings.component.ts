@@ -6,8 +6,6 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { MatListModule } from '@angular/material/list';
-import { MatDividerModule } from '@angular/material/divider';
 import { SettingsService } from '../services/settings.service';
 import { SettingsResponse } from '../models/settings.model';
 
@@ -21,9 +19,7 @@ import { SettingsResponse } from '../models/settings.model';
     MatIconModule,
     MatProgressSpinnerModule,
     MatChipsModule,
-    MatSnackBarModule,
-    MatListModule,
-    MatDividerModule
+    MatSnackBarModule
   ],
   template: `
     <div class="settings-container">
@@ -106,27 +102,7 @@ import { SettingsResponse } from '../models/settings.model';
             </mat-card-content>
           </mat-card>
 
-          <!-- System Features -->
-          <mat-card class="features-card">
-            <mat-card-header>
-              <div mat-card-avatar>
-                <mat-icon>star</mat-icon>
-              </div>
-              <mat-card-title>System Features</mat-card-title>
-              <mat-card-subtitle>Available functionality</mat-card-subtitle>
-            </mat-card-header>
-            
-            <mat-card-content>
-              <mat-list>
-                @for (feature of systemFeatures(); track feature) {
-                  <mat-list-item>
-                    <mat-icon matListItemIcon>check_circle</mat-icon>
-                    <div matListItemTitle>{{ feature }}</div>
-                  </mat-list-item>
-                }
-              </mat-list>
-            </mat-card-content>
-          </mat-card>
+
         </div>
       }
     </div>
@@ -240,18 +216,6 @@ import { SettingsResponse } from '../models/settings.model';
       text-transform: capitalize;
     }
 
-    mat-list {
-      padding: 0;
-    }
-
-    mat-list-item {
-      font-size: 14px;
-    }
-
-    mat-icon[matListItemIcon] {
-      color: #4caf50;
-    }
-
     @media (max-width: 768px) {
       .settings-container {
         padding: 8px;
@@ -271,13 +235,12 @@ import { SettingsResponse } from '../models/settings.model';
 export class SettingsComponent implements OnInit {
   settingsData = signal<SettingsResponse | null>(null);
   loading = signal<boolean>(true);
-  systemFeatures = signal<string[]>([]);
+
 
   constructor(private settingsService: SettingsService, private snackBar: MatSnackBar) {}
 
   ngOnInit() {
     this.loadSettings();
-    this.loadSystemFeatures();
   }
 
   loadSettings() {
@@ -310,18 +273,7 @@ export class SettingsComponent implements OnInit {
     });
   }
 
-  loadSystemFeatures() {
-    this.systemFeatures.set([
-      'Multi-language title sorting (6 languages)',
-      'Cursor-based pagination for performance',
-      'REST API with OpenAPI documentation',
-      'Hexagonal architecture design',
-      'Book management with CRUD operations',
-      'Advanced search functionality',
-      'Reading progress tracking',
-      'Type-safe configuration system'
-    ]);
-  }
+
 
   getEntityStats() {
     const counts = this.settingsData()?.entityCounts;
