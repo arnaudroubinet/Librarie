@@ -49,8 +49,9 @@ public class DemoDataService {
         Map<String, Publisher> publishers = createPublishers();
         Map<String, Author> authors = createAuthors();
         
-        // Create simple standalone books only
-        createSimpleBooks(languages, publishers, authors);
+        // Create series and books with series relationships
+        Map<String, Series> series = createSeries();
+        createBooksAndOriginalWorks(languages, publishers, authors, series);
         
         LOG.info("Demo data population completed successfully");
     }
@@ -286,7 +287,7 @@ public class DemoDataService {
             createBookInSeries(titles[i], "Rowling, " + titles[i], 
                              authors.get("J.K. Rowling"), 
                              publishers.get("Bantam Books"),
-                             languages.get("en"), 
+                             languages.get("en-US"), 
                              series.get("Harry Potter"),
                              BigDecimal.valueOf(i + 1),
                              years[i]);
@@ -307,7 +308,7 @@ public class DemoDataService {
             createBookInSeries(titles[i], "Tolkien, " + titles[i],
                              authors.get("J.R.R. Tolkien"),
                              publishers.get("Bantam Books"),
-                             languages.get("en"),
+                             languages.get("en-US"),
                              series.get("The Lord of the Rings"),
                              BigDecimal.valueOf(i + 1),
                              1954 + i);
@@ -334,7 +335,7 @@ public class DemoDataService {
             createBookInSeries(titles[i], "Asimov, " + titles[i],
                              authors.get("Isaac Asimov"),
                              publishers.get("Bantam Books"),
-                             languages.get("en"),
+                             languages.get("en-US"),
                              series.get("Foundation"),
                              BigDecimal.valueOf(i + 1),
                              years[i]);
@@ -363,7 +364,7 @@ public class DemoDataService {
             createBookInSeries(titles[i], "Doyle, " + titles[i],
                              authors.get("Arthur Conan Doyle"),
                              publishers.get("Penguin Random House"),
-                             languages.get("en"),
+                             languages.get("en-US"),
                              series.get("Sherlock Holmes"),
                              BigDecimal.valueOf(i + 1),
                              years[i]);
@@ -399,7 +400,7 @@ public class DemoDataService {
             createBookInSeries(titles[i], "Christie, " + titles[i],
                              authors.get("Agatha Christie"),
                              publishers.get("HarperCollins"),
-                             languages.get("en"),
+                             languages.get("en-US"),
                              series.get("Hercule Poirot"),
                              BigDecimal.valueOf(i + 1),
                              startYear + i * 2);
@@ -433,7 +434,7 @@ public class DemoDataService {
             createBookInSeries(titles[i], "Child, " + titles[i],
                              authors.get("Lee Child"),
                              publishers.get("Bantam Books"),
-                             languages.get("en"),
+                             languages.get("en-US"),
                              series.get("Jack Reacher"),
                              BigDecimal.valueOf(i + 1),
                              startYear + i);
@@ -478,7 +479,7 @@ public class DemoDataService {
                                    author.getSortName() + ", " + bookData[0],
                                    author,
                                    publishers.get(publisherName),
-                                   languages.get("en"),
+                                   languages.get("en-US"),
                                    Integer.parseInt(bookData[2]));
             }
         }
@@ -537,7 +538,7 @@ public class DemoDataService {
                                author.getSortName() + ", " + title,
                                author,
                                publishers.get(publisherName),
-                               languages.get("en"),
+                               languages.get("en-US"),
                                year);
         }
     }
