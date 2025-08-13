@@ -6,8 +6,6 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { MatListModule } from '@angular/material/list';
-import { MatDividerModule } from '@angular/material/divider';
 import { SettingsService } from '../services/settings.service';
 import { SettingsResponse } from '../models/settings.model';
 
@@ -21,9 +19,7 @@ import { SettingsResponse } from '../models/settings.model';
     MatIconModule,
     MatProgressSpinnerModule,
     MatChipsModule,
-    MatSnackBarModule,
-    MatListModule,
-    MatDividerModule
+    MatSnackBarModule
   ],
   template: `
     <div class="settings-container">
@@ -106,27 +102,7 @@ import { SettingsResponse } from '../models/settings.model';
             </mat-card-content>
           </mat-card>
 
-          <!-- System Features -->
-          <mat-card class="features-card">
-            <mat-card-header>
-              <div mat-card-avatar>
-                <mat-icon>star</mat-icon>
-              </div>
-              <mat-card-title>System Features</mat-card-title>
-              <mat-card-subtitle>Available functionality</mat-card-subtitle>
-            </mat-card-header>
-            
-            <mat-card-content>
-              <mat-list>
-                @for (feature of systemFeatures(); track feature) {
-                  <mat-list-item>
-                    <mat-icon matListItemIcon>check_circle</mat-icon>
-                    <div matListItemTitle>{{ feature }}</div>
-                  </mat-list-item>
-                }
-              </mat-list>
-            </mat-card-content>
-          </mat-card>
+
         </div>
       }
     </div>
@@ -135,7 +111,14 @@ import { SettingsResponse } from '../models/settings.model';
     .settings-container {
       max-width: 1200px;
       margin: 0 auto;
-      padding: 16px;
+      padding: 24px;
+    }
+
+    .settings-container h1 {
+      font-size: clamp(1.8rem, 4vw, 2.5rem);
+      margin-bottom: 24px;
+      font-weight: 600;
+      color: var(--text-primary);
     }
 
     .loading-container {
@@ -149,13 +132,21 @@ import { SettingsResponse } from '../models/settings.model';
 
     .dashboard-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-      gap: 16px;
-      margin-top: 24px;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 20px;
+      margin-top: 32px;
     }
 
     mat-card {
       height: fit-content;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    mat-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
     }
 
     mat-card-header [mat-card-avatar] {
@@ -164,14 +155,27 @@ import { SettingsResponse } from '../models/settings.model';
       display: flex;
       align-items: center;
       justify-content: center;
+      border-radius: 8px;
+    }
+
+    mat-card-title {
+      font-size: clamp(1.1rem, 2.5vw, 1.25rem);
+      font-weight: 600;
+    }
+
+    mat-card-subtitle {
+      font-size: clamp(0.875rem, 2vw, 0.95rem);
+      opacity: 0.8;
     }
 
     .stat-row {
       display: flex;
       justify-content: space-between;
+      align-items: center;
       margin: 12px 0;
-      padding: 8px 0;
+      padding: 12px 0;
       border-bottom: 1px solid #eee;
+      min-height: 24px;
     }
 
     .stat-row:last-child {
@@ -181,32 +185,39 @@ import { SettingsResponse } from '../models/settings.model';
     .stat-label {
       font-weight: 500;
       color: var(--text-secondary);
+      font-size: clamp(0.875rem, 2vw, 0.95rem);
     }
 
     .stat-value {
       font-weight: 600;
       color: var(--text-primary);
+      font-size: clamp(0.875rem, 2vw, 0.95rem);
+      text-align: right;
     }
 
     .formats-container {
       display: flex;
       flex-wrap: wrap;
       gap: 8px;
-      max-height: 200px;
+      max-height: 220px;
       overflow-y: auto;
+      padding: 4px;
     }
 
     .format-chip {
-      font-size: 11px;
-      height: 24px;
-      line-height: 24px;
+      font-size: clamp(10px, 2vw, 11px);
+      height: 28px;
+      line-height: 28px;
+      padding: 0 12px;
       background-color: #e3f2fd;
       color: #1976d2;
+      border-radius: 14px;
+      font-weight: 500;
     }
 
     .stats-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
       gap: 16px;
     }
 
@@ -214,56 +225,182 @@ import { SettingsResponse } from '../models/settings.model';
       display: flex;
       align-items: center;
       gap: 12px;
-      padding: 12px;
-      background: #f8f9fa;
-      border-radius: 8px;
+      padding: 16px;
+      background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+      border-radius: 12px;
+      transition: transform 0.2s ease, background 0.2s ease;
+      min-height: 60px;
+    }
+
+    .stat-item:hover {
+      transform: translateY(-1px);
+      background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%);
     }
 
     .stat-icon {
       color: #1976d2;
+      font-size: clamp(20px, 3vw, 24px);
+      flex-shrink: 0;
     }
 
     .stat-content {
       display: flex;
       flex-direction: column;
+      gap: 2px;
+      min-width: 0;
     }
 
     .stat-count {
-      font-size: 24px;
+      font-size: clamp(1.25rem, 3vw, 1.5rem);
       font-weight: bold;
       color: #1976d2;
+      line-height: 1.2;
     }
 
     .stat-name {
-      font-size: 12px;
+      font-size: clamp(0.75rem, 2vw, 0.8rem);
       color: #666;
       text-transform: capitalize;
+      line-height: 1.2;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
-    mat-list {
-      padding: 0;
-    }
-
-    mat-list-item {
-      font-size: 14px;
-    }
-
-    mat-icon[matListItemIcon] {
-      color: #4caf50;
-    }
-
-    @media (max-width: 768px) {
+    /* Desktop styles (1200px and up) */
+    @media (min-width: 1200px) {
       .settings-container {
-        padding: 8px;
+        padding: 32px;
+      }
+      
+      .dashboard-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 24px;
+      }
+    }
+
+    /* Tablet styles (768px to 1199px) */
+    @media (min-width: 768px) and (max-width: 1199px) {
+      .settings-container {
+        padding: 20px;
+      }
+      
+      .dashboard-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 18px;
+        margin-top: 28px;
+      }
+
+      .stats-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+
+    /* Mobile styles (480px to 767px) */
+    @media (min-width: 480px) and (max-width: 767px) {
+      .settings-container {
+        padding: 16px;
       }
       
       .dashboard-grid {
         grid-template-columns: 1fr;
-        gap: 12px;
+        gap: 16px;
+        margin-top: 24px;
       }
 
       .stats-grid {
         grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+      }
+
+      .stat-item {
+        padding: 14px;
+        min-height: 56px;
+      }
+
+      .format-chip {
+        height: 26px;
+        line-height: 26px;
+        padding: 0 10px;
+      }
+    }
+
+    /* Small mobile styles (up to 479px) */
+    @media (max-width: 479px) {
+      .settings-container {
+        padding: 12px;
+      }
+      
+      .dashboard-grid {
+        grid-template-columns: 1fr;
+        gap: 14px;
+        margin-top: 20px;
+      }
+
+      .stats-grid {
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
+
+      .stat-item {
+        padding: 12px;
+        min-height: 52px;
+        gap: 10px;
+      }
+
+      .stat-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+        padding: 10px 0;
+      }
+
+      .stat-value {
+        text-align: left;
+        font-weight: 700;
+      }
+
+      .format-chip {
+        height: 24px;
+        line-height: 24px;
+        padding: 0 8px;
+        font-size: 10px;
+      }
+
+      .formats-container {
+        max-height: 180px;
+      }
+
+      mat-card-content {
+        padding: 12px !important;
+      }
+
+      mat-card-header {
+        padding: 12px 12px 0 12px !important;
+      }
+    }
+
+    /* Ultra-wide screen optimization */
+    @media (min-width: 1600px) {
+      .settings-container {
+        max-width: 1400px;
+        padding: 40px;
+      }
+      
+      .dashboard-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 32px;
+      }
+    }
+
+    /* High DPI display optimization */
+    @media (min-resolution: 2dppx) {
+      mat-card {
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+      }
+      
+      mat-card:hover {
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
       }
     }
   `]
@@ -271,13 +408,12 @@ import { SettingsResponse } from '../models/settings.model';
 export class SettingsComponent implements OnInit {
   settingsData = signal<SettingsResponse | null>(null);
   loading = signal<boolean>(true);
-  systemFeatures = signal<string[]>([]);
+
 
   constructor(private settingsService: SettingsService, private snackBar: MatSnackBar) {}
 
   ngOnInit() {
     this.loadSettings();
-    this.loadSystemFeatures();
   }
 
   loadSettings() {
@@ -310,18 +446,7 @@ export class SettingsComponent implements OnInit {
     });
   }
 
-  loadSystemFeatures() {
-    this.systemFeatures.set([
-      'Multi-language title sorting (6 languages)',
-      'Cursor-based pagination for performance',
-      'REST API with OpenAPI documentation',
-      'Hexagonal architecture design',
-      'Book management with CRUD operations',
-      'Advanced search functionality',
-      'Reading progress tracking',
-      'Type-safe configuration system'
-    ]);
-  }
+
 
   getEntityStats() {
     const counts = this.settingsData()?.entityCounts;
