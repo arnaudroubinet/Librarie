@@ -51,6 +51,12 @@ public class DemoDataService {
         Map<String, Series> series = createComprehensiveSeries();
         
         // Create comprehensive books with proper relationships
+        LOG.infof("Creating books with authors: Tolkien=%s, Jordan=%s, Sanderson=%s, King=%s, Asimov=%s", 
+                 authors.get("J.R.R. Tolkien") != null ? authors.get("J.R.R. Tolkien").getName() : "NULL",
+                 authors.get("Robert Jordan") != null ? authors.get("Robert Jordan").getName() : "NULL", 
+                 authors.get("Brandon Sanderson") != null ? authors.get("Brandon Sanderson").getName() : "NULL",
+                 authors.get("Stephen King") != null ? authors.get("Stephen King").getName() : "NULL",
+                 authors.get("Isaac Asimov") != null ? authors.get("Isaac Asimov").getName() : "NULL");
         createComprehensiveBooks(languages, publishers, authors, series);
         
         LOG.info("Demo data population completed successfully");
@@ -575,6 +581,8 @@ public class DemoDataService {
     private void createBookInSeries(String title, String titleSort, Author author, Publisher publisher,
                                    Language language, Series seriesEntity, BigDecimal seriesIndex, int year,
                                    String coverUrl, String description) {
+        LOG.infof("Creating book '%s' with author '%s'", title, author.getName());
+        
         // Create original work
         OriginalWork originalWork = new OriginalWork();
         originalWork.setTitle(title);

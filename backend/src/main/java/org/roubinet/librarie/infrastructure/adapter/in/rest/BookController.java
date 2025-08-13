@@ -4,6 +4,9 @@ import org.roubinet.librarie.application.port.in.BookUseCase;
 import org.roubinet.librarie.application.port.in.BookSearchCriteria;
 import org.roubinet.librarie.domain.entity.Book;
 import org.roubinet.librarie.domain.entity.BookSeries;
+import org.roubinet.librarie.domain.entity.BookOriginalWork;
+import org.roubinet.librarie.domain.entity.OriginalWork;
+import org.roubinet.librarie.domain.entity.OriginalWorkAuthor;
 import org.roubinet.librarie.infrastructure.adapter.in.rest.dto.BookRequestDto;
 import org.roubinet.librarie.infrastructure.adapter.in.rest.dto.BookResponseDto;
 import org.roubinet.librarie.infrastructure.adapter.in.rest.dto.PageResponseDto;
@@ -25,9 +28,11 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
 import java.util.List;
+import java.util.ArrayList;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.Map;
+import java.util.HashMap;
 import java.util.HashMap;
 import java.util.stream.Collectors;
 
@@ -656,12 +661,36 @@ public class BookController {
     private Map<String, List<String>> extractContributorsFromBook(Book book) {
         Map<String, List<String>> contributors = new HashMap<>();
         
-        // In a real implementation, this would extract from contributor relationships
-        // For now, try to get from metadata or create default structure
-        if (book.getMetadata() != null) {
-            if (book.getMetadata().containsKey("author")) {
-                contributors.put("author", List.of((String) book.getMetadata().get("author")));
+        // Extract authors from OriginalWorkAuthor relationships through BookOriginalWork
+        List<String> authors = new ArrayList<>();
+        
+        if (book.getOriginalWorks() != null) {
+            for (BookOriginalWork bookOriginalWork : book.getOriginalWorks()) {
+                OriginalWork originalWork = bookOriginalWork.getOriginalWork();
+                if (originalWork != null && originalWork.getAuthors() != null) {
+                    for (OriginalWorkAuthor originalWorkAuthor : originalWork.getAuthors()) {
+                        if (originalWorkAuthor.getAuthor() != null) {
+                            authors.add(originalWorkAuthor.getAuthor().getName());
+                        }
+                    }
+                }
             }
+        }
+        
+        // Fallback to metadata if no relationship authors found
+        if (authors.isEmpty() && book.getMetadata() != null) {
+            if (book.getMetadata().containsKey("author")) {
+                authors.add((String) book.getMetadata().get("author"));
+            }
+        }
+        
+        // Set authors in contributors
+        if (!authors.isEmpty()) {
+            contributors.put("author", authors);
+        }
+        
+        // Handle other contributor types from metadata
+        if (book.getMetadata() != null) {
             if (book.getMetadata().containsKey("illustrator")) {
                 contributors.put("illustrator", List.of((String) book.getMetadata().get("illustrator")));
             }
@@ -670,9 +699,9 @@ public class BookController {
             }
         }
         
-        // Default if no contributors found
+        // Default if no contributors found at all
         if (contributors.isEmpty()) {
-            contributors.put("author", List.of("J.R.R. Tolkien"));
+            contributors.put("author", List.of("Unknown Author"));
         }
         
         return contributors;
