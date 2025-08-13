@@ -3,6 +3,10 @@ package org.roubinet.librarie.infrastructure.adapter.in.rest;
 import org.roubinet.librarie.application.port.in.AuthorUseCase;
 import org.roubinet.librarie.domain.entity.Author;
 import org.roubinet.librarie.infrastructure.adapter.in.rest.dto.AuthorResponseDto;
+import org.roubinet.librarie.infrastructure.adapter.in.rest.dto.PageResponseDto;
+import org.roubinet.librarie.infrastructure.adapter.in.rest.dto.pagination.CursorPageResult;
+import org.roubinet.librarie.infrastructure.config.LibrarieConfigProperties;
+import org.roubinet.librarie.infrastructure.security.InputSanitizationService;
 
 import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.eclipse.microprofile.openapi.annotations.media.Content;
@@ -31,27 +35,63 @@ import java.util.stream.Collectors;
 public class AuthorController {
     
     private final AuthorUseCase authorUseCase;
+    private final InputSanitizationService sanitizationService;
+    private final LibrarieConfigProperties config;
     
     @Inject
-    public AuthorController(AuthorUseCase authorUseCase) {
+    public AuthorController(AuthorUseCase authorUseCase,
+                           InputSanitizationService sanitizationService,
+                           LibrarieConfigProperties config) {
         this.authorUseCase = authorUseCase;
+        this.sanitizationService = sanitizationService;
+        this.config = config;
     }
     
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    @Operation(summary = "Get all authors", description = "Retrieve all authors")
+    @Operation(summary = "Get all authors with cursor-based pagination", description = "Retrieve all authors using keyset pagination")
     @APIResponses(value = {
         @APIResponse(responseCode = "200", description = "Authors retrieved successfully",
-            content = @Content(schema = @Schema(implementation = AuthorResponseDto.class)))
+            content = @Content(schema = @Schema(implementation = PageResponseDto.class)))
     })
-    public Response getAllAuthors() {
+    public Response getAllAuthors(
+            @Parameter(description = "Cursor for pagination", example = "eyJpZCI6IjEyMyIsInRpbWVzdGFtcCI6IjIwMjQtMDEtMDFUMTA6MDA6MDBaIn0=")
+            @QueryParam("cursor") String cursor,
+            @Parameter(description = "Number of items to return", example = "20")
+            @DefaultValue("20") @QueryParam("limit") int limit) {
+        
         try {
-            List<Author> authors = authorUseCase.getAllAuthors();
-            List<AuthorResponseDto> authorDtos = authors.stream()
+            // Validate and sanitize inputs
+            if (limit <= 0) {
+                limit = config.pagination().defaultPageSize();
+            }
+            if (limit > config.pagination().maxPageSize()) {
+                limit = config.pagination().maxPageSize();
+            }
+            
+            // Use cursor pagination
+            CursorPageResult<Author> pageResult = authorUseCase.getAllAuthors(cursor, limit);
+            
+            List<AuthorResponseDto> authorDtos = pageResult.getItems().stream()
                 .map(this::toDto)
                 .collect(Collectors.toList());
             
-            return Response.ok(authorDtos).build();
+            PageResponseDto<AuthorResponseDto> response = new PageResponseDto<>(
+                authorDtos, 
+                pageResult.getNextCursor(), 
+                pageResult.getPreviousCursor(), 
+                pageResult.getLimit(),
+                pageResult.isHasNext(),
+                pageResult.isHasPrevious(),
+                pageResult.getTotalCount()
+            );
+            
+            return Response.ok(response).build();
+            
+        } catch (SecurityException e) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                .entity("Security validation failed: " + e.getMessage())
+                .build();
         } catch (Exception e) {
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
                 .entity("Internal server error: " + e.getMessage())
@@ -62,7 +102,7 @@ public class AuthorController {
     @GET
     @Path("/{id}")
     @Produces(MediaType.APPLICATION_JSON)
-    @Operation(summary = "Get author by ID", description = "Retrieve a specific author by its UUID")
+    @Operation(summary = "Get author by ID", description = "Retrieve a specific author by their UUID")
     @APIResponses(value = {
         @APIResponse(responseCode = "200", description = "Author found",
             content = @Content(schema = @Schema(implementation = AuthorResponseDto.class))),
@@ -97,22 +137,60 @@ public class AuthorController {
     @GET
     @Path("/search")
     @Produces(MediaType.APPLICATION_JSON)
-    @Operation(summary = "Search authors", description = "Search authors by name")
+    @Operation(summary = "Search authors", description = "Search authors by name with cursor pagination")
     @APIResponses(value = {
         @APIResponse(responseCode = "200", description = "Search completed successfully",
-            content = @Content(schema = @Schema(implementation = AuthorResponseDto.class)))
+            content = @Content(schema = @Schema(implementation = PageResponseDto.class)))
     })
     public Response searchAuthors(
             @Parameter(description = "Search query", required = true)
-            @QueryParam("q") String query) {
+            @QueryParam("q") String query,
+            @Parameter(description = "Cursor for pagination")
+            @QueryParam("cursor") String cursor,
+            @Parameter(description = "Number of items to return", example = "20")
+            @DefaultValue("20") @QueryParam("limit") int limit) {
         
         try {
-            List<Author> authors = authorUseCase.searchAuthors(query);
-            List<AuthorResponseDto> authorDtos = authors.stream()
+            if (query == null || query.trim().isEmpty()) {
+                return Response.status(Response.Status.BAD_REQUEST)
+                    .entity("Search query is required")
+                    .build();
+            }
+            
+            // Sanitize search query
+            String sanitizedQuery = sanitizationService.sanitizeSearchQuery(query);
+            
+            // Validate limit
+            if (limit <= 0) {
+                limit = config.pagination().defaultPageSize();
+            }
+            if (limit > config.pagination().maxPageSize()) {
+                limit = config.pagination().maxPageSize();
+            }
+            
+            // Use cursor pagination
+            CursorPageResult<Author> pageResult = authorUseCase.searchAuthors(sanitizedQuery, cursor, limit);
+            
+            List<AuthorResponseDto> authorDtos = pageResult.getItems().stream()
                 .map(this::toDto)
                 .collect(Collectors.toList());
             
-            return Response.ok(authorDtos).build();
+            PageResponseDto<AuthorResponseDto> response = new PageResponseDto<>(
+                authorDtos, 
+                pageResult.getNextCursor(), 
+                pageResult.getPreviousCursor(), 
+                pageResult.getLimit(),
+                pageResult.isHasNext(),
+                pageResult.isHasPrevious(),
+                pageResult.getTotalCount()
+            );
+            
+            return Response.ok(response).build();
+            
+        } catch (SecurityException e) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                .entity("Security validation failed: " + e.getMessage())
+                .build();
         } catch (Exception e) {
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
                 .entity("Internal server error: " + e.getMessage())
@@ -120,7 +198,14 @@ public class AuthorController {
         }
     }
     
+    /**
+     * Convert Author entity to DTO.
+     */
     private AuthorResponseDto toDto(Author author) {
+        if (author == null) {
+            return null;
+        }
+        
         AuthorResponseDto dto = new AuthorResponseDto();
         dto.setId(author.getId());
         dto.setName(author.getName());
@@ -132,6 +217,7 @@ public class AuthorController {
         dto.setMetadata(author.getMetadata());
         dto.setCreatedAt(author.getCreatedAt());
         dto.setUpdatedAt(author.getUpdatedAt());
+        
         return dto;
     }
 }
