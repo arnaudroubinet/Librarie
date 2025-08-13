@@ -39,6 +39,10 @@ import { MatBadgeModule } from '@angular/material/badge';
             <mat-icon>library_books</mat-icon>
             <span>Series</span>
           </a>
+          <a mat-button class="nav-item" routerLink="/authors" routerLinkActive="active">
+            <mat-icon>people</mat-icon>
+            <span>Authors</span>
+          </a>
           <a mat-button class="nav-item" routerLink="/search" routerLinkActive="active">
             <mat-icon>search</mat-icon>
             <span>Search</span>
