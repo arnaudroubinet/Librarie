@@ -42,15 +42,22 @@ public class DemoDataService {
             return;
         }
         
-        LOG.info("Demo mode enabled, populating demo data...");
+        LOG.info("Demo mode enabled, populating comprehensive demo data...");
         
         // Create reference data first
         Map<String, Language> languages = createLanguages();
         Map<String, Publisher> publishers = createPublishers();
-        Map<String, Author> authors = createAuthors();
+        Map<String, Author> authors = createComprehensiveAuthors();
+        Map<String, Series> series = createComprehensiveSeries();
         
-        // Create simple standalone books only
-        createSimpleBooks(languages, publishers, authors);
+        // Create comprehensive books with proper relationships
+        LOG.infof("Creating books with authors: Tolkien=%s, Jordan=%s, Sanderson=%s, King=%s, Asimov=%s", 
+                 authors.get("J.R.R. Tolkien") != null ? authors.get("J.R.R. Tolkien").getName() : "NULL",
+                 authors.get("Robert Jordan") != null ? authors.get("Robert Jordan").getName() : "NULL", 
+                 authors.get("Brandon Sanderson") != null ? authors.get("Brandon Sanderson").getName() : "NULL",
+                 authors.get("Stephen King") != null ? authors.get("Stephen King").getName() : "NULL",
+                 authors.get("Isaac Asimov") != null ? authors.get("Isaac Asimov").getName() : "NULL");
+        createComprehensiveBooks(languages, publishers, authors, series);
         
         LOG.info("Demo data population completed successfully");
     }
@@ -128,503 +135,432 @@ public class DemoDataService {
         return publishers;
     }
     
-    private Map<String, Author> createAuthors() {
+    private Map<String, Author> createComprehensiveAuthors() {
         Map<String, Author> authors = new HashMap<>();
         
-        String[][] authorData = {
-            // Classic Literature
-            {"Jane Austen", "Austen, Jane", "1775", "1817"},
-            {"Charles Dickens", "Dickens, Charles", "1812", "1870"},
-            {"William Shakespeare", "Shakespeare, William", "1564", "1616"},
-            {"Leo Tolstoy", "Tolstoy, Leo", "1828", "1910"},
-            {"Mark Twain", "Twain, Mark", "1835", "1910"},
-            {"Emily Brontë", "Brontë, Emily", "1818", "1848"},
-            {"Charlotte Brontë", "Brontë, Charlotte", "1816", "1855"},
-            {"George Orwell", "Orwell, George", "1903", "1950"},
-            {"Virginia Woolf", "Woolf, Virginia", "1882", "1941"},
-            {"James Joyce", "Joyce, James", "1882", "1941"},
-            
-            // Modern Fiction
-            {"J.K. Rowling", "Rowling, J.K.", "1965", null},
-            {"Stephen King", "King, Stephen", "1947", null},
-            {"Margaret Atwood", "Atwood, Margaret", "1939", null},
-            {"Haruki Murakami", "Murakami, Haruki", "1949", null},
-            {"Toni Morrison", "Morrison, Toni", "1931", "2019"},
-            {"Gabriel García Márquez", "Márquez, Gabriel García", "1927", "2014"},
-            {"Isabel Allende", "Allende, Isabel", "1942", null},
-            {"Paulo Coelho", "Coelho, Paulo", "1947", null},
-            {"Dan Brown", "Brown, Dan", "1964", null},
-            {"John Grisham", "Grisham, John", "1955", null},
-            
-            // Science Fiction & Fantasy
-            {"Isaac Asimov", "Asimov, Isaac", "1920", "1992"},
-            {"Arthur C. Clarke", "Clarke, Arthur C.", "1917", "2008"},
-            {"Robert Heinlein", "Heinlein, Robert", "1907", "1988"},
-            {"Philip K. Dick", "Dick, Philip K.", "1928", "1982"},
-            {"Ursula K. Le Guin", "Le Guin, Ursula K.", "1929", "2018"},
-            {"Frank Herbert", "Herbert, Frank", "1920", "1986"},
-            {"J.R.R. Tolkien", "Tolkien, J.R.R.", "1892", "1973"},
-            {"George R.R. Martin", "Martin, George R.R.", "1948", null},
-            {"Brandon Sanderson", "Sanderson, Brandon", "1975", null},
-            {"Neil Gaiman", "Gaiman, Neil", "1960", null},
-            
-            // Mystery & Thriller
-            {"Agatha Christie", "Christie, Agatha", "1890", "1976"},
-            {"Arthur Conan Doyle", "Doyle, Arthur Conan", "1859", "1930"},
-            {"Raymond Chandler", "Chandler, Raymond", "1888", "1959"},
-            {"Dashiell Hammett", "Hammett, Dashiell", "1894", "1961"},
-            {"Michael Crichton", "Crichton, Michael", "1942", "2008"},
-            {"Tom Clancy", "Clancy, Tom", "1947", "2013"},
-            {"Lee Child", "Child, Lee", "1954", null},
-            {"James Patterson", "Patterson, James", "1947", null},
-            {"Gillian Flynn", "Flynn, Gillian", "1971", null},
-            {"Louise Penny", "Penny, Louise", "1958", null}
-        };
+        // J.R.R. Tolkien
+        Author tolkien = new Author();
+        tolkien.setName("J.R.R. Tolkien");
+        tolkien.setSortName("Tolkien, J.R.R.");
+        tolkien.setBirthDate(LocalDate.of(1892, 1, 3));
+        tolkien.setDeathDate(LocalDate.of(1973, 9, 2));
+        tolkien.setBio(Map.of("en", "John Ronald Reuel Tolkien was an English writer, poet, philologist, and academic, best known as the author of the high fantasy works The Hobbit and The Lord of the Rings."));
+        tolkien.setWebsiteUrl("https://www.tolkienestate.com/");
+        tolkien.setMetadata(Map.of(
+            "nationality", "British",
+            "genres", List.of("Fantasy", "Philology"),
+            "education", "Oxford University",
+            "imageUrl", "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d4/J._R._R._Tolkien%2C_ca._1925.jpg/256px-J._R._R._Tolkien%2C_ca._1925.jpg"
+        ));
+        tolkien.persist();
+        authors.put("J.R.R. Tolkien", tolkien);
         
-        for (String[] data : authorData) {
-            // Check if author already exists by name
-            Author existing = Author.find("name", data[0]).firstResult();
-            if (existing == null) {
-                Author author = new Author();
-                author.setName(data[0]);
-                author.setSortName(data[1]);
-                author.setBirthDate(data[2] != null ? LocalDate.of(Integer.parseInt(data[2]), 1, 1) : null);
-                author.setDeathDate(data[3] != null ? LocalDate.of(Integer.parseInt(data[3]), 1, 1) : null);
-                author.setBio(Map.of("en", "Renowned author known for literary contributions to world literature."));
-                author.persist();
-                authors.put(data[0], author);
-            } else {
-                authors.put(data[0], existing);
-            }
-        }
+        // Robert Jordan
+        Author jordan = new Author();
+        jordan.setName("Robert Jordan");
+        jordan.setSortName("Jordan, Robert");
+        jordan.setBirthDate(LocalDate.of(1948, 10, 17));
+        jordan.setDeathDate(LocalDate.of(2007, 9, 16));
+        jordan.setBio(Map.of("en", "Robert Jordan was an American author of epic fantasy. He is best known for the Wheel of Time series, which comprises 14 books and a prequel novel."));
+        jordan.setWebsiteUrl("https://www.dragonmount.com/");
+        jordan.setMetadata(Map.of(
+            "nationality", "American",
+            "genres", List.of("Epic Fantasy"),
+            "realName", "James Oliver Rigney Jr.",
+            "imageUrl", "https://upload.wikimedia.org/wikipedia/en/thumb/8/81/Robert_Jordan.jpg/256px-Robert_Jordan.jpg"
+        ));
+        jordan.persist();
+        authors.put("Robert Jordan", jordan);
         
+        // Brandon Sanderson  
+        Author sanderson = new Author();
+        sanderson.setName("Brandon Sanderson");
+        sanderson.setSortName("Sanderson, Brandon");
+        sanderson.setBirthDate(LocalDate.of(1975, 12, 19));
+        sanderson.setBio(Map.of("en", "Brandon Sanderson is an American author of epic fantasy and science fiction. He is best known for the Cosmere fictional universe, in which most of his fantasy novels, most notably the Mistborn series and The Stormlight Archive, are set."));
+        sanderson.setWebsiteUrl("https://www.brandonsanderson.com/");
+        sanderson.setMetadata(Map.of(
+            "nationality", "American",
+            "genres", List.of("Epic Fantasy", "Science Fiction"),
+            "university", "Brigham Young University",
+            "imageUrl", "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3c/Brandon_Sanderson_sign_autographs_2024.jpg/256px-Brandon_Sanderson_sign_autographs_2024.jpg"
+        ));
+        sanderson.persist();
+        authors.put("Brandon Sanderson", sanderson);
+        
+        // Stephen King
+        Author king = new Author();
+        king.setName("Stephen King");
+        king.setSortName("King, Stephen");
+        king.setBirthDate(LocalDate.of(1947, 9, 21));
+        king.setBio(Map.of("en", "Stephen Edwin King is an American author of horror, supernatural fiction, suspense, crime, science-fiction, and fantasy novels. He has published 64 novels, including seven under the pen name Richard Bachman, and more than 200 short stories."));
+        king.setWebsiteUrl("https://stephenking.com/");
+        king.setMetadata(Map.of(
+            "nationality", "American",
+            "genres", List.of("Horror", "Supernatural Fiction", "Suspense", "Science Fiction"),
+            "penNames", List.of("Richard Bachman"),
+            "imageUrl", "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e3/Stephen_King%2C_Comicon.jpg/256px-Stephen_King%2C_Comicon.jpg"
+        ));
+        king.persist();
+        authors.put("Stephen King", king);
+        
+        // Isaac Asimov
+        Author asimov = new Author();
+        asimov.setName("Isaac Asimov");
+        asimov.setSortName("Asimov, Isaac");
+        asimov.setBirthDate(LocalDate.of(1920, 1, 2));
+        asimov.setDeathDate(LocalDate.of(1992, 4, 6));
+        asimov.setBio(Map.of("en", "Isaac Asimov was an American writer and professor of biochemistry at Boston University. He was known for his works of science fiction and popular science. Asimov was a prolific writer who wrote or edited more than 500 books."));
+        asimov.setWebsiteUrl("https://www.asimovonline.com/");
+        asimov.setMetadata(Map.of(
+            "nationality", "American",
+            "genres", List.of("Science Fiction", "Popular Science", "Mystery"),
+            "profession", "Biochemist",
+            "imageUrl", "https://upload.wikimedia.org/wikipedia/commons/thumb/3/34/Isaac.Asimov01.jpg/256px-Isaac.Asimov01.jpg"
+        ));
+        asimov.persist();
+        authors.put("Isaac Asimov", asimov);
+        
+        LOG.infof("Created %d comprehensive authors", authors.size());
         return authors;
     }
     
-    private Map<String, Series> createSeries() {
+    private Map<String, Series> createComprehensiveSeries() {
         Map<String, Series> series = new HashMap<>();
         
-        String[][] seriesData = {
-            {"Harry Potter", "Potter, Harry", "The magical adventures of Harry Potter at Hogwarts School of Witchcraft and Wizardry."},
-            {"The Chronicles of Narnia", "Chronicles of Narnia, The", "Fantasy series about children who discover a magical land through a wardrobe."},
-            {"A Song of Ice and Fire", "Song of Ice and Fire, A", "Epic fantasy series set in the fictional Seven Kingdoms of Westeros."},
-            {"The Lord of the Rings", "Lord of the Rings, The", "Epic high fantasy adventure in Middle-earth."},
-            {"Foundation", "Foundation", "Science fiction series about psychohistory and the fall of the Galactic Empire."},
-            {"Dune Chronicles", "Dune Chronicles", "Science fiction saga set in the distant future on the desert planet Arrakis."},
-            {"The Wheel of Time", "Wheel of Time, The", "High fantasy series following the Dragon Reborn and the Last Battle."},
-            {"Hercule Poirot", "Poirot, Hercule", "Mystery series featuring the Belgian detective Hercule Poirot."},
-            {"Sherlock Holmes", "Holmes, Sherlock", "Classic detective stories featuring the brilliant consulting detective."},
-            {"Jack Reacher", "Reacher, Jack", "Thriller series following former military police officer Jack Reacher."},
-            {"The Hunger Games", "Hunger Games, The", "Dystopian trilogy set in post-apocalyptic North America."},
-            {"Twilight", "Twilight", "Vampire romance series set in the Pacific Northwest."},
-            {"The Millennium Trilogy", "Millennium Trilogy, The", "Swedish crime thriller series featuring Lisbeth Salander."},
-            {"The Dark Tower", "Dark Tower, The", "Dark fantasy series blending elements of science fiction, horror, and westerns."},
-            {"Discworld", "Discworld", "Comic fantasy series set on a flat world carried by four elephants on a giant turtle."},
-            {"The Culture", "Culture, The", "Science fiction series about a post-scarcity anarchist utopia."},
-            {"Outlander", "Outlander", "Historical fiction series featuring time travel and romance."},
-            {"The Expanse", "Expanse, The", "Space opera series set in a future where humanity has colonized the solar system."},
-            {"The Witcher", "Witcher, The", "Fantasy series about Geralt of Rivia, a monster hunter in a medieval-inspired world."},
-            {"Inspector Gamache", "Gamache, Inspector", "Mystery series set in the fictional village of Three Pines, Quebec."}
-        };
+        // The Lord of the Rings
+        Series lotr = new Series("The Lord of the Rings", "Lord of the Rings, The");
+        lotr.setDescription("Epic high fantasy adventure in Middle-earth following the journey to destroy the One Ring and defeat the Dark Lord Sauron.");
+        lotr.setImagePath("https://upload.wikimedia.org/wikipedia/en/thumb/8/8e/The_Lord_of_the_Rings_-_The_Fellowship_of_the_Ring_%282001%29.jpg/256px-The_Lord_of_the_Rings_-_The_Fellowship_of_the_Ring_%282001%29.jpg");
+        lotr.setMetadata(Map.of(
+            "genre", "Epic Fantasy",
+            "setting", "Middle-earth",
+            "totalBooks", 3,
+            "seriesImageUrl", "https://upload.wikimedia.org/wikipedia/en/thumb/8/8e/The_Lord_of_the_Rings_-_The_Fellowship_of_the_Ring_%282001%29.jpg/256px-The_Lord_of_the_Rings_-_The_Fellowship_of_the_Ring_%282001%29.jpg"
+        ));
+        lotr.persist();
+        series.put("The Lord of the Rings", lotr);
         
-        for (String[] data : seriesData) {
-            Series seriesEntity = new Series(data[0], data[1]);
-            seriesEntity.setDescription(data[2]);
-            seriesEntity.persist();
-            series.put(data[0], seriesEntity);
-        }
+        // The Wheel of Time
+        Series wot = new Series("The Wheel of Time", "Wheel of Time, The");
+        wot.setDescription("High fantasy series following the Dragon Reborn and the Last Battle against the Dark One. Originally begun by Robert Jordan and completed by Brandon Sanderson after Jordan's death.");
+        wot.setImagePath("https://upload.wikimedia.org/wikipedia/en/thumb/5/56/WoT01_TheEyeOfTheWorld.jpg/256px-WoT01_TheEyeOfTheWorld.jpg");
+        wot.setMetadata(Map.of(
+            "genre", "Epic Fantasy",
+            "setting", "Randland",
+            "totalBooks", 14,
+            "originalAuthor", "Robert Jordan",
+            "completedBy", "Brandon Sanderson",
+            "seriesImageUrl", "https://upload.wikimedia.org/wikipedia/en/thumb/5/56/WoT01_TheEyeOfTheWorld.jpg/256px-WoT01_TheEyeOfTheWorld.jpg"
+        ));
+        wot.persist();
+        series.put("The Wheel of Time", wot);
         
+        // The Dark Tower (Stephen King)
+        Series darkTower = new Series("The Dark Tower", "Dark Tower, The");
+        darkTower.setDescription("Dark fantasy series blending elements of science fiction, horror, and westerns, following Roland Deschain, the last gunslinger, on his quest for the Dark Tower.");
+        darkTower.setImagePath("https://upload.wikimedia.org/wikipedia/en/thumb/6/6a/TheDarkTower1_TheGunslinger.jpg/256px-TheDarkTower1_TheGunslinger.jpg");
+        darkTower.setMetadata(Map.of(
+            "genre", "Dark Fantasy",
+            "subgenres", List.of("Science Fiction", "Horror", "Western"),
+            "totalBooks", 8,
+            "seriesImageUrl", "https://upload.wikimedia.org/wikipedia/en/thumb/6/6a/TheDarkTower1_TheGunslinger.jpg/256px-TheDarkTower1_TheGunslinger.jpg"
+        ));
+        darkTower.persist();
+        series.put("The Dark Tower", darkTower);
+        
+        // Foundation Series (Isaac Asimov)
+        Series foundation = new Series("Foundation", "Foundation");
+        foundation.setDescription("Science fiction series about psychohistory and the fall and rebirth of the Galactic Empire, spanning thousands of years.");
+        foundation.setImagePath("https://upload.wikimedia.org/wikipedia/en/thumb/7/73/Foundation_gnome_press.jpg/256px-Foundation_gnome_press.jpg");
+        foundation.setMetadata(Map.of(
+            "genre", "Science Fiction",
+            "concepts", List.of("Psychohistory", "Galactic Empire"),
+            "totalBooks", 7,
+            "seriesImageUrl", "https://upload.wikimedia.org/wikipedia/en/thumb/7/73/Foundation_gnome_press.jpg/256px-Foundation_gnome_press.jpg"
+        ));
+        foundation.persist();
+        series.put("Foundation", foundation);
+        
+        // Robot Series (Isaac Asimov)
+        Series robot = new Series("Robot", "Robot");
+        robot.setDescription("Science fiction series exploring the relationship between humans and robots, featuring the famous Three Laws of Robotics.");
+        robot.setImagePath("https://upload.wikimedia.org/wikipedia/en/thumb/e/ea/I_robot.jpg/256px-I_robot.jpg");
+        robot.setMetadata(Map.of(
+            "genre", "Science Fiction",
+            "concepts", List.of("Three Laws of Robotics", "Artificial Intelligence"),
+            "totalBooks", 4,
+            "seriesImageUrl", "https://upload.wikimedia.org/wikipedia/en/thumb/e/ea/I_robot.jpg/256px-I_robot.jpg"
+        ));
+        robot.persist();
+        series.put("Robot", robot);
+        
+        LOG.infof("Created %d comprehensive series", series.size());
         return series;
     }
     
-    private void createBooksAndOriginalWorks(Map<String, Language> languages, 
-                                            Map<String, Publisher> publishers,
-                                            Map<String, Author> authors, 
-                                            Map<String, Series> series) {
-        Random random = new Random();
-        List<String> publisherList = new ArrayList<>(publishers.keySet());
-        
-        // Harry Potter Series
-        createHarryPotterSeries(languages, publishers, authors, series);
-        
-        // Lord of the Rings
-        createLordOfTheRingsSeries(languages, publishers, authors, series);
-        
-        // Foundation Series
-        createFoundationSeries(languages, publishers, authors, series);
-        
-        // Sherlock Holmes
-        createSherlockHolmesSeries(languages, publishers, authors, series);
-        
-        // Hercule Poirot (sample books)
-        createHerculePoirotSeries(languages, publishers, authors, series);
-        
-        // Jack Reacher (sample books)
-        createJackReacherSeries(languages, publishers, authors, series);
-        
-        // Standalone classics and modern books
-        createStandaloneBooks(languages, publishers, authors, random, publisherList);
-    }
-    
-    private void createHarryPotterSeries(Map<String, Language> languages, 
-                                        Map<String, Publisher> publishers,
-                                        Map<String, Author> authors, 
-                                        Map<String, Series> series) {
-        String[] titles = {
-            "Harry Potter and the Philosopher's Stone",
-            "Harry Potter and the Chamber of Secrets", 
-            "Harry Potter and the Prisoner of Azkaban",
-            "Harry Potter and the Goblet of Fire",
-            "Harry Potter and the Order of the Phoenix",
-            "Harry Potter and the Half-Blood Prince",
-            "Harry Potter and the Deathly Hallows"
-        };
-        
-        int[] years = {1997, 1998, 1999, 2000, 2003, 2005, 2007};
-        
-        for (int i = 0; i < titles.length; i++) {
-            createBookInSeries(titles[i], "Rowling, " + titles[i], 
-                             authors.get("J.K. Rowling"), 
-                             publishers.get("Bantam Books"),
-                             languages.get("en"), 
-                             series.get("Harry Potter"),
-                             BigDecimal.valueOf(i + 1),
-                             years[i]);
-        }
-    }
-    
-    private void createLordOfTheRingsSeries(Map<String, Language> languages, 
-                                           Map<String, Publisher> publishers,
-                                           Map<String, Author> authors, 
-                                           Map<String, Series> series) {
-        String[] titles = {
-            "The Fellowship of the Ring",
-            "The Two Towers",
-            "The Return of the King"
-        };
-        
-        for (int i = 0; i < titles.length; i++) {
-            createBookInSeries(titles[i], "Tolkien, " + titles[i],
-                             authors.get("J.R.R. Tolkien"),
-                             publishers.get("Bantam Books"),
-                             languages.get("en"),
-                             series.get("The Lord of the Rings"),
-                             BigDecimal.valueOf(i + 1),
-                             1954 + i);
-        }
-    }
-    
-    private void createFoundationSeries(Map<String, Language> languages, 
-                                       Map<String, Publisher> publishers,
-                                       Map<String, Author> authors, 
-                                       Map<String, Series> series) {
-        String[] titles = {
-            "Foundation",
-            "Foundation and Empire", 
-            "Second Foundation",
-            "Foundation's Edge",
-            "Foundation and Earth",
-            "Prelude to Foundation",
-            "Forward the Foundation"
-        };
-        
-        int[] years = {1951, 1952, 1953, 1982, 1986, 1988, 1993};
-        
-        for (int i = 0; i < titles.length; i++) {
-            createBookInSeries(titles[i], "Asimov, " + titles[i],
-                             authors.get("Isaac Asimov"),
-                             publishers.get("Bantam Books"),
-                             languages.get("en"),
-                             series.get("Foundation"),
-                             BigDecimal.valueOf(i + 1),
-                             years[i]);
-        }
-    }
-    
-    private void createSherlockHolmesSeries(Map<String, Language> languages, 
-                                           Map<String, Publisher> publishers,
-                                           Map<String, Author> authors, 
-                                           Map<String, Series> series) {
-        String[] titles = {
-            "A Study in Scarlet",
-            "The Sign of the Four",
-            "The Adventures of Sherlock Holmes",
-            "The Memoirs of Sherlock Holmes",
-            "The Hound of the Baskervilles",
-            "The Return of Sherlock Holmes",
-            "The Valley of Fear",
-            "His Last Bow",
-            "The Case-Book of Sherlock Holmes"
-        };
-        
-        int[] years = {1887, 1890, 1892, 1893, 1902, 1905, 1915, 1917, 1927};
-        
-        for (int i = 0; i < titles.length; i++) {
-            createBookInSeries(titles[i], "Doyle, " + titles[i],
-                             authors.get("Arthur Conan Doyle"),
-                             publishers.get("Penguin Random House"),
-                             languages.get("en"),
-                             series.get("Sherlock Holmes"),
-                             BigDecimal.valueOf(i + 1),
-                             years[i]);
-        }
-    }
-    
-    private void createHerculePoirotSeries(Map<String, Language> languages, 
+    private void createComprehensiveBooks(Map<String, Language> languages, 
                                           Map<String, Publisher> publishers,
                                           Map<String, Author> authors, 
                                           Map<String, Series> series) {
-        String[] titles = {
-            "The Mysterious Affair at Styles",
-            "The Murder on the Links",
-            "The Murder of Roger Ackroyd",
-            "The Big Four",
-            "The Mystery of the Blue Train",
-            "Peril at End House",
-            "Lord Edgware Dies",
-            "Murder on the Orient Express",
-            "Three Act Tragedy",
-            "Death on the Nile",
-            "The A.B.C. Murders",
-            "Murder in Mesopotamia",
-            "Cards on the Table",
-            "Dumb Witness",
-            "Death on the Nile",
-            "Curtain"
-        };
         
-        int startYear = 1920;
+        Language english = languages.get("en-US");
+        Publisher randomHouse = publishers.get("Penguin Random House");
+        Publisher tor = publishers.get("Tor Books");
+        Publisher bantam = publishers.get("Bantam Books");
+        Publisher delRey = publishers.get("Del Rey");
         
-        for (int i = 0; i < Math.min(titles.length, 16); i++) {
-            createBookInSeries(titles[i], "Christie, " + titles[i],
-                             authors.get("Agatha Christie"),
-                             publishers.get("HarperCollins"),
-                             languages.get("en"),
-                             series.get("Hercule Poirot"),
-                             BigDecimal.valueOf(i + 1),
-                             startYear + i * 2);
-        }
+        // J.R.R. Tolkien - The Lord of the Rings series
+        createTolkienBooks(english, randomHouse, authors.get("J.R.R. Tolkien"), series.get("The Lord of the Rings"));
+        
+        // The Wheel of Time series - Robert Jordan & Brandon Sanderson
+        createWheelOfTimeBooks(english, tor, authors.get("Robert Jordan"), authors.get("Brandon Sanderson"), series.get("The Wheel of Time"));
+        
+        // Stephen King books
+        createStephenKingBooks(english, randomHouse, authors.get("Stephen King"), series.get("The Dark Tower"));
+        
+        // Isaac Asimov books
+        createIsaacAsimovBooks(english, bantam, authors.get("Isaac Asimov"), series.get("Foundation"), series.get("Robot"));
+        
+        LOG.info("Created comprehensive books for all requested authors");
     }
     
-    private void createJackReacherSeries(Map<String, Language> languages, 
-                                        Map<String, Publisher> publishers,
-                                        Map<String, Author> authors, 
-                                        Map<String, Series> series) {
-        String[] titles = {
-            "Killing Floor",
-            "Die Trying", 
-            "Tripwire",
-            "The Visitor",
-            "Echo Burning",
-            "Without Fail",
-            "Persuader",
-            "The Enemy",
-            "One Shot",
-            "The Hard Way",
-            "Bad Luck and Trouble",
-            "Nothing to Lose",
-            "Gone Tomorrow",
-            "61 Hours"
+    private void createTolkienBooks(Language language, Publisher publisher, Author author, Series series) {
+        // The Lord of the Rings trilogy
+        String[][] lotrBooks = {
+            {"The Fellowship of the Ring", "1954", "https://upload.wikimedia.org/wikipedia/en/thumb/8/8e/The_Lord_of_the_Rings_-_The_Fellowship_of_the_Ring_%282001%29.jpg/256px-The_Lord_of_the_Rings_-_The_Fellowship_of_the_Ring_%282001%29.jpg", "The first volume of The Lord of the Rings follows Frodo Baggins as he begins his journey to destroy the One Ring."},
+            {"The Two Towers", "1954", "https://upload.wikimedia.org/wikipedia/en/thumb/a/ad/The_Lord_of_the_Rings_-_The_Two_Towers_%282002%29.jpg/256px-The_Lord_of_the_Rings_-_The_Two_Towers_%282002%29.jpg", "The second volume follows the continuing quest of the Fellowship as it divides into separate paths."},
+            {"The Return of the King", "1955", "https://upload.wikimedia.org/wikipedia/en/thumb/b/be/The_Lord_of_the_Rings_-_The_Return_of_the_King_%282003%29.jpg/256px-The_Lord_of_the_Rings_-_The_Return_of_the_King_%282003%29.jpg", "The final volume of The Lord of the Rings chronicles the final battle against Sauron and the return of the king."}
         };
         
-        int startYear = 1997;
-        
-        for (int i = 0; i < Math.min(titles.length, 14); i++) {
-            createBookInSeries(titles[i], "Child, " + titles[i],
-                             authors.get("Lee Child"),
-                             publishers.get("Bantam Books"),
-                             languages.get("en"),
-                             series.get("Jack Reacher"),
-                             BigDecimal.valueOf(i + 1),
-                             startYear + i);
-        }
-    }
-    
-    private void createStandaloneBooks(Map<String, Language> languages, 
-                                      Map<String, Publisher> publishers,
-                                      Map<String, Author> authors, 
-                                      Random random,
-                                      List<String> publisherList) {
-        
-        // Classic standalone novels
-        String[][] classicBooks = {
-            {"Pride and Prejudice", "Jane Austen", "1813"},
-            {"Jane Eyre", "Charlotte Brontë", "1847"},
-            {"Wuthering Heights", "Emily Brontë", "1847"},
-            {"Great Expectations", "Charles Dickens", "1861"},
-            {"A Tale of Two Cities", "Charles Dickens", "1859"},
-            {"1984", "George Orwell", "1949"},
-            {"Animal Farm", "George Orwell", "1945"},
-            {"To Kill a Mockingbird", "Harper Lee", "1960"},
-            {"The Catcher in the Rye", "J.D. Salinger", "1951"},
-            {"One Hundred Years of Solitude", "Gabriel García Márquez", "1967"},
-            {"The Alchemist", "Paulo Coelho", "1988"},
-            {"Beloved", "Toni Morrison", "1987"},
-            {"Norwegian Wood", "Haruki Murakami", "1987"},
-            {"The Handmaid's Tale", "Margaret Atwood", "1985"},
-            {"Dune", "Frank Herbert", "1965"},
-            {"Fahrenheit 451", "Ray Bradbury", "1953"},
-            {"Brave New World", "Aldous Huxley", "1932"},
-            {"The Time Machine", "H.G. Wells", "1895"},
-            {"Frankenstein", "Mary Shelley", "1818"},
-            {"Dracula", "Bram Stoker", "1897"}
-        };
-        
-        for (String[] bookData : classicBooks) {
-            Author author = authors.get(bookData[1]);
-            if (author != null) {
-                String publisherName = publisherList.get(random.nextInt(publisherList.size()));
-                createStandaloneBook(bookData[0], 
-                                   author.getSortName() + ", " + bookData[0],
-                                   author,
-                                   publishers.get(publisherName),
-                                   languages.get("en"),
-                                   Integer.parseInt(bookData[2]));
-            }
+        for (int i = 0; i < lotrBooks.length; i++) {
+            String[] bookData = lotrBooks[i];
+            createBookInSeries(
+                bookData[0], // title
+                "Tolkien, " + bookData[0], // titleSort
+                author,
+                publisher,
+                language,
+                series,
+                BigDecimal.valueOf(i + 1),
+                Integer.parseInt(bookData[1]),
+                bookData[2], // coverUrl
+                bookData[3]  // description
+            );
         }
         
-        // Additional modern books to reach hundreds
-        createAdditionalModernBooks(languages, publishers, authors, random, publisherList);
-    }
-    
-    private void createAdditionalModernBooks(Map<String, Language> languages, 
-                                            Map<String, Publisher> publishers,
-                                            Map<String, Author> authors, 
-                                            Random random,
-                                            List<String> publisherList) {
-        
-        String[] titleTemplates = {
-            "The {adjective} {noun}", "A {adjective} {noun}", "The {noun} of {noun}",
-            "Beyond the {noun}", "The Last {noun}", "The Secret {noun}",
-            "Tales from {location}", "The {adjective} {profession}",
-            "Mysteries of {location}", "The {noun} Chronicles"
+        // Other Tolkien standalone works
+        String[][] standaloneBooks = {
+            {"The Hobbit", "1937", "https://upload.wikimedia.org/wikipedia/en/thumb/4/4a/TheHobbit_FirstEdition.jpg/256px-TheHobbit_FirstEdition.jpg", "A fantasy novel about the hobbit Bilbo Baggins' journey to help reclaim the Lonely Mountain from the dragon Smaug."},
+            {"The Silmarillion", "1977", "https://upload.wikimedia.org/wikipedia/en/thumb/8/86/Silmarillion.gif/256px-Silmarillion.gif", "A collection of mythopoeic stories that forms the history and cosmology of Tolkien's Middle-earth."},
+            {"Unfinished Tales", "1980", "https://upload.wikimedia.org/wikipedia/en/thumb/5/5c/Unfinished_Tales_cover.jpg/256px-Unfinished_Tales_cover.jpg", "A collection of stories and essays by J.R.R. Tolkien, edited and published posthumously by his son Christopher Tolkien."}
         };
         
-        String[] adjectives = {
-            "Ancient", "Hidden", "Forgotten", "Lost", "Sacred", "Dark", "Golden",
-            "Silent", "Mystic", "Eternal", "Broken", "Shattered", "Crimson",
-            "Silver", "Royal", "Noble", "Wild", "Distant", "Infinite", "Perfect"
-        };
-        
-        String[] nouns = {
-            "Kingdom", "Empire", "Castle", "Tower", "Forest", "Mountain", "Ocean",
-            "Desert", "City", "Village", "Palace", "Temple", "Library", "Garden",
-            "Bridge", "River", "Valley", "Island", "Harbor", "Cathedral"
-        };
-        
-        String[] locations = {
-            "Atlantis", "Avalon", "Eldorado", "Shangri-La", "Camelot", "Olympus",
-            "the North", "the East", "the West", "the Mountains", "the Sea"
-        };
-        
-        String[] professions = {
-            "Scholar", "Warrior", "Merchant", "Priest", "Knight", "Wizard",
-            "Hunter", "Sailor", "Explorer", "Artist", "Poet", "Musician"
-        };
-        
-        List<Author> authorList = new ArrayList<>(authors.values());
-        
-        // Generate additional books to reach around 200+ books total
-        for (int i = 0; i < 100; i++) {
-            String template = titleTemplates[random.nextInt(titleTemplates.length)];
-            String title = generateTitleFromTemplate(template, adjectives, nouns, locations, professions, random);
-            
-            Author author = authorList.get(random.nextInt(authorList.size()));
-            String publisherName = publisherList.get(random.nextInt(publisherList.size()));
-            int year = getRandomYear(1950, 2023);
-            
-            createStandaloneBook(title,
-                               author.getSortName() + ", " + title,
-                               author,
-                               publishers.get(publisherName),
-                               languages.get("en"),
-                               year);
+        for (String[] bookData : standaloneBooks) {
+            createStandaloneBook(
+                bookData[0], // title
+                "Tolkien, " + bookData[0], // titleSort
+                author,
+                publisher,
+                language,
+                Integer.parseInt(bookData[1]),
+                bookData[2], // coverUrl
+                bookData[3]  // description
+            );
         }
+        
+        LOG.infof("Created %d books for J.R.R. Tolkien", lotrBooks.length + standaloneBooks.length);
     }
     
-    private String generateTitleFromTemplate(String template, String[] adjectives, String[] nouns, 
-                                           String[] locations, String[] professions, Random random) {
-        return template
-            .replace("{adjective}", adjectives[random.nextInt(adjectives.length)])
-            .replace("{noun}", nouns[random.nextInt(nouns.length)])
-            .replace("{location}", locations[random.nextInt(locations.length)])
-            .replace("{profession}", professions[random.nextInt(professions.length)]);
+    private void createWheelOfTimeBooks(Language language, Publisher publisher, Author jordan, Author sanderson, Series series) {
+        // Robert Jordan's books (1-11)
+        String[][] jordanBooks = {
+            {"The Eye of the World", "1990", "https://upload.wikimedia.org/wikipedia/en/thumb/5/56/WoT01_TheEyeOfTheWorld.jpg/256px-WoT01_TheEyeOfTheWorld.jpg", "The first book in The Wheel of Time series, introducing Rand al'Thor and his friends as they flee their village."},
+            {"The Great Hunt", "1990", "https://upload.wikimedia.org/wikipedia/en/thumb/6/66/WoT02_TheGreatHunt.jpg/256px-WoT02_TheGreatHunt.jpg", "The second book follows the hunt for the stolen Horn of Valere."},
+            {"The Dragon Reborn", "1991", "https://upload.wikimedia.org/wikipedia/en/thumb/3/39/WoT03_TheDragonReborn.jpg/256px-WoT03_TheDragonReborn.jpg", "The third book focuses on Rand's journey to claim Callandor in the Stone of Tear."},
+            {"The Shadow Rising", "1992", "https://upload.wikimedia.org/wikipedia/en/thumb/1/1c/WoT04_TheShadowRising.jpg/256px-WoT04_TheShadowRising.jpg", "The fourth book explores the history of the Aiel and the Two Rivers."},
+            {"The Fires of Heaven", "1993", "https://upload.wikimedia.org/wikipedia/en/thumb/2/21/WoT05_TheFiresOfHeaven.jpg/256px-WoT05_TheFiresOfHeaven.jpg", "The fifth book deals with civil war in Cairhien and the Aiel Waste."},
+            {"Lord of Chaos", "1994", "https://upload.wikimedia.org/wikipedia/en/thumb/7/77/WoT06_LordOfChaos.jpg/256px-WoT06_LordOfChaos.jpg", "The sixth book culminates in the Battle of Dumai's Wells."},
+            {"A Crown of Swords", "1996", "https://upload.wikimedia.org/wikipedia/en/thumb/8/82/WoT07_ACrownOfSwords.jpg/256px-WoT07_ACrownOfSwords.jpg", "The seventh book follows the aftermath of Dumai's Wells."},
+            {"The Path of Daggers", "1998", "https://upload.wikimedia.org/wikipedia/en/thumb/9/9d/WoT08_ThePathOfDaggers.jpg/256px-WoT08_ThePathOfDaggers.jpg", "The eighth book focuses on the use of the Bowl of the Winds."},
+            {"Winter's Heart", "2000", "https://upload.wikimedia.org/wikipedia/en/thumb/b/bb/WoT09_WintersHeart.jpg/256px-WoT09_WintersHeart.jpg", "The ninth book deals with the cleansing of saidin."},
+            {"Crossroads of Twilight", "2003", "https://upload.wikimedia.org/wikipedia/en/thumb/f/fc/WoT10_CrossroadsOfTwilight.jpg/256px-WoT10_CrossroadsOfTwilight.jpg", "The tenth book explores the aftermath of the cleansing."},
+            {"Knife of Dreams", "2005", "https://upload.wikimedia.org/wikipedia/en/thumb/7/71/WoT11_KnifeOfDreams.jpg/256px-WoT11_KnifeOfDreams.jpg", "The eleventh book was Robert Jordan's final completed novel in the series."}
+        };
+        
+        for (int i = 0; i < jordanBooks.length; i++) {
+            String[] bookData = jordanBooks[i];
+            createBookInSeries(
+                bookData[0], // title
+                "Jordan, " + bookData[0], // titleSort
+                jordan,
+                publisher,
+                language,
+                series,
+                BigDecimal.valueOf(i + 1),
+                Integer.parseInt(bookData[1]),
+                bookData[2], // coverUrl
+                bookData[3]  // description
+            );
+        }
+        
+        // Brandon Sanderson's completing books (12-14)
+        String[][] sandersonBooks = {
+            {"The Gathering Storm", "2009", "https://upload.wikimedia.org/wikipedia/en/thumb/3/31/WoT12_TheGatheringStorm.jpg/256px-WoT12_TheGatheringStorm.jpg", "The twelfth book, completed by Brandon Sanderson from Robert Jordan's notes."},
+            {"Towers of Midnight", "2010", "https://upload.wikimedia.org/wikipedia/en/thumb/8/8d/WoT13_TowersOfMidnight.jpg/256px-WoT13_TowersOfMidnight.jpg", "The thirteenth book, continuing Sanderson's completion of the series."},
+            {"A Memory of Light", "2013", "https://upload.wikimedia.org/wikipedia/en/thumb/0/0c/WoT14_AMemoryOfLight.jpg/256px-WoT14_AMemoryOfLight.jpg", "The fourteenth and final book in The Wheel of Time series."}
+        };
+        
+        for (int i = 0; i < sandersonBooks.length; i++) {
+            String[] bookData = sandersonBooks[i];
+            // These books have both Jordan and Sanderson as authors, but we'll attribute to Sanderson as primary
+            createBookInSeries(
+                bookData[0], // title
+                "Sanderson, " + bookData[0], // titleSort
+                sanderson,
+                publisher,
+                language,
+                series,
+                BigDecimal.valueOf(jordanBooks.length + i + 1),
+                Integer.parseInt(bookData[1]),
+                bookData[2], // coverUrl
+                bookData[3]  // description
+            );
+        }
+        
+        LOG.infof("Created %d books for The Wheel of Time series", jordanBooks.length + sandersonBooks.length);
     }
     
-    private void createBookInSeries(String title, String titleSort, Author author, Publisher publisher,
-                                   Language language, Series seriesEntity, BigDecimal seriesIndex, int year) {
-        // Create original work
-        OriginalWork originalWork = new OriginalWork();
-        originalWork.setTitle(title);
-        originalWork.setTitleSort(titleSort);
-        originalWork.setFirstPublication(LocalDate.of(year, 1, 1));
-        originalWork.setDescription("A captivating work of literature.");
-        originalWork.persist();
+    private void createStephenKingBooks(Language language, Publisher publisher, Author author, Series darkTowerSeries) {
+        // The Dark Tower series
+        String[][] darkTowerBooks = {
+            {"The Gunslinger", "1982", "https://upload.wikimedia.org/wikipedia/en/thumb/6/6a/TheDarkTower1_TheGunslinger.jpg/256px-TheDarkTower1_TheGunslinger.jpg", "The first book in The Dark Tower series, introducing Roland Deschain, the last gunslinger."},
+            {"The Drawing of the Three", "1987", "https://upload.wikimedia.org/wikipedia/en/thumb/9/91/Drawingthreetower.jpg/256px-Drawingthreetower.jpg", "The second book where Roland draws three companions from our world."},
+            {"The Waste Lands", "1991", "https://upload.wikimedia.org/wikipedia/en/thumb/b/b3/Wastelandstower.jpg/256px-Wastelandstower.jpg", "The third book as the ka-tet travels through the waste lands."},
+            {"Wizard and Glass", "1997", "https://upload.wikimedia.org/wikipedia/en/thumb/c/c7/Wizardglassdark.jpg/256px-Wizardglassdark.jpg", "The fourth book reveals Roland's past in Mejis."},
+            {"Wolves of the Calla", "2003", "https://upload.wikimedia.org/wikipedia/en/thumb/a/ae/Wolves_of_the_calla.jpg/256px-Wolves_of_the_calla.jpg", "The fifth book where the ka-tet defends a farming community."},
+            {"Song of Susannah", "2004", "https://upload.wikimedia.org/wikipedia/en/thumb/d/dc/Song_of_susannah.jpg/256px-Song_of_susannah.jpg", "The sixth book follows Susannah's journey to our world."},
+            {"The Dark Tower", "2004", "https://upload.wikimedia.org/wikipedia/en/thumb/4/4a/The_Dark_Tower_VII.jpg/256px-The_Dark_Tower_VII.jpg", "The seventh book concludes Roland's quest for the Dark Tower."},
+            {"The Wind Through the Keyhole", "2012", "https://upload.wikimedia.org/wikipedia/en/thumb/3/39/The_Wind_Through_the_Keyhole.jpg/256px-The_Wind_Through_the_Keyhole.jpg", "A mid-series book set between Wizard and Glass and Wolves of the Calla."}
+        };
         
-        // Link author to original work
-        OriginalWorkAuthor originalWorkAuthor = new OriginalWorkAuthor(originalWork, author, "author");
-        entityManager.persist(originalWorkAuthor);
+        for (int i = 0; i < darkTowerBooks.length; i++) {
+            String[] bookData = darkTowerBooks[i];
+            createBookInSeries(
+                bookData[0], // title
+                "King, " + bookData[0], // titleSort
+                author,
+                publisher,
+                language,
+                darkTowerSeries,
+                BigDecimal.valueOf(i + 1),
+                Integer.parseInt(bookData[1]),
+                bookData[2], // coverUrl
+                bookData[3]  // description
+            );
+        }
         
-        // Create book
-        Book book = new Book();
-        book.setTitle(title);
-        book.setTitleSort(titleSort);
-        book.setPath("/demo/books/" + title.replaceAll("[^a-zA-Z0-9]", "_") + ".epub");
-        book.setFileSize((long) (500000 + Math.random() * 2000000)); // 500KB to 2.5MB
-        book.setFileHash(generateRandomHash());
-        book.setHasCover(Math.random() > 0.3); // 70% have covers
-        book.setPublicationDate(LocalDate.of(year, (int)(Math.random() * 12) + 1, (int)(Math.random() * 28) + 1));
-        book.setLanguage(language);
-        book.setPublisher(publisher);
-        book.setMetadata(Map.of("genre", "Fiction", "pages", (int)(200 + Math.random() * 600)));
-        book.persist();
+        // Stephen King standalone books
+        String[][] standaloneBooks = {
+            {"Carrie", "1974", "https://upload.wikimedia.org/wikipedia/en/thumb/3/31/Carrie_novel.jpg/256px-Carrie_novel.jpg", "King's first published novel about a teenage girl with telekinetic powers."},
+            {"The Shining", "1977", "https://upload.wikimedia.org/wikipedia/en/thumb/4/4c/Shining_novel.jpg/256px-Shining_novel.jpg", "A horror novel about a family isolated in a haunted hotel."},
+            {"The Stand", "1978", "https://upload.wikimedia.org/wikipedia/en/thumb/9/96/The_Stand_cover.jpg/256px-The_Stand_cover.jpg", "An epic post-apocalyptic dark fantasy novel."},
+            {"It", "1986", "https://upload.wikimedia.org/wikipedia/en/thumb/8/8e/It_%281986%29_front_cover%2C_first_edition.jpg/256px-It_%281986%29_front_cover%2C_first_edition.jpg", "A horror novel about a creature that preys on children in the town of Derry."},
+            {"Misery", "1987", "https://upload.wikimedia.org/wikipedia/en/thumb/e/e7/Misery_%28novel%29.jpg/256px-Misery_%28novel%29.jpg", "A psychological horror novel about a writer held captive by his 'number one fan'."},
+            {"Pet Sematary", "1983", "https://upload.wikimedia.org/wikipedia/en/thumb/2/24/Pet_Sematary_%28book_cover%29.jpg/256px-Pet_Sematary_%28book_cover%29.jpg", "A horror novel about a burial ground with supernatural powers."},
+            {"Salem's Lot", "1975", "https://upload.wikimedia.org/wikipedia/en/thumb/5/50/Salem%27s_Lot_cover.jpg/256px-Salem%27s_Lot_cover.jpg", "A horror novel about vampires in a small New England town."},
+            {"The Dead Zone", "1979", "https://upload.wikimedia.org/wikipedia/en/thumb/1/16/The_Dead_Zone_%28novel%29.jpg/256px-The_Dead_Zone_%28novel%29.jpg", "A supernatural thriller about a man who awakens from a coma with psychic abilities."}
+        };
         
-        // Link book to original work
-        BookOriginalWork bookOriginalWork = new BookOriginalWork(book, originalWork, 
-                                                                  BookOriginalWorkRelationType.PRIMARY, 0);
-        entityManager.persist(bookOriginalWork);
+        for (String[] bookData : standaloneBooks) {
+            createStandaloneBook(
+                bookData[0], // title
+                "King, " + bookData[0], // titleSort
+                author,
+                publisher,
+                language,
+                Integer.parseInt(bookData[1]),
+                bookData[2], // coverUrl
+                bookData[3]  // description
+            );
+        }
         
-        // Link book to series  
-        BookSeries bookSeries = new BookSeries(book, seriesEntity, seriesIndex);
-        entityManager.persist(bookSeries);
-        
-        // Update series book count
-        seriesEntity.incrementBookCount();
-        entityManager.persist(seriesEntity);
+        LOG.infof("Created %d books for Stephen King", darkTowerBooks.length + standaloneBooks.length);
     }
     
-    private void createStandaloneBook(String title, String titleSort, Author author, Publisher publisher,
-                                     Language language, int year) {
-        // Create original work
-        OriginalWork originalWork = new OriginalWork();
-        originalWork.setTitle(title);
-        originalWork.setTitleSort(titleSort);
-        originalWork.setFirstPublication(LocalDate.of(year, 1, 1));
-        originalWork.setDescription("A remarkable standalone work of literature.");
-        originalWork.persist();
+    private void createIsaacAsimovBooks(Language language, Publisher publisher, Author author, Series foundationSeries, Series robotSeries) {
+        // Foundation series
+        String[][] foundationBooks = {
+            {"Foundation", "1951", "https://upload.wikimedia.org/wikipedia/en/thumb/7/73/Foundation_gnome_press.jpg/256px-Foundation_gnome_press.jpg", "The first book in the Foundation series about Hari Seldon's psychohistory."},
+            {"Foundation and Empire", "1952", "https://upload.wikimedia.org/wikipedia/en/thumb/8/80/Foundation_and_Empire_Cover.jpg/256px-Foundation_and_Empire_Cover.jpg", "The second Foundation book dealing with the rise of the Mule."},
+            {"Second Foundation", "1953", "https://upload.wikimedia.org/wikipedia/en/thumb/a/a8/Second_foundation.jpg/256px-Second_foundation.jpg", "The third book revealing the location of the Second Foundation."},
+            {"Foundation's Edge", "1982", "https://upload.wikimedia.org/wikipedia/en/thumb/2/29/Foundation%27s_Edge.jpg/256px-Foundation%27s_Edge.jpg", "The fourth book set centuries after the original trilogy."},
+            {"Foundation and Earth", "1986", "https://upload.wikimedia.org/wikipedia/en/thumb/9/9c/Foundation_and_Earth_Cover.jpg/256px-Foundation_and_Earth_Cover.jpg", "The fifth book following Golan Trevize's search for Earth."},
+            {"Prelude to Foundation", "1988", "https://upload.wikimedia.org/wikipedia/en/thumb/b/bf/Prelude_to_Foundation.jpg/256px-Prelude_to_Foundation.jpg", "A prequel focusing on young Hari Seldon."},
+            {"Forward the Foundation", "1993", "https://upload.wikimedia.org/wikipedia/en/thumb/6/61/Forward_the_Foundation.jpg/256px-Forward_the_Foundation.jpg", "The final prequel about Seldon's later years."}
+        };
         
-        // Link author to original work
-        OriginalWorkAuthor originalWorkAuthor = new OriginalWorkAuthor(originalWork, author, "author");
-        entityManager.persist(originalWorkAuthor);
+        for (int i = 0; i < foundationBooks.length; i++) {
+            String[] bookData = foundationBooks[i];
+            createBookInSeries(
+                bookData[0], // title
+                "Asimov, " + bookData[0], // titleSort
+                author,
+                publisher,
+                language,
+                foundationSeries,
+                BigDecimal.valueOf(i + 1),
+                Integer.parseInt(bookData[1]),
+                bookData[2], // coverUrl
+                bookData[3]  // description
+            );
+        }
         
-        // Create book
-        Book book = new Book();
-        book.setTitle(title);
-        book.setTitleSort(titleSort);
-        book.setPath("/demo/books/" + title.replaceAll("[^a-zA-Z0-9]", "_") + ".epub");
-        book.setFileSize((long) (500000 + Math.random() * 2000000)); // 500KB to 2.5MB
-        book.setFileHash(generateRandomHash());
-        book.setHasCover(Math.random() > 0.3); // 70% have covers
-        book.setPublicationDate(LocalDate.of(year, (int)(Math.random() * 12) + 1, (int)(Math.random() * 28) + 1));
-        book.setLanguage(language);
-        book.setPublisher(publisher);
-        book.setMetadata(Map.of("genre", "Fiction", "pages", (int)(200 + Math.random() * 600)));
-        book.persist();
+        // Robot series
+        String[][] robotBooks = {
+            {"I, Robot", "1950", "https://upload.wikimedia.org/wikipedia/en/thumb/e/ea/I_robot.jpg/256px-I_robot.jpg", "A collection of nine short stories about robots and the Three Laws of Robotics."},
+            {"The Caves of Steel", "1954", "https://upload.wikimedia.org/wikipedia/en/thumb/f/fc/Caves_of_steel.jpg/256px-Caves_of_steel.jpg", "A science fiction detective novel featuring Elijah Baley and R. Daneel Olivaw."},
+            {"The Naked Sun", "1957", "https://upload.wikimedia.org/wikipedia/en/thumb/d/dc/The_Naked_Sun.jpg/256px-The_Naked_Sun.jpg", "The second robot novel continuing the partnership of Baley and Daneel."},
+            {"The Robots of Dawn", "1983", "https://upload.wikimedia.org/wikipedia/en/thumb/5/50/Robots_of_dawn.jpg/256px-Robots_of_dawn.jpg", "The third robot novel set on the Spacer world of Aurora."}
+        };
         
-        // Link book to original work
-        BookOriginalWork bookOriginalWork = new BookOriginalWork(book, originalWork, 
-                                                                  BookOriginalWorkRelationType.PRIMARY, 0);
-        entityManager.persist(bookOriginalWork);
+        for (int i = 0; i < robotBooks.length; i++) {
+            String[] bookData = robotBooks[i];
+            createBookInSeries(
+                bookData[0], // title
+                "Asimov, " + bookData[0], // titleSort
+                author,
+                publisher,
+                language,
+                robotSeries,
+                BigDecimal.valueOf(i + 1),
+                Integer.parseInt(bookData[1]),
+                bookData[2], // coverUrl
+                bookData[3]  // description
+            );
+        }
+        
+        // Isaac Asimov standalone books
+        String[][] standaloneBooks = {
+            {"The End of Eternity", "1955", "https://upload.wikimedia.org/wikipedia/en/thumb/7/7f/EndOfEternity.jpg/256px-EndOfEternity.jpg", "A science fiction novel about time travel and the organization Eternity."},
+            {"The Gods Themselves", "1972", "https://upload.wikimedia.org/wikipedia/en/thumb/b/b4/TheGodsThemselves%281stEd%29.jpg/256px-TheGodsThemselves%281stEd%29.jpg", "A science fiction novel about parallel universes and energy exchange."},
+            {"Nightfall", "1990", "https://upload.wikimedia.org/wikipedia/en/thumb/c/cb/Nightfall_novel.jpg/256px-Nightfall_novel.jpg", "An expansion of his famous short story about a planet with six suns."}
+        };
+        
+        for (String[] bookData : standaloneBooks) {
+            createStandaloneBook(
+                bookData[0], // title
+                "Asimov, " + bookData[0], // titleSort
+                author,
+                publisher,
+                language,
+                Integer.parseInt(bookData[1]),
+                bookData[2], // coverUrl
+                bookData[3]  // description
+            );
+        }
+        
+        LOG.infof("Created %d books for Isaac Asimov", foundationBooks.length + robotBooks.length + standaloneBooks.length);
     }
     
     private String generateRandomHash() {
@@ -642,77 +578,104 @@ public class DemoDataService {
         return startYear + random.nextInt(endYear - startYear + 1);
     }
     
-    private void createSimpleBooks(Map<String, Language> languages, Map<String, Publisher> publishers, Map<String, Author> authors) {
-        LOG.info("Creating simple demo books...");
+    private void createBookInSeries(String title, String titleSort, Author author, Publisher publisher,
+                                   Language language, Series seriesEntity, BigDecimal seriesIndex, int year,
+                                   String coverUrl, String description) {
+        LOG.infof("Creating book '%s' with author '%s'", title, author.getName());
         
-        // Sample book data
-        String[][] bookData = {
-            {"The Great Gatsby", "English (United States)", "Charles Scribner's Sons", "F. Scott Fitzgerald"},
-            {"To Kill a Mockingbird", "English (United States)", "J.B. Lippincott & Co.", "Harper Lee"},
-            {"1984", "English (United Kingdom)", "Secker & Warburg", "George Orwell"},
-            {"Pride and Prejudice", "English (United Kingdom)", "T. Egerton", "Jane Austen"},
-            {"Le Petit Prince", "French (France)", "Reynal & Hitchcock", "Antoine de Saint-Exupéry"},
-            {"L'Étranger", "French (France)", "Gallimard", "Albert Camus"},
-            {"Don Quijote", "Spanish (Spain)", "Francisco de Robles", "Miguel de Cervantes"},
-            {"Cien años de soledad", "Spanish (Spain)", "Editorial Sudamericana", "Gabriel García Márquez"},
-            {"Der Prozess", "German (Germany)", "Die Schmiede", "Franz Kafka"},
-            {"Faust", "German (Germany)", "J.G. Cotta", "Johann Wolfgang von Goethe"},
-            {"Il nome della rosa", "Italian (Italy)", "Bompiani", "Umberto Eco"},
-            {"La Divina Commedia", "Italian (Italy)", "Giovanni Boccaccio", "Dante Alighieri"},
-            {"Dom Casmurro", "Portuguese (Brazil)", "H. Garnier", "Machado de Assis"},
-            {"O Cortiço", "Portuguese (Brazil)", "B.L. Garnier", "Aluísio Azevedo"},
-            {"Война и мир", "Russian (Russia)", "The Russian Messenger", "Leo Tolstoy"},
-            {"Преступление и наказание", "Russian (Russia)", "The Russian Messenger", "Fyodor Dostoevsky"},
-            {"ノルウェイの森", "Japanese (Japan)", "Kodansha", "Haruki Murakami"},
-            {"吾輩は猫である", "Japanese (Japan)", "Hototogisu", "Natsume Soseki"},
-            {"红楼梦", "Chinese (Simplified)", "程甲本", "Cao Xueqin"},
-            {"西游记", "Chinese (Simplified)", "世德堂", "Wu Cheng'en"}
-        };
+        // Create original work
+        OriginalWork originalWork = new OriginalWork();
+        originalWork.setTitle(title);
+        originalWork.setTitleSort(titleSort);
+        originalWork.setFirstPublication(LocalDate.of(year, 1, 1));
+        originalWork.setDescription(description);
+        originalWork.persist();
         
-        for (String[] data : bookData) {
-            String title = data[0];
-            String languageName = data[1];
-            String publisherName = data[2];
-            String authorName = data[3];
-            
-            Language language = languages.values().stream()
-                .filter(l -> l.getName().equals(languageName))
-                .findFirst()
-                .orElse(languages.get("en-US"));
-                
-            Publisher publisher = publishers.values().stream()
-                .filter(p -> p.getName().equals(publisherName))
-                .findFirst()
-                .orElse(publishers.get("Penguin Random House"));
-                
-            Author author = authors.values().stream()
-                .filter(a -> a.getName().equals(authorName))
-                .findFirst()
-                .orElse(authors.get("William Shakespeare"));
-            
-            Book book = new Book();
-            book.setTitle(title);
-            book.setTitleSort(title);
-            book.setFileHash(generateRandomHash());
-            book.setFileSize((long)(500000 + Math.random() * 2000000)); // 500KB to 2.5MB
-            book.setPath("/demo/books/" + title.toLowerCase().replaceAll("[^a-z0-9]", "_") + ".pdf");
-            book.setHasCover(Math.random() > 0.3); // 70% chance of having a cover
-            book.setPublicationDate(LocalDate.of(getRandomYear(1800, 2020), 1, 1));
-            book.setLanguage(language);
-            book.setPublisher(publisher);
-            book.setMetadata(Map.of(
-                "genre", getRandomGenre(),
-                "pages", (int)(100 + Math.random() * 800),
-                "format", "PDF"
-            ));
-            
-            book.persist();
-            LOG.infof("Created book: %s", title);
+        // Link author to original work
+        OriginalWorkAuthor originalWorkAuthor = new OriginalWorkAuthor(originalWork, author, "author");
+        entityManager.persist(originalWorkAuthor);
+        
+        // Create book
+        Book book = new Book();
+        book.setTitle(title);
+        book.setTitleSort(titleSort);
+        book.setPath("/demo/books/" + title.replaceAll("[^a-zA-Z0-9]", "_") + ".epub");
+        book.setFileSize((long) (500000 + Math.random() * 2000000)); // 500KB to 2.5MB
+        book.setFileHash(generateRandomHash());
+        book.setHasCover(coverUrl != null && !coverUrl.trim().isEmpty());
+        book.setPublicationDate(LocalDate.of(year, (int)(Math.random() * 12) + 1, (int)(Math.random() * 28) + 1));
+        book.setLanguage(language);
+        book.setPublisher(publisher);
+        
+        // Add cover URL and enhanced metadata
+        Map<String, Object> metadata = new HashMap<>();
+        metadata.put("genre", "Fiction");
+        metadata.put("pages", (int)(200 + Math.random() * 600));
+        if (coverUrl != null && !coverUrl.trim().isEmpty()) {
+            metadata.put("coverUrl", coverUrl);
         }
+        if (description != null && !description.trim().isEmpty()) {
+            metadata.put("description", description);
+        }
+        book.setMetadata(metadata);
+        book.persist();
+        
+        // Link book to original work
+        BookOriginalWork bookOriginalWork = new BookOriginalWork(book, originalWork, 
+                                                                  BookOriginalWorkRelationType.PRIMARY, 0);
+        entityManager.persist(bookOriginalWork);
+        
+        // Link book to series  
+        BookSeries bookSeries = new BookSeries(book, seriesEntity, seriesIndex);
+        entityManager.persist(bookSeries);
+        
+        // Update series book count
+        seriesEntity.incrementBookCount();
+        entityManager.persist(seriesEntity);
     }
     
-    private String getRandomGenre() {
-        String[] genres = {"Fiction", "Non-Fiction", "Mystery", "Romance", "Sci-Fi", "Fantasy", "Biography", "History", "Poetry", "Drama"};
-        return genres[(int)(Math.random() * genres.length)];
+    private void createStandaloneBook(String title, String titleSort, Author author, Publisher publisher,
+                                     Language language, int year, String coverUrl, String description) {
+        // Create original work
+        OriginalWork originalWork = new OriginalWork();
+        originalWork.setTitle(title);
+        originalWork.setTitleSort(titleSort);
+        originalWork.setFirstPublication(LocalDate.of(year, 1, 1));
+        originalWork.setDescription(description);
+        originalWork.persist();
+        
+        // Link author to original work
+        OriginalWorkAuthor originalWorkAuthor = new OriginalWorkAuthor(originalWork, author, "author");
+        entityManager.persist(originalWorkAuthor);
+        
+        // Create book
+        Book book = new Book();
+        book.setTitle(title);
+        book.setTitleSort(titleSort);
+        book.setPath("/demo/books/" + title.replaceAll("[^a-zA-Z0-9]", "_") + ".epub");
+        book.setFileSize((long) (500000 + Math.random() * 2000000)); // 500KB to 2.5MB
+        book.setFileHash(generateRandomHash());
+        book.setHasCover(coverUrl != null && !coverUrl.trim().isEmpty());
+        book.setPublicationDate(LocalDate.of(year, (int)(Math.random() * 12) + 1, (int)(Math.random() * 28) + 1));
+        book.setLanguage(language);
+        book.setPublisher(publisher);
+        
+        // Add cover URL and enhanced metadata
+        Map<String, Object> metadata = new HashMap<>();
+        metadata.put("genre", "Fiction");
+        metadata.put("pages", (int)(200 + Math.random() * 600));
+        if (coverUrl != null && !coverUrl.trim().isEmpty()) {
+            metadata.put("coverUrl", coverUrl);
+        }
+        if (description != null && !description.trim().isEmpty()) {
+            metadata.put("description", description);
+        }
+        book.setMetadata(metadata);
+        book.persist();
+        
+        // Link book to original work
+        BookOriginalWork bookOriginalWork = new BookOriginalWork(book, originalWork, 
+                                                                  BookOriginalWorkRelationType.PRIMARY, 0);
+        entityManager.persist(bookOriginalWork);
     }
 }
