@@ -1,5 +1,5 @@
-import { Component, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnDestroy, signal } from '@angular/core';
+import { CommonModule, Location } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
@@ -263,7 +263,7 @@ import { Book, CursorPageResponse, BookSearchCriteria } from '../models/book.mod
           </div>
           
           <div class="pagination-section">
-            @if (previousCursor() || nextCursor()) {
+            @if (previousCursor() || nextCursor() || hasSearched()) {
               <div class="pagination-controls">
                 @if (previousCursor()) {
                   <button mat-raised-button class="nav-button" (click)="loadPrevious()">
@@ -275,6 +275,11 @@ import { Book, CursorPageResponse, BookSearchCriteria } from '../models/book.mod
                   <button mat-raised-button class="nav-button" (click)="loadNext()">
                     Next
                     <mat-icon>chevron_right</mat-icon>
+                  </button>
+                } @else if (previousCursor() || hasSearched()) {
+                  <button mat-raised-button class="nav-button back-button" (click)="goBack()">
+                    <mat-icon>arrow_back</mat-icon>
+                    Back
                   </button>
                 }
               </div>
@@ -604,6 +609,16 @@ import { Book, CursorPageResponse, BookSearchCriteria } from '../models/book.mod
       border-color: #e5a00d;
     }
 
+    .back-button {
+      background: rgba(229, 160, 13, 0.15);
+      border-color: #e5a00d;
+      color: #e5a00d;
+    }
+
+    .back-button:hover {
+      background: rgba(229, 160, 13, 0.3);
+    }
+
     @media (max-width: 768px) {
       .search-header {
         padding: 24px 16px;
@@ -644,7 +659,7 @@ import { Book, CursorPageResponse, BookSearchCriteria } from '../models/book.mod
     }
   `]
 })
-export class SearchComponent {
+export class SearchComponent implements OnDestroy {
   searchForm: FormGroup;
   books = signal<Book[]>([]);
   loading = signal(false);
@@ -654,11 +669,14 @@ export class SearchComponent {
   previousCursor = signal<string | undefined>(undefined);
   limit = signal(20);
   lastCriteria: BookSearchCriteria | null = null;
+  private pageHistory: string[] = [];
+  private popstateListener?: () => void;
 
   constructor(
     private bookService: BookService,
     private snackBar: MatSnackBar,
-    private fb: FormBuilder
+    private fb: FormBuilder,
+    private location: Location
   ) {
     this.searchForm = this.fb.group({
       quickSearch: [''],
@@ -673,6 +691,67 @@ export class SearchComponent {
       sortBy: ['title'],
       sortDirection: ['asc']
     });
+    this.setupBrowserBackSupport();
+  }
+
+  ngOnDestroy() {
+    if (this.popstateListener) {
+      window.removeEventListener('popstate', this.popstateListener);
+    }
+  }
+
+  private setupBrowserBackSupport() {
+    this.popstateListener = () => {
+      // Handle browser back/forward navigation
+      const state = window.history.state;
+      if (state && state.searchPage && state.cursor !== undefined) {
+        this.loadSearchPage(state.cursor, state.query, state.criteria);
+      }
+    };
+    window.addEventListener('popstate', this.popstateListener);
+  }
+
+  private loadSearchPage(cursor: string, query?: string, criteria?: BookSearchCriteria) {
+    this.loading.set(true);
+    
+    if (criteria) {
+      this.bookService.searchBooksByCriteria(criteria, cursor, this.limit()).subscribe({
+        next: (response: CursorPageResponse<Book>) => {
+          this.books.set(response.content);
+          this.nextCursor.set(response.nextCursor);
+          this.previousCursor.set(response.previousCursor);
+          this.loading.set(false);
+        },
+        error: (error) => {
+          console.error('Error loading search page:', error);
+          this.loading.set(false);
+        }
+      });
+    } else if (query) {
+      this.bookService.searchBooks(query, cursor, this.limit()).subscribe({
+        next: (response: CursorPageResponse<Book>) => {
+          this.books.set(response.content);
+          this.nextCursor.set(response.nextCursor);
+          this.previousCursor.set(response.previousCursor);
+          this.loading.set(false);
+        },
+        error: (error) => {
+          console.error('Error loading search page:', error);
+          this.loading.set(false);
+        }
+      });
+    }
+  }
+
+  private updateBrowserHistory(cursor?: string) {
+    const state = {
+      searchPage: true,
+      cursor: cursor,
+      query: this.lastSearchQuery(),
+      criteria: this.lastCriteria
+    };
+    const url = `/search${cursor ? `?cursor=${encodeURIComponent(cursor)}` : ''}`;
+    window.history.pushState(state, '', url);
   }
 
   performQuickSearch() {
@@ -757,6 +836,8 @@ export class SearchComponent {
     if (!this.nextCursor()) return;
 
     this.loading.set(true);
+    this.pageHistory.push(this.nextCursor()!);
+    this.updateBrowserHistory(this.nextCursor());
 
     if (this.lastCriteria) {
       // Continue advanced search with cursor
@@ -794,6 +875,8 @@ export class SearchComponent {
     if (!this.previousCursor()) return;
 
     this.loading.set(true);
+    this.pageHistory.pop(); // Remove current page from history
+    this.updateBrowserHistory(this.previousCursor());
 
     if (this.lastCriteria) {
       // Continue advanced search with cursor
@@ -825,6 +908,10 @@ export class SearchComponent {
         }
       });
     }
+  }
+
+  goBack() {
+    this.location.back();
   }
 
   clearForm() {
