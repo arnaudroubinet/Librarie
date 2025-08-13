@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable, switchMap } from 'rxjs';
+import { Observable, map } from 'rxjs';
 import { Series, SeriesPageResponse } from '../models/series.model';
 import { environment } from '../../environments/environment';
 
@@ -27,19 +27,31 @@ export class SeriesService {
   }
 
   getSeriesBooks(seriesName: string, cursor?: string, limit: number = 20): Observable<any> {
-    // Use the books search endpoint with series criteria
-    let params = new HttpParams().set('limit', limit.toString());
-    
-    if (cursor) {
-      params = params.set('cursor', cursor);
-    }
-    
-    const criteria = {
-      seriesContains: seriesName,
-      sortBy: 'seriesIndex',
-      sortDirection: 'asc'
-    };
-    
-    return this.http.post<any>(`${environment.apiUrl}/v1/books/criteria`, criteria, { params });
+    // Since the criteria search isn't working, let's get all books and filter client-side
+    // This is a temporary workaround - in production you'd want to fix the backend search
+    return this.http.get<any>(`${environment.apiUrl}/v1/books?limit=100`).pipe(
+      map((response: any) => {
+        const filteredBooks = response.content.filter((book: any) => 
+          book.series && book.series === seriesName
+        );
+        
+        // Sort by series index
+        filteredBooks.sort((a: any, b: any) => {
+          const aIndex = a.seriesIndex || 0;
+          const bIndex = b.seriesIndex || 0;
+          return aIndex - bIndex;
+        });
+        
+        return {
+          content: filteredBooks,
+          nextCursor: null,
+          previousCursor: null,
+          limit: limit,
+          hasNext: false,
+          hasPrevious: false,
+          totalCount: filteredBooks.length
+        };
+      })
+    );
   }
 }
