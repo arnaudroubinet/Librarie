@@ -75,9 +75,23 @@ public class DemoDataService {
         
         Arrays.stream(languageData)
             .forEach(data -> {
-                Language language = new Language(data[0], data[1], Boolean.parseBoolean(data[2]));
-                entityManager.persist(language);
-                languages.put(data[0], language);
+                // Check if language already exists by trying to find and merge
+                try {
+                    Language existing = entityManager.find(Language.class, data[0]);
+                    if (existing == null) {
+                        Language language = new Language(data[0], data[1], Boolean.parseBoolean(data[2]));
+                        entityManager.persist(language);
+                        languages.put(data[0], language);
+                    } else {
+                        languages.put(data[0], existing);
+                    }
+                } catch (Exception e) {
+                    // If persist fails due to constraint, try to find existing
+                    Language existing = entityManager.find(Language.class, data[0]);
+                    if (existing != null) {
+                        languages.put(data[0], existing);
+                    }
+                }
             });
         
         return languages;
@@ -97,12 +111,18 @@ public class DemoDataService {
         };
         
         for (String name : publisherNames) {
-            Publisher publisher = new Publisher();
-            publisher.setName(name);
-            publisher.setWebsiteUrl("https://" + name.toLowerCase().replace(" ", "").replace("&", "and") + ".com");
-            publisher.setMetadata(Map.of("founded", getRandomYear(1800, 1990), "country", "US"));
-            publisher.persist();
-            publishers.put(name, publisher);
+            // Check if publisher already exists by name
+            Publisher existing = Publisher.find("name", name).firstResult();
+            if (existing == null) {
+                Publisher publisher = new Publisher();
+                publisher.setName(name);
+                publisher.setWebsiteUrl("https://" + name.toLowerCase().replace(" ", "").replace("&", "and") + ".com");
+                publisher.setMetadata(Map.of("founded", getRandomYear(1800, 1990), "country", "US"));
+                publisher.persist();
+                publishers.put(name, publisher);
+            } else {
+                publishers.put(name, existing);
+            }
         }
         
         return publishers;
@@ -162,14 +182,20 @@ public class DemoDataService {
         };
         
         for (String[] data : authorData) {
-            Author author = new Author();
-            author.setName(data[0]);
-            author.setSortName(data[1]);
-            author.setBirthDate(data[2] != null ? LocalDate.of(Integer.parseInt(data[2]), 1, 1) : null);
-            author.setDeathDate(data[3] != null ? LocalDate.of(Integer.parseInt(data[3]), 1, 1) : null);
-            author.setBio(Map.of("en", "Renowned author known for literary contributions to world literature."));
-            author.persist();
-            authors.put(data[0], author);
+            // Check if author already exists by name
+            Author existing = Author.find("name", data[0]).firstResult();
+            if (existing == null) {
+                Author author = new Author();
+                author.setName(data[0]);
+                author.setSortName(data[1]);
+                author.setBirthDate(data[2] != null ? LocalDate.of(Integer.parseInt(data[2]), 1, 1) : null);
+                author.setDeathDate(data[3] != null ? LocalDate.of(Integer.parseInt(data[3]), 1, 1) : null);
+                author.setBio(Map.of("en", "Renowned author known for literary contributions to world literature."));
+                author.persist();
+                authors.put(data[0], author);
+            } else {
+                authors.put(data[0], existing);
+            }
         }
         
         return authors;
@@ -653,7 +679,7 @@ public class DemoDataService {
             String authorName = data[3];
             
             Language language = languages.values().stream()
-                .filter(l -> l.getDisplayName().equals(languageName))
+                .filter(l -> l.getName().equals(languageName))
                 .findFirst()
                 .orElse(languages.get("en-US"));
                 
@@ -670,12 +696,11 @@ public class DemoDataService {
             Book book = new Book();
             book.setTitle(title);
             book.setTitleSort(title);
-            book.setSha256(generateRandomHash());
+            book.setFileHash(generateRandomHash());
             book.setFileSize((long)(500000 + Math.random() * 2000000)); // 500KB to 2.5MB
-            book.setMimeType("application/pdf");
             book.setPath("/demo/books/" + title.toLowerCase().replaceAll("[^a-z0-9]", "_") + ".pdf");
             book.setHasCover(Math.random() > 0.3); // 70% chance of having a cover
-            book.setPublicationDate(getRandomYear(1800, 2020) + "-01-01");
+            book.setPublicationDate(LocalDate.of(getRandomYear(1800, 2020), 1, 1));
             book.setLanguage(language);
             book.setPublisher(publisher);
             book.setMetadata(Map.of(
@@ -685,7 +710,7 @@ public class DemoDataService {
             ));
             
             book.persist();
-            LOG.info("Created book: {}", title);
+            LOG.infof("Created book: %s", title);
         }
     }
     
