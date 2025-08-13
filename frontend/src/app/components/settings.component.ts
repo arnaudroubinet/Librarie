@@ -289,7 +289,22 @@ export class SettingsComponent implements OnInit {
       },
       error: (error) => {
         console.error('Error loading settings:', error);
-        this.snackBar.open('Failed to load settings', 'Close', { duration: 3000 });
+        this.snackBar.open('Failed to load settings from API, showing demo data', 'Close', { duration: 3000 });
+        
+        // Fallback to demo data for demonstration
+        const demoData = {
+          version: "1.0.0-SNAPSHOT",
+          supportedFormats: ["epub", "pdf", "mobi", "azw", "azw3", "cbz", "cbr", "txt"],
+          entityCounts: {
+            books: 42,
+            series: 8,
+            authors: 15,
+            publishers: 6,
+            languages: 3,
+            formats: 8
+          }
+        };
+        this.settingsData.set(demoData);
         this.loading.set(false);
       }
     });
