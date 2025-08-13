@@ -41,10 +41,7 @@ public class AuthorService implements AuthorUseCase {
             limit = config.pagination().maxPageSize();
         }
         
-        // Since AuthorRepository doesn't have cursor-based pagination yet,
-        // let's implement a simple cursor-based pagination using the existing findAll method
-        List<Author> allAuthors = authorRepository.findAll();
-        return createCursorPageResult(allAuthors, cursor, limit);
+        return authorRepository.findAll(cursor, limit);
     }
     
     @Override
@@ -69,8 +66,7 @@ public class AuthorService implements AuthorUseCase {
             limit = config.pagination().maxPageSize();
         }
         
-        List<Author> foundAuthors = authorRepository.findByNameContainingIgnoreCase(name.trim());
-        return createCursorPageResult(foundAuthors, cursor, limit);
+        return authorRepository.findByNameContainingIgnoreCase(name.trim(), cursor, limit);
     }
     
     @Override
@@ -135,51 +131,6 @@ public class AuthorService implements AuthorUseCase {
         }
         
         authorRepository.deleteById(id);
-    }
-    
-    /**
-     * Create a simple cursor-based page result from a list.
-     * This is a simplified implementation - in production, you'd want proper cursor-based queries.
-     */
-    private CursorPageResult<Author> createCursorPageResult(List<Author> authors, String cursor, int limit) {
-        // For simplicity, using offset-based pagination disguised as cursor pagination
-        int offset = parseCursor(cursor);
-        int totalSize = authors.size();
-        
-        int startIndex = Math.min(offset, totalSize);
-        int endIndex = Math.min(startIndex + limit, totalSize);
-        
-        List<Author> pageItems = authors.subList(startIndex, endIndex);
-        
-        String nextCursor = (endIndex < totalSize) ? String.valueOf(endIndex) : null;
-        String previousCursor = (startIndex > 0) ? String.valueOf(Math.max(0, startIndex - limit)) : null;
-        
-        boolean hasNext = endIndex < totalSize;
-        boolean hasPrevious = startIndex > 0;
-        
-        return new CursorPageResult<>(
-            pageItems,
-            nextCursor,
-            previousCursor,
-            hasNext,
-            hasPrevious,
-            limit,
-            (long) totalSize
-        );
-    }
-    
-    /**
-     * Parse cursor to offset. For simplicity, cursor is just the offset as string.
-     */
-    private int parseCursor(String cursor) {
-        if (cursor == null || cursor.trim().isEmpty()) {
-            return 0;
-        }
-        try {
-            return Integer.parseInt(cursor);
-        } catch (NumberFormatException e) {
-            return 0;
-        }
     }
     
     /**
