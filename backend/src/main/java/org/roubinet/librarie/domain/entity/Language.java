@@ -1,5 +1,6 @@
 package org.roubinet.librarie.domain.entity;
 
+import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -11,7 +12,7 @@ import jakarta.persistence.Table;
  */
 @Entity
 @Table(name = "languages")
-public class Language {
+public class Language extends PanacheEntityBase {
 
     @Id
     @Column(name = "code", length = 35)

@@ -47,9 +47,9 @@ import { MatBadgeModule } from '@angular/material/badge';
 
         <div class="nav-section">
           <div class="section-title">MANAGEMENT</div>
-          <a mat-button class="nav-item" routerLink="/library" routerLinkActive="active">
+          <a mat-button class="nav-item" routerLink="/settings" routerLinkActive="active">
             <mat-icon>settings</mat-icon>
-            <span>Library Settings</span>
+            <span>Settings</span>
           </a>
         </div>
 
