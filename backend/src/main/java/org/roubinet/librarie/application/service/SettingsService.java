@@ -3,20 +3,19 @@ package org.roubinet.librarie.application.service;
 import org.roubinet.librarie.application.port.in.SettingsUseCase;
 import org.roubinet.librarie.application.port.out.BookRepository;
 import org.roubinet.librarie.application.port.out.SeriesRepository;
-import org.roubinet.librarie.domain.entity.Author;
-import org.roubinet.librarie.domain.entity.Publisher;
-import org.roubinet.librarie.domain.entity.Language;
-import org.roubinet.librarie.domain.entity.Format;
+import org.roubinet.librarie.application.port.out.AuthorRepository;
+import org.roubinet.librarie.application.port.out.PublisherRepository;
+import org.roubinet.librarie.application.port.out.LanguageRepository;
+import org.roubinet.librarie.application.port.out.FormatRepository;
 import org.roubinet.librarie.domain.model.SettingsData;
+import org.roubinet.librarie.domain.model.EntityCounts;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import jakarta.persistence.EntityManager;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.util.List;
-import java.util.Map;
-import java.util.HashMap;
-import java.util.stream.Collectors;
+import java.util.Arrays;
 
 /**
  * Application service implementing settings use cases.
@@ -26,63 +25,65 @@ public class SettingsService implements SettingsUseCase {
     
     private final BookRepository bookRepository;
     private final SeriesRepository seriesRepository;
-    private final EntityManager entityManager;
+    private final AuthorRepository authorRepository;
+    private final PublisherRepository publisherRepository;
+    private final LanguageRepository languageRepository;
+    private final FormatRepository formatRepository;
+    
+    @ConfigProperty(name = "quarkus.application.version")
+    String applicationVersion;
+    
+    @ConfigProperty(name = "librarie.file-processing.allowed-extensions")
+    String allowedExtensions;
     
     @Inject
-    public SettingsService(BookRepository bookRepository, SeriesRepository seriesRepository, EntityManager entityManager) {
+    public SettingsService(BookRepository bookRepository, 
+                          SeriesRepository seriesRepository,
+                          AuthorRepository authorRepository,
+                          PublisherRepository publisherRepository,
+                          LanguageRepository languageRepository,
+                          FormatRepository formatRepository) {
         this.bookRepository = bookRepository;
         this.seriesRepository = seriesRepository;
-        this.entityManager = entityManager;
+        this.authorRepository = authorRepository;
+        this.publisherRepository = publisherRepository;
+        this.languageRepository = languageRepository;
+        this.formatRepository = formatRepository;
     }
     
     @Override
     public SettingsData getSystemSettings() {
         String version = getApplicationVersion();
         List<String> supportedFormats = getSupportedFormats();
-        Map<String, Long> entityCounts = getEntityCounts();
+        EntityCounts entityCounts = getEntityCounts();
         
         return new SettingsData(version, supportedFormats, entityCounts);
     }
     
     private String getApplicationVersion() {
-        // Try to get version from system property or manifest
-        String version = System.getProperty("application.version");
-        if (version == null) {
-            // Fallback to package implementation version
-            Package pkg = getClass().getPackage();
-            version = pkg != null ? pkg.getImplementationVersion() : null;
-        }
-        return version != null ? version : "1.0.0-SNAPSHOT";
+        return applicationVersion != null ? applicationVersion : "1.0.0-SNAPSHOT";
     }
     
     private List<String> getSupportedFormats() {
-        // Get distinct format types from the Format entity
-        List<Format> formats = Format.listAll();
-        if (formats.isEmpty()) {
-            // Fallback to hardcoded list if no formats in database
-            return List.of("epub", "mobi", "azw", "azw3", "pdf", "cbz", "cbr", "fb2", 
-                          "txt", "rtf", "doc", "docx", "odt", "html", "lit", "lrf", 
-                          "pdb", "pml", "rb", "snb", "tcr", "txtz");
+        // Get supported formats from application properties
+        if (allowedExtensions != null && !allowedExtensions.isEmpty()) {
+            return Arrays.asList(allowedExtensions.split(","));
         }
-        return formats.stream()
-                .map(format -> format.getType().toLowerCase())
-                .distinct()
-                .sorted()
-                .collect(Collectors.toList());
+        
+        // Fallback to hardcoded list if no configuration
+        return List.of("epub", "mobi", "azw", "azw3", "pdf", "cbz", "cbr", "fb2", 
+                      "txt", "rtf", "doc", "docx", "odt", "html", "lit", "lrf", 
+                      "pdb", "pml", "rb", "snb", "tcr", "txtz");
     }
     
-    private Map<String, Long> getEntityCounts() {
-        Map<String, Long> counts = new HashMap<>();
+    private EntityCounts getEntityCounts() {
+        long books = bookRepository.count();
+        long series = seriesRepository.getTotalCount();
+        long authors = authorRepository.count();
+        long publishers = publisherRepository.count();
+        long languages = languageRepository.count();
+        long formats = formatRepository.count();
         
-        counts.put("books", bookRepository.count());
-        counts.put("series", seriesRepository.getTotalCount());
-        counts.put("authors", Author.count());
-        counts.put("publishers", Publisher.count());
-        
-        // For entities that don't extend PanacheEntityBase, use EntityManager
-        counts.put("languages", entityManager.createQuery("SELECT COUNT(l) FROM Language l", Long.class).getSingleResult());
-        counts.put("formats", Format.count());
-        
-        return counts;
+        return new EntityCounts(books, series, authors, publishers, languages, formats);
     }
 }

@@ -1,7 +1,6 @@
 package org.roubinet.librarie.infrastructure.adapter.in.rest.dto;
 
 import java.util.List;
-import java.util.Map;
 
 /**
  * DTO for settings response containing system information.
@@ -10,11 +9,11 @@ public class SettingsResponseDto {
     
     private String version;
     private List<String> supportedFormats;
-    private Map<String, Long> entityCounts;
+    private EntityCountsDto entityCounts;
     
     public SettingsResponseDto() {}
     
-    public SettingsResponseDto(String version, List<String> supportedFormats, Map<String, Long> entityCounts) {
+    public SettingsResponseDto(String version, List<String> supportedFormats, EntityCountsDto entityCounts) {
         this.version = version;
         this.supportedFormats = supportedFormats;
         this.entityCounts = entityCounts;
@@ -37,11 +36,11 @@ public class SettingsResponseDto {
         this.supportedFormats = supportedFormats;
     }
     
-    public Map<String, Long> getEntityCounts() {
+    public EntityCountsDto getEntityCounts() {
         return entityCounts;
     }
     
-    public void setEntityCounts(Map<String, Long> entityCounts) {
+    public void setEntityCounts(EntityCountsDto entityCounts) {
         this.entityCounts = entityCounts;
     }
 }

@@ -2,7 +2,9 @@ package org.roubinet.librarie.infrastructure.adapter.in.rest;
 
 import org.roubinet.librarie.application.port.in.SettingsUseCase;
 import org.roubinet.librarie.domain.model.SettingsData;
+import org.roubinet.librarie.domain.model.EntityCounts;
 import org.roubinet.librarie.infrastructure.adapter.in.rest.dto.SettingsResponseDto;
+import org.roubinet.librarie.infrastructure.adapter.in.rest.dto.EntityCountsDto;
 
 import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.eclipse.microprofile.openapi.annotations.media.Content;
@@ -41,10 +43,21 @@ public class SettingsController {
         try {
             SettingsData settingsData = settingsUseCase.getSystemSettings();
             
+            // Convert EntityCounts to EntityCountsDto
+            EntityCounts entityCounts = settingsData.getEntityCounts();
+            EntityCountsDto entityCountsDto = new EntityCountsDto(
+                entityCounts.getBooks(),
+                entityCounts.getSeries(),
+                entityCounts.getAuthors(),
+                entityCounts.getPublishers(),
+                entityCounts.getLanguages(),
+                entityCounts.getFormats()
+            );
+            
             SettingsResponseDto response = new SettingsResponseDto(
                 settingsData.getVersion(),
                 settingsData.getSupportedFormats(),
-                settingsData.getEntityCounts()
+                entityCountsDto
             );
             
             return Response.ok(response).build();

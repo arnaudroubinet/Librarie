@@ -6,11 +6,11 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.roubinet.librarie.application.port.in.SettingsUseCase;
 import org.roubinet.librarie.domain.model.SettingsData;
+import org.roubinet.librarie.domain.model.EntityCounts;
 import org.roubinet.librarie.infrastructure.adapter.in.rest.dto.SettingsResponseDto;
 
 import jakarta.ws.rs.core.Response;
 import java.util.List;
-import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -35,10 +35,11 @@ public class SettingsControllerTest {
     @Test
     void testGetSettings_Success() {
         // Given
+        EntityCounts entityCounts = new EntityCounts(5L, 2L, 3L, 1L, 4L, 6L);
         SettingsData mockSettingsData = new SettingsData(
             "1.0.0-SNAPSHOT",
             List.of("epub", "pdf", "mobi"),
-            Map.of("books", 5L, "authors", 3L, "series", 2L)
+            entityCounts
         );
         when(settingsUseCase.getSystemSettings()).thenReturn(mockSettingsData);
 
@@ -52,7 +53,10 @@ public class SettingsControllerTest {
         SettingsResponseDto dto = (SettingsResponseDto) response.getEntity();
         assertEquals("1.0.0-SNAPSHOT", dto.getVersion());
         assertEquals(3, dto.getSupportedFormats().size());
-        assertEquals(3, dto.getEntityCounts().size());
+        assertNotNull(dto.getEntityCounts());
+        assertEquals(5L, dto.getEntityCounts().getBooks());
+        assertEquals(3L, dto.getEntityCounts().getAuthors());
+        assertEquals(2L, dto.getEntityCounts().getSeries());
     }
 
     @Test
