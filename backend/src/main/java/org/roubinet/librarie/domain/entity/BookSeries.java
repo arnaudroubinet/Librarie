@@ -14,7 +14,7 @@ import java.io.Serializable;
 import java.math.BigDecimal;
 
 /**
- * BookSeries record representing the immutable relationship between books and series.
+ * BookSeries entity representing the relationship between books and series.
  * A book can only be in one series (enforced by unique constraint on book_id).
  */
 @Entity
@@ -22,25 +22,54 @@ import java.math.BigDecimal;
     @UniqueConstraint(columnNames = {"book_id"}, name = "uk_book_series_book_id")
 })
 @IdClass(BookSeries.BookSeriesId.class)
-public record BookSeries(
+public class BookSeries {
+    
     @Id
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "book_id")
-    Book book,
+    private Book book;
     
     @Id
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "series_id") 
-    Series series,
+    private Series series;
     
     @Column(name = "series_index", nullable = false, precision = 10, scale = 2, columnDefinition = "decimal(10,2) default 1.0")
-    BigDecimal seriesIndex
-) {
+    private BigDecimal seriesIndex = BigDecimal.ONE;
+
+    // Default constructor for JPA
+    public BookSeries() {}
     
-    public BookSeries {
-        if (seriesIndex == null) {
-            seriesIndex = BigDecimal.ONE;
-        }
+    // Constructor with all fields
+    public BookSeries(Book book, Series series, BigDecimal seriesIndex) {
+        this.book = book;
+        this.series = series;
+        this.seriesIndex = seriesIndex != null ? seriesIndex : BigDecimal.ONE;
+    }
+
+    // Getters and setters
+    public Book getBook() {
+        return book;
+    }
+
+    public void setBook(Book book) {
+        this.book = book;
+    }
+
+    public Series getSeries() {
+        return series;
+    }
+
+    public void setSeries(Series series) {
+        this.series = series;
+    }
+
+    public BigDecimal getSeriesIndex() {
+        return seriesIndex;
+    }
+
+    public void setSeriesIndex(BigDecimal seriesIndex) {
+        this.seriesIndex = seriesIndex;
     }
 
     // Composite key class

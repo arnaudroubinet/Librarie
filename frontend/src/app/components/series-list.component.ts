@@ -426,22 +426,33 @@ import { Series, SeriesPageResponse } from '../models/series.model';
       transition: opacity 0.3s ease;
     }
 
-    .series-poster:hover .series-actions {
+    .series-poster:hover .series-actions,
+    .series-poster:focus-within .series-actions {
       opacity: 1;
     }
 
     .action-btn {
-      background: rgba(0, 0, 0, 0.7);
+      background: rgba(0, 0, 0, 0.8);
       color: #fff;
-      width: 32px;
-      height: 32px;
-      line-height: 32px;
+      width: 36px;
+      height: 36px;
+      min-width: 36px;
+      border-radius: 50%;
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      transition: all 0.2s ease;
+    }
+
+    .action-btn:hover {
+      background: rgba(0, 0, 0, 0.9);
+      border-color: #e5a00d;
+      color: #e5a00d;
+      transform: scale(1.1);
     }
 
     .action-btn mat-icon {
-      font-size: 16px;
-      width: 16px;
-      height: 16px;
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
     }
 
     .pagination-section {
@@ -457,14 +468,33 @@ import { Series, SeriesPageResponse } from '../models/series.model';
     }
 
     .nav-button {
-      background: rgba(255, 255, 255, 0.1);
+      background: linear-gradient(135deg, rgba(229, 160, 13, 0.2) 0%, rgba(204, 144, 0, 0.2) 100%);
       color: #fff;
       border: 1px solid #555;
+      padding: 8px 16px;
+      min-height: 40px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s ease;
     }
 
     .nav-button:hover {
-      background: rgba(229, 160, 13, 0.2);
+      background: linear-gradient(135deg, rgba(229, 160, 13, 0.4) 0%, rgba(204, 144, 0, 0.4) 100%);
       border-color: #e5a00d;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(229, 160, 13, 0.3);
+    }
+
+    .nav-button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .nav-button mat-icon {
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
     }
 
     .pagination-info {
@@ -490,9 +520,46 @@ import { Series, SeriesPageResponse } from '../models/series.model';
         padding: 16px;
       }
 
+      .series-actions {
+        opacity: 1; /* Always visible on mobile for touch devices */
+        position: static;
+        margin-top: 8px;
+        justify-content: center;
+      }
+
+      .action-btn {
+        width: 44px;
+        height: 44px;
+        min-width: 44px; /* Better touch target for mobile */
+      }
+
       .pagination-controls {
         flex-direction: column;
         gap: 16px;
+      }
+
+      .nav-button {
+        padding: 12px 24px;
+        font-size: 16px;
+        min-height: 48px; /* Better touch target */
+      }
+    }
+
+    @media (max-width: 480px) {
+      .series-grid {
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        gap: 12px;
+        padding: 12px;
+      }
+
+      .library-title {
+        font-size: 1.75rem;
+      }
+
+      .fab-search {
+        width: 48px;
+        height: 48px;
+        min-width: 48px;
       }
     }
   `]

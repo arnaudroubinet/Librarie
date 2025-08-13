@@ -14,39 +14,74 @@ import jakarta.persistence.Table;
 import java.io.Serializable;
 
 /**
- * BookOriginalWork record representing the immutable many-to-many relationship between books and original works.
+ * BookOriginalWork entity representing the many-to-many relationship between books and original works.
  * Supports different relationship types like primary, collection, anthology, adaptation.
  */
 @Entity
 @Table(name = "book_original_works")
 @IdClass(BookOriginalWork.BookOriginalWorkId.class)
-public record BookOriginalWork(
+public class BookOriginalWork {
+    
     @Id
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "book_id")
-    Book book,
+    private Book book;
 
     @Id
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "original_work_id")
-    OriginalWork originalWork,
+    private OriginalWork originalWork;
 
     @Id
     @Enumerated(EnumType.STRING)
     @Column(name = "relationship_type", nullable = false, columnDefinition = "text default 'PRIMARY'")
-    BookOriginalWorkRelationType relationshipType,
+    private BookOriginalWorkRelationType relationshipType = BookOriginalWorkRelationType.PRIMARY;
 
     @Column(name = "order_index", nullable = false, columnDefinition = "integer default 0")
-    Integer orderIndex
-) {
-    
-    public BookOriginalWork {
-        if (relationshipType == null) {
-            relationshipType = BookOriginalWorkRelationType.PRIMARY;
-        }
-        if (orderIndex == null) {
-            orderIndex = 0;
-        }
+    private Integer orderIndex = 0;
+
+    // Default constructor for JPA
+    public BookOriginalWork() {}
+
+    // Constructor with all fields
+    public BookOriginalWork(Book book, OriginalWork originalWork, BookOriginalWorkRelationType relationshipType, Integer orderIndex) {
+        this.book = book;
+        this.originalWork = originalWork;
+        this.relationshipType = relationshipType != null ? relationshipType : BookOriginalWorkRelationType.PRIMARY;
+        this.orderIndex = orderIndex != null ? orderIndex : 0;
+    }
+
+    // Getters and setters
+    public Book getBook() {
+        return book;
+    }
+
+    public void setBook(Book book) {
+        this.book = book;
+    }
+
+    public OriginalWork getOriginalWork() {
+        return originalWork;
+    }
+
+    public void setOriginalWork(OriginalWork originalWork) {
+        this.originalWork = originalWork;
+    }
+
+    public BookOriginalWorkRelationType getRelationshipType() {
+        return relationshipType;
+    }
+
+    public void setRelationshipType(BookOriginalWorkRelationType relationshipType) {
+        this.relationshipType = relationshipType;
+    }
+
+    public Integer getOrderIndex() {
+        return orderIndex;
+    }
+
+    public void setOrderIndex(Integer orderIndex) {
+        this.orderIndex = orderIndex;
     }
 
     // Composite key class
