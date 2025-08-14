@@ -56,6 +56,23 @@ public class CursorUtils {
             throw new RuntimeException("Failed to create cursor", e);
         }
     }
+
+    /**
+     * Create a cursor from UUID and string value (for non-timestamp sorting).
+     * 
+     * @param id the record UUID
+     * @param value the record string value (e.g., sortName)
+     * @return Base64-encoded cursor
+     */
+    public String createCursor(UUID id, String value) {
+        try {
+            CursorData cursorData = new CursorData(id.toString(), value);
+            String json = objectMapper.writeValueAsString(cursorData);
+            return Base64.getEncoder().encodeToString(json.getBytes());
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to create cursor", e);
+        }
+    }
     
     /**
      * Parse a cursor to extract ID and timestamp.
