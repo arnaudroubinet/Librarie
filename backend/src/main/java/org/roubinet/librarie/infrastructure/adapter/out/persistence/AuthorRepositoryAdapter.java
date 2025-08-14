@@ -98,6 +98,15 @@ public class AuthorRepositoryAdapter implements AuthorRepository {
     }
     
     @Override
+    public List<Author> findByNameContainingIgnoreCase(String name) {
+        String searchPattern = "%" + name.toLowerCase() + "%";
+        // Limit results for performance - typically used in unified search
+        return Author.find("LOWER(name) LIKE ?1", searchPattern)
+                    .page(Page.ofSize(50)) // Reasonable limit for unified search
+                    .list();
+    }
+    
+    @Override
     public Author save(Author author) {
         Author.persist(author);
         return author;

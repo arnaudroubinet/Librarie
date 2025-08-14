@@ -3,6 +3,7 @@ package org.roubinet.librarie.application.port.out;
 import org.roubinet.librarie.domain.entity.Series;
 import org.roubinet.librarie.infrastructure.adapter.in.rest.dto.pagination.CursorPageResult;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -34,4 +35,12 @@ public interface SeriesRepository {
      * @return Total number of series
      */
     long getTotalCount();
+    
+    /**
+     * Search series by name containing the search term (case-insensitive).
+     * 
+     * @param name the name search term
+     * @return list of matching series
+     */
+    List<Series> findByNameContainingIgnoreCase(String name);
 }

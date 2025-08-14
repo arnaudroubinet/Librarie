@@ -38,6 +38,12 @@ export class AuthorService {
     return this.http.get<AuthorPageResponse>(`${this.baseUrl}/search`, { params });
   }
 
+  // Simple search for unified search (returns array)
+  searchAuthorsSimple(query: string): Observable<Author[]> {
+    const params = new HttpParams().set('q', query).set('limit', '10');
+    return this.http.get<Author[]>(`${this.baseUrl}/search`, { params });
+  }
+
   createAuthor(author: AuthorRequest): Observable<Author> {
     return this.http.post<Author>(this.baseUrl, author);
   }

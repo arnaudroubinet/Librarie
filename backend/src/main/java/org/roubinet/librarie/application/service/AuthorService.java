@@ -70,6 +70,14 @@ public class AuthorService implements AuthorUseCase {
     }
     
     @Override
+    public List<Author> searchAuthors(String query) {
+        if (query == null || query.trim().isEmpty()) {
+            return List.of();
+        }
+        return authorRepository.findByNameContainingIgnoreCase(query.trim());
+    }
+    
+    @Override
     @Transactional
     public Author createAuthor(Author author) {
         if (author == null) {

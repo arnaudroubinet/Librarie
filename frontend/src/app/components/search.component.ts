@@ -16,7 +16,11 @@ import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
 import { MatRippleModule } from '@angular/material/core';
 import { BookService } from '../services/book.service';
+import { SearchService } from '../services/search.service';
 import { Book, CursorPageResponse, BookSearchCriteria } from '../models/book.model';
+import { Series } from '../models/series.model';
+import { Author } from '../models/author.model';
+import { UnifiedSearchResult } from '../models/search.model';
 
 @Component({
   selector: 'app-search',
@@ -195,15 +199,29 @@ import { Book, CursorPageResponse, BookSearchCriteria } from '../models/book.mod
         <!-- Search Results -->
         @if (hasSearched() && !loading()) {
           <div class="results-header">
-            @if (books().length > 0) {
-              <h2>Found {{ books().length }} result(s)</h2>
-              @if (lastSearchQuery()) {
-                <p>for "{{ lastSearchQuery() }}"</p>
+            @if (isUnifiedSearch()) {
+              @if (books().length > 0 || series().length > 0 || authors().length > 0) {
+                <h2>Found {{ books().length + series().length + authors().length }} result(s)</h2>
+                @if (lastSearchQuery()) {
+                  <p>for "{{ lastSearchQuery() }}"</p>
+                }
+              } @else {
+                <h2>No results found</h2>
+                @if (lastSearchQuery()) {
+                  <p>for "{{ lastSearchQuery() }}"</p>
+                }
               }
             } @else {
-              <h2>No results found</h2>
-              @if (lastSearchQuery()) {
-                <p>for "{{ lastSearchQuery() }}"</p>
+              @if (books().length > 0) {
+                <h2>Found {{ books().length }} book(s)</h2>
+                @if (lastSearchQuery()) {
+                  <p>for "{{ lastSearchQuery() }}"</p>
+                }
+              } @else {
+                <h2>No books found</h2>
+                @if (lastSearchQuery()) {
+                  <p>for "{{ lastSearchQuery() }}"</p>
+                }
               }
             }
           </div>
@@ -214,9 +232,110 @@ import { Book, CursorPageResponse, BookSearchCriteria } from '../models/book.mod
             <div class="loading-content">
               <mat-spinner diameter="60" color="accent"></mat-spinner>
               <h3>Searching your library...</h3>
-              <p>Finding books that match your criteria</p>
+              <p>Finding content that match your criteria</p>
             </div>
           </div>
+        } @else if (isUnifiedSearch()) {
+          <!-- Unified Search Results -->
+          @if (books().length > 0) {
+            <div class="results-section">
+              <h3 class="section-title">
+                <mat-icon>book</mat-icon>
+                Books ({{ books().length }})
+              </h3>
+              <div class="books-grid">
+                @for (book of books(); track book.id) {
+                  <div class="book-poster" matRipple [routerLink]="['/books', book.id]">
+                    <div class="book-cover">
+                      @if (book.hasCover) {
+                        <img [src]="'/api/books/' + book.id + '/cover'" 
+                             [alt]="book.title + ' cover'"
+                             class="cover-image"
+                             (error)="onImageError($event)">
+                      } @else {
+                        <div class="cover-placeholder">
+                          <mat-icon>book</mat-icon>
+                          <span class="title-text">{{ getShortTitle(book.title) }}</span>
+                        </div>
+                      }
+                      <div class="cover-overlay">
+                        <mat-icon class="play-icon">visibility</mat-icon>
+                      </div>
+                    </div>
+                    
+                    <div class="book-info">
+                      <h3 class="book-title" [title]="book.title">{{ book.title }}</h3>
+                      @if (book.contributors?.['author']?.length) {
+                        <p class="book-author">{{ book.contributors!['author'].join(', ') }}</p>
+                      }
+                      @if (book.publicationDate) {
+                        <p class="book-year">{{ getYear(book.publicationDate) }}</p>
+                      }
+                    </div>
+                  </div>
+                }
+              </div>
+            </div>
+          }
+          
+          @if (series().length > 0) {
+            <div class="results-section">
+              <h3 class="section-title">
+                <mat-icon>collections_bookmark</mat-icon>
+                Series ({{ series().length }})
+              </h3>
+              <div class="series-grid">
+                @for (s of series(); track s.id) {
+                  <div class="series-item" matRipple [routerLink]="['/series', s.id]">
+                    <div class="series-info">
+                      <h4 class="series-name">{{ s.name }}</h4>
+                      @if (s.description) {
+                        <p class="series-description">{{ s.description }}</p>
+                      }
+                      <p class="series-count">{{ s.bookCount }} book(s)</p>
+                    </div>
+                  </div>
+                }
+              </div>
+            </div>
+          }
+          
+          @if (authors().length > 0) {
+            <div class="results-section">
+              <h3 class="section-title">
+                <mat-icon>person</mat-icon>
+                Authors ({{ authors().length }})
+              </h3>
+              <div class="authors-grid">
+                @for (author of authors(); track author.id) {
+                  <div class="author-item" matRipple>
+                    <div class="author-info">
+                      <h4 class="author-name">{{ author.name }}</h4>
+                      @if (author.birthDate || author.deathDate) {
+                        <p class="author-dates">
+                          {{ author.birthDate ? getYear(author.birthDate) : '?' }} - 
+                          {{ author.deathDate ? getYear(author.deathDate) : 'Present' }}
+                        </p>
+                      }
+                      @if (author.bio && author.bio['en']) {
+                        <p class="author-bio">{{ author.bio['en'] }}</p>
+                      }
+                    </div>
+                  </div>
+                }
+              </div>
+            </div>
+          }
+          
+          @if (books().length === 0 && series().length === 0 && authors().length === 0) {
+            <div class="empty-results">
+              <div class="empty-content">
+                <mat-icon class="empty-icon">search_off</mat-icon>
+                <h2>No results found</h2>
+                <p>Try adjusting your search criteria or checking your spelling.</p>
+              </div>
+            </div>
+          }
         } @else if (books().length > 0) {
           <div class="books-grid">
             @for (book of books(); track book.id) {
@@ -609,6 +728,73 @@ import { Book, CursorPageResponse, BookSearchCriteria } from '../models/book.mod
       border-color: #e5a00d;
     }
 
+    /* Unified Search Styles */
+    .results-section {
+      margin-bottom: 32px;
+    }
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 1.4rem;
+      font-weight: 500;
+      margin: 0 0 16px 0;
+      color: #fff;
+      border-bottom: 2px solid #e5a00d;
+      padding-bottom: 8px;
+    }
+
+    .section-title mat-icon {
+      color: #e5a00d;
+    }
+
+    .series-grid, .authors-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 16px;
+    }
+
+    .series-item, .author-item {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid #333;
+      border-radius: 8px;
+      padding: 16px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .series-item:hover, .author-item:hover {
+      background: rgba(255, 255, 255, 0.12);
+      border-color: #e5a00d;
+      transform: translateY(-2px);
+    }
+
+    .series-name, .author-name {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin: 0 0 8px 0;
+      color: #fff;
+    }
+
+    .series-description, .author-bio {
+      font-size: 14px;
+      color: #ccc;
+      margin: 0 0 8px 0;
+      line-height: 1.4;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .series-count, .author-dates {
+      font-size: 12px;
+      color: #888;
+      margin: 0;
+    }
+
     .back-button {
       background: rgba(229, 160, 13, 0.15);
       border-color: #e5a00d;
@@ -648,6 +834,11 @@ import { Book, CursorPageResponse, BookSearchCriteria } from '../models/book.mod
         gap: 16px;
       }
 
+      .series-grid, .authors-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+
       .pagination-controls {
         flex-direction: column;
         gap: 16px;
@@ -662,6 +853,8 @@ import { Book, CursorPageResponse, BookSearchCriteria } from '../models/book.mod
 export class SearchComponent implements OnDestroy {
   searchForm: FormGroup;
   books = signal<Book[]>([]);
+  series = signal<Series[]>([]);
+  authors = signal<Author[]>([]);
   loading = signal(false);
   hasSearched = signal(false);
   lastSearchQuery = signal('');
@@ -669,11 +862,13 @@ export class SearchComponent implements OnDestroy {
   previousCursor = signal<string | undefined>(undefined);
   limit = signal(20);
   lastCriteria: BookSearchCriteria | null = null;
+  isUnifiedSearch = signal(false);
   private pageHistory: string[] = [];
   private popstateListener?: () => void;
 
   constructor(
     private bookService: BookService,
+    private searchService: SearchService,
     private snackBar: MatSnackBar,
     private fb: FormBuilder,
     private location: Location
@@ -762,17 +957,21 @@ export class SearchComponent implements OnDestroy {
     this.hasSearched.set(true);
     this.lastSearchQuery.set(query);
     this.lastCriteria = null;
+    this.isUnifiedSearch.set(true);
 
-    this.bookService.searchBooks(query, undefined, this.limit()).subscribe({
-      next: (response: CursorPageResponse<Book>) => {
-        this.books.set(response.content);
-        this.nextCursor.set(response.nextCursor);
-        this.previousCursor.set(response.previousCursor);
+    this.searchService.unifiedSearch(query, 10).subscribe({
+      next: (response: UnifiedSearchResult) => {
+        this.books.set(response.books);
+        this.series.set(response.series);
+        this.authors.set(response.authors);
+        // Reset pagination cursors for unified search
+        this.nextCursor.set(undefined);
+        this.previousCursor.set(undefined);
         this.loading.set(false);
       },
       error: (error) => {
-        console.error('Error searching books:', error);
-        this.snackBar.open('Failed to search books. Please try again.', 'Close', {
+        console.error('Error performing unified search:', error);
+        this.snackBar.open('Failed to search. Please try again.', 'Close', {
           duration: 3000
         });
         this.loading.set(false);
@@ -814,6 +1013,10 @@ export class SearchComponent implements OnDestroy {
     this.hasSearched.set(true);
     this.lastSearchQuery.set('Advanced Search');
     this.lastCriteria = criteria;
+    this.isUnifiedSearch.set(false);
+    // Clear non-book results for advanced search
+    this.series.set([]);
+    this.authors.set([]);
 
     this.bookService.searchBooksByCriteria(criteria, undefined, this.limit()).subscribe({
       next: (response: CursorPageResponse<Book>) => {
@@ -929,9 +1132,12 @@ export class SearchComponent implements OnDestroy {
       sortDirection: 'asc'
     });
     this.books.set([]);
+    this.series.set([]);
+    this.authors.set([]);
     this.hasSearched.set(false);
     this.lastSearchQuery.set('');
     this.lastCriteria = null;
+    this.isUnifiedSearch.set(false);
   }
 
   getYear(dateString: string): string {

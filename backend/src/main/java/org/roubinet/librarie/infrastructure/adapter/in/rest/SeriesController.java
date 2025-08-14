@@ -126,6 +126,32 @@ public class SeriesController {
         }
     }
     
+    @GET
+    @Path("/search")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Operation(summary = "Search series", description = "Search series by name")
+    @APIResponses(value = {
+        @APIResponse(responseCode = "200", description = "Search completed successfully",
+            content = @Content(schema = @Schema(implementation = SeriesResponseDto.class)))
+    })
+    public Response searchSeries(
+            @Parameter(description = "Search query", required = true)
+            @QueryParam("q") String query) {
+        
+        try {
+            List<SeriesData> series = seriesUseCase.searchSeries(query);
+            List<SeriesResponseDto> seriesDtos = series.stream()
+                .map(this::toDto)
+                .collect(Collectors.toList());
+            
+            return Response.ok(seriesDtos).build();
+        } catch (Exception e) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                .entity("Internal server error: " + e.getMessage())
+                .build();
+        }
+    }
+    
     /**
      * Convert SeriesData domain model to DTO.
      */
