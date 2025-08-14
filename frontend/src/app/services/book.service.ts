@@ -81,4 +81,14 @@ export class BookService {
     const completionData: CompletionRequest = { progress };
     return this.http.post<CompletionResponse>(`${this.baseUrl}/${bookId}/completion`, completionData);
   }
+
+  getBooksByAuthor(authorName: string, cursor?: string, limit: number = 20): Observable<CursorPageResponse<Book>> {
+    const criteria: BookSearchCriteria = {
+      contributorsContain: [authorName],
+      sortBy: 'createdAt',
+      sortDirection: 'desc'
+    };
+    
+    return this.searchBooksByCriteria(criteria, cursor, limit);
+  }
 }

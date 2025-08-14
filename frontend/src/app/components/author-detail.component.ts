@@ -9,7 +9,11 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatDividerModule } from '@angular/material/divider';
 import { AuthorService } from '../services/author.service';
+import { BookService } from '../services/book.service';
+import { SeriesService } from '../services/series.service';
 import { Author } from '../models/author.model';
+import { Book } from '../models/book.model';
+import { Series } from '../models/series.model';
 
 @Component({
   selector: 'app-author-detail',
@@ -150,19 +154,102 @@ import { Author } from '../models/author.model';
                 </div>
               }
 
-              <!-- Series Section -->
+              <!-- Series & Works Section -->
               <div class="works-section">
                 <h2 class="section-title">
                   <mat-icon>library_books</mat-icon>
                   Series & Works
+                  <span class="item-count">
+                    {{ (authorSeries().length || 0) + (authorBooks().length || 0) }} items
+                  </span>
                 </h2>
-                <div class="placeholder-content">
-                  <mat-icon class="placeholder-icon">auto_stories</mat-icon>
-                  <p>Series and works information coming soon...</p>
-                  <p class="placeholder-description">
-                    This section will show the series this author has contributed to and their individual works.
-                  </p>
-                </div>
+                
+                @if (loadingWorks()) {
+                  <div class="loading-works">
+                    <mat-spinner diameter="30"></mat-spinner>
+                    <p>Loading author's works...</p>
+                  </div>
+                } @else {
+                  @if (authorSeries().length > 0 || authorBooks().length > 0) {
+                    <!-- Series Section -->
+                    @if (authorSeries().length > 0) {
+                      <div class="series-subsection">
+                        <h3 class="subsection-title">
+                          <mat-icon>collections_bookmark</mat-icon>
+                          Series ({{ authorSeries().length }})
+                        </h3>
+                        <div class="series-grid">
+                          @for (series of authorSeries(); track series.name) {
+                            <div class="series-card">
+                              @if (series.fallbackImagePath) {
+                                <img [src]="series.fallbackImagePath" 
+                                     [alt]="series.name + ' cover'" 
+                                     class="series-cover"
+                                     (error)="onImageError($event)" />
+                              } @else {
+                                <div class="series-cover-placeholder">
+                                  <mat-icon>auto_stories</mat-icon>
+                                </div>
+                              }
+                              <div class="series-info">
+                                <h4 class="series-title">{{ series.name }}</h4>
+                                <p class="series-book-count">{{ series.bookCount }} {{ series.bookCount === 1 ? 'book' : 'books' }}</p>
+                              </div>
+                            </div>
+                          }
+                        </div>
+                      </div>
+                    }
+
+                    <!-- Individual Books Section -->
+                    @if (authorBooks().length > 0) {
+                      <div class="books-subsection">
+                        <h3 class="subsection-title">
+                          <mat-icon>book</mat-icon>
+                          Books ({{ authorBooks().length }})
+                        </h3>
+                        <div class="books-grid">
+                          @for (book of authorBooks(); track book.id) {
+                            <div class="book-card">
+                              @if (book.hasCover && book.path) {
+                                <img [src]="book.path + '/cover'" 
+                                     [alt]="book.title + ' cover'" 
+                                     class="book-cover"
+                                     (error)="onImageError($event)" />
+                              } @else {
+                                <div class="book-cover-placeholder">
+                                  <mat-icon>book</mat-icon>
+                                </div>
+                              }
+                              <div class="book-info">
+                                <h4 class="book-title">{{ book.title }}</h4>
+                                @if (book.series) {
+                                  <p class="book-series">{{ book.series }}
+                                    @if (book.seriesIndex) {
+                                      #{{ book.seriesIndex }}
+                                    }
+                                  </p>
+                                }
+                                @if (book.publicationDate) {
+                                  <p class="book-date">{{ formatBookDate(book.publicationDate) }}</p>
+                                }
+                              </div>
+                            </div>
+                          }
+                        </div>
+                      </div>
+                    }
+                  } @else {
+                    <div class="no-works">
+                      <mat-icon class="no-works-icon">auto_stories</mat-icon>
+                      <p>No books or series found for this author.</p>
+                      <p class="no-works-description">
+                        This could mean the author's works haven't been added to the library yet,
+                        or they might be listed under a different name.
+                      </p>
+                    </div>
+                  }
+                }
               </div>
 
               <!-- Actions Section -->
@@ -464,16 +551,169 @@ import { Author } from '../models/author.model';
         height: 160px;
       }
     }
+
+    .item-count {
+      font-size: 0.9rem;
+      color: #ff4081;
+      font-weight: normal;
+      margin-left: 8px;
+    }
+
+    .loading-works {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 32px;
+      color: rgba(255, 255, 255, 0.7);
+    }
+
+    .loading-works mat-spinner {
+      margin-bottom: 16px;
+    }
+
+    .subsection-title {
+      font-size: 1.2rem;
+      font-weight: 600;
+      margin: 24px 0 16px 0;
+      color: #ff4081;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .series-subsection, .books-subsection {
+      margin-bottom: 32px;
+    }
+
+    .series-grid, .books-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 16px;
+      margin-top: 16px;
+    }
+
+    .series-card, .book-card {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 8px;
+      padding: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+
+    .series-card:hover, .book-card:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(25, 118, 210, 0.3);
+      transform: translateY(-2px);
+    }
+
+    .series-cover, .book-cover {
+      width: 100%;
+      height: 120px;
+      object-fit: cover;
+      border-radius: 4px;
+      margin-bottom: 12px;
+    }
+
+    .series-cover-placeholder, .book-cover-placeholder {
+      width: 100%;
+      height: 120px;
+      background: linear-gradient(45deg, #1976d2, #ff4081);
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 12px;
+    }
+
+    .series-cover-placeholder mat-icon, .book-cover-placeholder mat-icon {
+      font-size: 3rem !important;
+      width: 3rem !important;
+      height: 3rem !important;
+      color: white;
+    }
+
+    .series-title, .book-title {
+      font-size: 1rem;
+      font-weight: 600;
+      margin: 0 0 8px 0;
+      line-height: 1.3;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .series-book-count, .book-series, .book-date {
+      font-size: 0.85rem;
+      color: rgba(255, 255, 255, 0.7);
+      margin: 4px 0;
+    }
+
+    .book-series {
+      color: #1976d2;
+      font-weight: 500;
+    }
+
+    .no-works {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 48px 24px;
+      text-align: center;
+      color: rgba(255, 255, 255, 0.7);
+    }
+
+    .no-works-icon {
+      font-size: 4rem !important;
+      width: 4rem !important;
+      height: 4rem !important;
+      color: rgba(255, 255, 255, 0.3);
+      margin-bottom: 16px;
+    }
+
+    .no-works-description {
+      font-size: 0.9rem;
+      margin-top: 8px;
+      opacity: 0.8;
+    }
+
+    /* Additional responsive updates for works section */
+    @media (max-width: 768px) {
+      .series-grid, .books-grid {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 12px;
+      }
+
+      .series-cover, .book-cover {
+        height: 100px;
+      }
+
+      .series-cover-placeholder, .book-cover-placeholder {
+        height: 100px;
+      }
+
+      .series-cover-placeholder mat-icon, .book-cover-placeholder mat-icon {
+        font-size: 2.5rem !important;
+        width: 2.5rem !important;
+        height: 2.5rem !important;
+      }
+    }
   `]
 })
 export class AuthorDetailComponent implements OnInit {
   author = signal<Author | null>(null);
   loading = signal(true);
+  authorBooks = signal<Book[]>([]);
+  authorSeries = signal<Series[]>([]);
+  loadingWorks = signal(false);
 
   constructor(
     private route: ActivatedRoute,
     private router: Router,
     private authorService: AuthorService,
+    private bookService: BookService,
+    private seriesService: SeriesService,
     private snackBar: MatSnackBar
   ) {}
 
@@ -493,11 +733,38 @@ export class AuthorDetailComponent implements OnInit {
       next: (author: Author) => {
         this.author.set(author);
         this.loading.set(false);
+        this.loadAuthorWorks(author.name);
       },
       error: (error) => {
         console.error('Error loading author details:', error);
         this.snackBar.open('Failed to load author details', 'Close', { duration: 3000 });
         this.loading.set(false);
+      }
+    });
+  }
+
+  loadAuthorWorks(authorName: string) {
+    this.loadingWorks.set(true);
+    
+    // Load books by author
+    this.bookService.getBooksByAuthor(authorName, undefined, 50).subscribe({
+      next: (booksResponse) => {
+        this.authorBooks.set(booksResponse.content);
+      },
+      error: (error) => {
+        console.error('Error loading author books:', error);
+      }
+    });
+
+    // Load series by author
+    this.seriesService.getSeriesByAuthor(authorName).subscribe({
+      next: (series) => {
+        this.authorSeries.set(series);
+        this.loadingWorks.set(false);
+      },
+      error: (error) => {
+        console.error('Error loading author series:', error);
+        this.loadingWorks.set(false);
       }
     });
   }
@@ -545,5 +812,10 @@ export class AuthorDetailComponent implements OnInit {
 
   isArray(value: any): boolean {
     return Array.isArray(value);
+  }
+
+  formatBookDate(dateString: string): string {
+    const date = new Date(dateString);
+    return date.getFullYear().toString();
   }
 }

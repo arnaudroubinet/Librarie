@@ -1,7 +1,8 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
 import { Series, SeriesPageResponse } from '../models/series.model';
+import { BookService } from './book.service';
 import { environment } from '../../environments/environment';
 
 @Injectable({
@@ -9,6 +10,7 @@ import { environment } from '../../environments/environment';
 })
 export class SeriesService {
   private readonly baseUrl = `${environment.apiUrl}/v1/books/series`;
+  private bookService = inject(BookService);
 
   constructor(private http: HttpClient) {}
 
@@ -51,6 +53,35 @@ export class SeriesService {
           hasPrevious: false,
           totalCount: filteredBooks.length
         };
+      })
+    );
+  }
+
+  getSeriesByAuthor(authorName: string): Observable<Series[]> {
+    // Get all books by the author, then extract unique series
+    return this.bookService.getBooksByAuthor(authorName, undefined, 100).pipe(
+      map(response => {
+        const seriesMap = new Map<string, Series>();
+        
+        response.content.forEach(book => {
+          if (book.series) {
+            if (!seriesMap.has(book.series)) {
+              // Create a basic series object from book data
+              seriesMap.set(book.series, {
+                id: '', // We don't have series ID from book data
+                name: book.series,
+                bookCount: 0,
+                fallbackImagePath: book.hasCover ? `${book.path}/cover` : undefined
+              });
+            }
+            
+            // Increment book count for this series
+            const series = seriesMap.get(book.series)!;
+            series.bookCount++;
+          }
+        });
+        
+        return Array.from(seriesMap.values()).sort((a, b) => a.name.localeCompare(b.name));
       })
     );
   }
