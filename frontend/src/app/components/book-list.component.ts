@@ -39,9 +39,6 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
           <h1 class="library-title">
             <iconify-icon class="title-icon" icon="ph:books-thin"></iconify-icon>
             Books Library
-            @if (scrollState.items().length > 0) {
-              <span class="book-count">{{ scrollState.items().length }} books</span>
-            }
           </h1>
           <p class="library-subtitle">Discover and explore your digital book collection</p>
         </div>
@@ -80,6 +77,10 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
                       <img [src]="getEffectiveImagePath(asBook(book))!" 
                            [alt]="asBook(book).title + ' cover'"
                            class="cover-image"
+                           loading="lazy"
+                           decoding="async"
+                           fetchpriority="low"
+                           (load)="onImageLoad($event)"
                            (error)="onImageError($event)">
                     } @else {
                       <div class="cover-placeholder">
@@ -89,14 +90,11 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
                     }
                     <div class="book-overlay">
                       <div class="book-actions">
-                        <button mat-icon-button class="action-btn" (click)="viewBookDetails($event, asBook(book).id)">
-                          <mat-icon>visibility</mat-icon>
+                        <button mat-icon-button class="action-btn" aria-label="Bookmark" (click)="toggleFavorite($event, asBook(book))">
+                          <iconify-icon [icon]="getBookmarkIcon(asBook(book))"></iconify-icon>
                         </button>
-                        <button mat-icon-button class="action-btn" (click)="toggleFavorite($event, asBook(book))">
-                          <mat-icon>favorite_border</mat-icon>
-                        </button>
-                        <button mat-icon-button class="action-btn" (click)="shareBook($event, asBook(book))">
-                          <mat-icon>share</mat-icon>
+                        <button mat-icon-button class="action-btn" aria-label="Share" (click)="shareBook($event, asBook(book))">
+                          <iconify-icon icon="material-symbols-light:share"></iconify-icon>
                         </button>
                       </div>
                     </div>
@@ -189,12 +187,7 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
 
   .title-icon { font-size: 32px; width: 32px; height: 32px; color: #e5a00d; margin-right: 12px; }
 
-    .book-count {
-      font-size: 1.1rem;
-      opacity: 0.7;
-      font-weight: 400;
-      margin-left: 16px;
-    }
+  /* Removed book-count display */
 
     .library-subtitle {
       font-size: 0.95rem;
@@ -326,7 +319,12 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
       width: 100%;
       height: 100%;
       object-fit: cover;
-      transition: transform 0.3s ease;
+      opacity: 0;
+      transition: opacity 0.3s ease, transform 0.3s ease;
+    }
+
+    .cover-image.loaded {
+      opacity: 1;
     }
 
     .book-card:hover .cover-image {
@@ -385,6 +383,12 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
     .action-btn:hover {
       background: rgba(79, 195, 247, 0.8) !important;
       transform: scale(1.1) !important;
+    }
+
+    .action-btn iconify-icon {
+      font-size: 28px;
+      width: 28px;
+      height: 28px;
     }
 
     .book-info {
@@ -546,21 +550,45 @@ export class BookListComponent implements OnInit {
     return item as Book;
   }
 
-  viewBookDetails(event: Event, bookId: string) {
-    event.stopPropagation();
-    // Router navigation will be handled by template
-  }
+  // Clicking anywhere on the card (outside action buttons) opens details via [routerLink]
 
   toggleFavorite(event: Event, book: Book) {
     event.stopPropagation();
-    // TODO: Implement favorite functionality
-    this.snackBar.open('Favorite functionality not implemented yet', 'Close', { duration: 3000 });
+    // TODO: Implement bookmark functionality
+    this.snackBar.open('Bookmark functionality not implemented yet', 'Close', { duration: 3000 });
   }
 
   shareBook(event: Event, book: Book) {
     event.stopPropagation();
-    // TODO: Implement share functionality
-    this.snackBar.open('Share functionality not implemented yet', 'Close', { duration: 3000 });
+    const url = `${window.location.origin}/books/${book.id}`;
+    const done = () => this.snackBar.open('Book link copied to clipboard', 'Close', { duration: 2000 });
+    const fail = () => this.snackBar.open('Failed to copy link', 'Close', { duration: 2500 });
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url).then(done).catch(() => {
+        // Fallback if writeText fails
+        this.legacyCopy(url) ? done() : fail();
+      });
+    } else {
+      this.legacyCopy(url) ? done() : fail();
+    }
+  }
+
+  private legacyCopy(text: string): boolean {
+    try {
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.style.position = 'fixed';
+      textarea.style.left = '-9999px';
+      document.body.appendChild(textarea);
+      textarea.focus();
+      textarea.select();
+      const success = document.execCommand('copy');
+      document.body.removeChild(textarea);
+      return success;
+    } catch {
+      return false;
+    }
   }
 
   getEffectiveImagePath(book: Book): string | null {
@@ -573,6 +601,10 @@ export class BookListComponent implements OnInit {
 
   onImageError(event: any) {
     event.target.style.display = 'none';
+  }
+
+  onImageLoad(event: any) {
+    event.target.classList.add('loaded');
   }
 
   getShortTitle(title: string): string {
@@ -589,5 +621,14 @@ export class BookListComponent implements OnInit {
 
   getPublicationYear(publicationDate: string): number {
     return new Date(publicationDate).getFullYear();
+  }
+
+  getBookmarkIcon(book: Book): string {
+    return this.isBookmarked(book) ? 'material-symbols:bookmark' : 'material-symbols:bookmark-outline';
+  }
+
+  isBookmarked(book: Book): boolean {
+    // TODO: wire to real bookmark state when implemented
+    return false;
   }
 }

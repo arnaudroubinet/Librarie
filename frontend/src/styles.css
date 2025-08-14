@@ -12,6 +12,10 @@ html, body {
   font-family: 'Poppins', 'Inter', 'Roboto', sans-serif;
 }
 
+/* Default links are white across the app */
+a, a:visited { color: #ffffff; text-decoration: none; }
+a:hover, a:focus { color: #ffffff; text-decoration: underline; }
+
 /* Custom theme variables */
 :root {
   --primary-color: #1976d2;

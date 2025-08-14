@@ -124,22 +124,25 @@ import { MatButtonModule } from '@angular/material/button';
       margin-bottom: 4px;
       padding: 12px 8px;
       border-radius: 8px;
-      color: #cccccc;
+      color: #ffffff; /* Menu button text/icon should be white */
       font-weight: 500;
       transition: all 0.3s ease;
       position: relative;
       overflow: hidden;
     }
 
-    .nav-item:hover {
-      background: rgba(229, 160, 13, 0.1);
-      color: #e5a00d;
-      transform: translateX(4px);
-    }
+    /* Ensure links are white in all unselected states */
+    .nav-item:link,
+    .nav-item:visited,
+    .nav-item:hover,
+    .nav-item:focus,
+    .nav-item:active { color: #ffffff !important; }
+
+    .nav-item:hover { color: #ffffff; transform: translateX(4px); }
 
     .nav-item.active {
-      background: linear-gradient(135deg, #e5a00d 0%, #cc9000 100%);
-      color: #000000;
+      /* Keep whatever background (often blue) but ensure text stays white */
+      color: #ffffff !important;
       font-weight: 600;
     }
 
@@ -153,7 +156,12 @@ import { MatButtonModule } from '@angular/material/button';
       background: #fff;
     }
 
-  .nav-item :is(mat-icon, iconify-icon) { margin-right: 12px; font-size: 20px; width: 20px; height: 20px; }
+  .nav-item :is(mat-icon, iconify-icon) { margin-right: 12px; font-size: 20px; width: 20px; height: 20px; color: inherit; }
+  .nav-item iconify-icon,
+  .nav-item mat-icon { color: #ffffff !important; }
+
+    /* Ensure Angular Material button label inside stays white */
+    .nav-item .mdc-button__label { color: #ffffff !important; }
 
     .nav-footer {
       margin-top: auto;
