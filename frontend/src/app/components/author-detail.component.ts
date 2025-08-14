@@ -1,6 +1,6 @@
-import { Component, OnInit, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { ActivatedRoute, Router } from '@angular/router';
+import { Component, OnInit, signal, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
+import { CommonModule, Location } from '@angular/common';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -10,12 +10,19 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatDividerModule } from '@angular/material/divider';
 import { AuthorService } from '../services/author.service';
 import { Author } from '../models/author.model';
+import { BookService } from '../services/book.service';
+import { Book } from '../models/book.model';
+import { SeriesService } from '../services/series.service';
+import { environment } from '../../environments/environment';
+import { forkJoin } from 'rxjs';
 
 @Component({
   selector: 'app-author-detail',
   standalone: true,
+  schemas: [CUSTOM_ELEMENTS_SCHEMA],
   imports: [
     CommonModule,
+  RouterModule,
     MatCardModule,
     MatButtonModule,
     MatIconModule,
@@ -35,8 +42,8 @@ import { Author } from '../models/author.model';
         <div class="author-detail">
           <div class="back-button">
             <button mat-button (click)="goBack()">
-              <mat-icon>arrow_back</mat-icon>
-              Back to Authors
+              <iconify-icon icon="lets-icons:back"></iconify-icon>
+              Back
             </button>
           </div>
 
@@ -52,7 +59,7 @@ import { Author } from '../models/author.model';
               } @else {
                 <div class="author-photo-placeholder">
                   <div class="placeholder-content">
-                    <mat-icon class="placeholder-icon">person</mat-icon>
+                    <iconify-icon class="placeholder-iconify" icon="ph:users-three-thin"></iconify-icon>
                     <div class="placeholder-text">{{ getInitials(author()!.name) }}</div>
                   </div>
                 </div>
@@ -64,9 +71,6 @@ import { Author } from '../models/author.model';
               <!-- Name Section -->
               <div class="name-section">
                 <h1 class="author-name">{{ author()!.name }}</h1>
-                @if (author()!.sortName && author()!.sortName !== author()!.name) {
-                  <div class="author-sortname">({{ author()!.sortName }})</div>
-                }
                 @if (author()!.birthDate || author()!.deathDate) {
                   <div class="author-dates">
                     {{ formatDates(author()!.birthDate, author()!.deathDate) }}
@@ -115,14 +119,11 @@ import { Author } from '../models/author.model';
                   </div>
                 }
 
-                @if (author()!.websiteUrl) {
+        @if (author()!.websiteUrl) {
                   <div class="detail-item">
                     <span class="detail-label">Website:</span>
                     <span class="detail-value">
-                      <a [href]="author()!.websiteUrl" target="_blank" class="website-link">
-                        {{ author()!.websiteUrl }}
-                        <mat-icon class="external-link">open_in_new</mat-icon>
-                      </a>
+          <a [href]="author()!.websiteUrl" target="_blank" class="website-link">{{ author()!.websiteUrl }}</a>
                     </span>
                   </div>
                 }
@@ -140,6 +141,20 @@ import { Author } from '../models/author.model';
                     <span class="detail-value">{{ author()!.metadata!['profession'] }}</span>
                   </div>
                 }
+
+                @if (author()!.createdAt) {
+                  <div class="detail-item">
+                    <span class="detail-label">Added</span>
+                    <span class="detail-value">{{ formatDate(author()!.createdAt!) }}</span>
+                  </div>
+                }
+
+                @if (author()!.updatedAt) {
+                  <div class="detail-item">
+                    <span class="detail-label">Updated</span>
+                    <span class="detail-value">{{ formatDate(author()!.updatedAt!) }}</span>
+                  </div>
+                }
               </div>
 
               <!-- Biography Section -->
@@ -151,40 +166,90 @@ import { Author } from '../models/author.model';
               }
 
               <!-- Series Section -->
-              <div class="works-section">
-                <h2 class="section-title">
-                  <mat-icon>library_books</mat-icon>
-                  Series & Works
-                </h2>
-                <div class="placeholder-content">
-                  <mat-icon class="placeholder-icon">auto_stories</mat-icon>
-                  <p>Series and works information coming soon...</p>
-                  <p class="placeholder-description">
-                    This section will show the series this author has contributed to and their individual works.
-                  </p>
+              @if (authorSeries().length > 0) {
+                <div class="works-section">
+                  <h2 class="section-title">
+                    <iconify-icon icon="icon-park-outline:bookshelf"></iconify-icon>
+                    Series
+                  </h2>
+                  <div class="series-grid">
+                    @for (s of authorSeries(); track s.key) {
+                      @if (s.id) {
+                        <a class="series-card" [routerLink]="['/series', s.id]">
+                          <div class="cover-wrap">
+                            @if (s.imagePath || s.fallbackImagePath) {
+                              <img class="book-cover" [src]="s.imagePath || s.fallbackImagePath" [alt]="s.name + ' cover'" />
+                            } @else if (s.coverFromBookId) {
+                              <img class="book-cover" [src]="apiUrl + '/v1/books/' + s.coverFromBookId + '/cover'" [alt]="s.name + ' cover'" />
+                            } @else {
+                              <div class="series-cover-placeholder">
+                                <iconify-icon class="placeholder-iconify" icon="icon-park-outline:bookshelf"></iconify-icon>
+                                <div class="placeholder-text">{{ getShortTitle(s.name) }}</div>
+                              </div>
+                            }
+                          </div>
+                          <div class="series-title">{{ s.name }}</div>
+                          <div class="series-count">{{ s.count }} {{ s.count === 1 ? 'book' : 'books' }}</div>
+                        </a>
+                      } @else {
+                        <div class="series-card">
+                          <div class="cover-wrap">
+                            @if (s.coverFromBookId) {
+                              <img class="book-cover" [src]="apiUrl + '/v1/books/' + s.coverFromBookId + '/cover'" [alt]="s.name + ' cover'" />
+                            } @else {
+                              <div class="series-cover-placeholder">
+                                <iconify-icon class="placeholder-iconify" icon="icon-park-outline:bookshelf"></iconify-icon>
+                                <div class="placeholder-text">{{ getShortTitle(s.name) }}</div>
+                              </div>
+                            }
+                          </div>
+                          <div class="series-title">{{ s.name }}</div>
+                          <div class="series-count">{{ s.count }} {{ s.count === 1 ? 'book' : 'books' }}</div>
+                        </div>
+                      }
+                    }
+                  </div>
                 </div>
-              </div>
+              }
 
-              <!-- Actions Section -->
-              <div class="actions-section">
-                @if (author()!.websiteUrl) {
-                  <button mat-raised-button color="primary" (click)="openWebsite(author()!.websiteUrl!)">
-                    <mat-icon>language</mat-icon>
-                    Visit Website
-                  </button>
-                }
-              </div>
+              <!-- Books Section -->
+              @if (authorBooks().length > 0) {
+                <div class="works-section">
+                  <h2 class="section-title">
+                    <iconify-icon icon="ph:books-thin"></iconify-icon>
+                    Books
+                  </h2>
+                  <div class="books-grid">
+                    @for (b of authorBooks(); track b.id) {
+                      <a class="book-card" [routerLink]="['/books', b.id]">
+                        <div class="cover-wrap">
+                          @if (b.hasCover) {
+                            <img class="book-cover" [src]="apiUrl + '/v1/books/' + b.id + '/cover'" [alt]="b.title + ' cover'" />
+                          } @else {
+                            <div class="book-cover-placeholder">
+                              <iconify-icon class="placeholder-iconify" icon="ph:books-thin"></iconify-icon>
+                              <div class="placeholder-text">{{ getShortTitle(b.title) }}</div>
+                            </div>
+                          }
+                        </div>
+                        <div class="book-title">{{ b.title }}</div>
+                        @if (b.series) { <div class="book-series-sub">{{ b.series }} @if (b.seriesIndex) { <span>#{{ b.seriesIndex }}</span> }</div> }
+                      </a>
+                    }
+                  </div>
+                </div>
+              }
             </div>
           </div>
         </div>
       } @else {
-        <div class="error-container">
+  <div class="error-state">
           <mat-icon class="error-icon">error</mat-icon>
           <h2>Author not found</h2>
           <p>The author you're looking for could not be found.</p>
           <button mat-raised-button color="primary" (click)="goBack()">
-            <mat-icon>arrow_back</mat-icon>
-            Back to Authors
+      <iconify-icon icon="lets-icons:back"></iconify-icon>
+      Back
           </button>
         </div>
       }
@@ -199,7 +264,7 @@ import { Author } from '../models/author.model';
       padding: 0;
     }
 
-    .loading-container, .error-container {
+    .loading-container, .error-state {
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -258,7 +323,7 @@ import { Author } from '../models/author.model';
       width: 200px;
       height: 200px;
       border-radius: 50%;
-      background: linear-gradient(45deg, #1976d2, #ff4081);
+      background: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -266,10 +331,7 @@ import { Author } from '../models/author.model';
       box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
     }
 
-    .placeholder-content {
-      text-align: center;
-      color: white;
-    }
+  .placeholder-content { text-align: center; color: white; }
 
     .placeholder-icon {
       font-size: 3rem !important;
@@ -293,27 +355,16 @@ import { Author } from '../models/author.model';
     }
 
     .author-name {
-      font-size: 2.5rem;
-      font-weight: 700;
-      margin: 0 0 8px 0;
-      line-height: 1.2;
-      background: linear-gradient(45deg, #1976d2, #ff4081);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
+  font-size: 2.2rem;
+  font-weight: 700;
+  margin: 0 0 8px 0;
+  line-height: 1.2;
+  color: #ffffff;
     }
 
-    .author-sortname {
-      font-size: 1.1rem;
-      opacity: 0.7;
-      margin-bottom: 8px;
-    }
+  /* Removed sort name display */
 
-    .author-dates {
-      font-size: 1.1rem;
-      color: #ff4081;
-      font-weight: 500;
-    }
+  .author-dates { font-size: 1.1rem; color: #81d4fa; font-weight: 500; }
 
     .details-list {
       background: rgba(255, 255, 255, 0.05);
@@ -336,39 +387,17 @@ import { Author } from '../models/author.model';
       border-bottom: none;
     }
 
-    .detail-label {
-      font-weight: 600;
-      color: #1976d2;
-      white-space: nowrap;
-    }
+  .detail-label { font-weight: 600; color: #4fc3f7; white-space: nowrap; }
 
     .detail-value {
       word-break: break-word;
     }
 
-    .website-link {
-      color: #ff4081;
-      text-decoration: none;
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      transition: color 0.3s ease;
-    }
+  .website-link { color: #b3e5fc; text-decoration: none; display: inline-flex; align-items: center; gap: 4px; transition: color 0.3s ease; }
+  .website-link:hover { color: #e1f5fe; }
+    /* Removed external-link icon styling */
 
-    .website-link:hover {
-      color: #ff6090;
-    }
-
-    .external-link {
-      font-size: 1rem !important;
-      width: 1rem !important;
-      height: 1rem !important;
-    }
-
-    mat-chip-set {
-      --mdc-chip-container-color: rgba(25, 118, 210, 0.2);
-      --mdc-chip-label-text-color: #ffffff;
-    }
+  mat-chip-set { --mdc-chip-container-color: rgba(79, 195, 247, 0.2); --mdc-chip-label-text-color: #ffffff; }
 
     .biography-section, .works-section {
       background: rgba(255, 255, 255, 0.05);
@@ -378,15 +407,7 @@ import { Author } from '../models/author.model';
       border: 1px solid rgba(255, 255, 255, 0.1);
     }
 
-    .section-title {
-      font-size: 1.5rem;
-      font-weight: 600;
-      margin: 0 0 16px 0;
-      color: #1976d2;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
+  .section-title { font-size: 1.25rem; font-weight: 600; margin: 0 0 16px 0; color: #4fc3f7; display: flex; align-items: center; gap: 8px; }
 
     .biography-text {
       line-height: 1.6;
@@ -400,15 +421,22 @@ import { Author } from '../models/author.model';
       margin-top: 8px;
     }
 
-    .actions-section {
-      display: flex;
-      gap: 16px;
-      flex-wrap: wrap;
-    }
+  .series-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 16px; }
+  .series-card { display: block; text-decoration: none; color: #ffffff; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 12px; transition: transform .2s ease, background .2s ease; }
+  .series-card:hover { transform: translateY(-2px); background: rgba(255,255,255,0.06); }
+  .series-title { font-size: .95rem; font-weight: 600; line-height: 1.2; margin-bottom: 4px; }
+  .series-count { font-size: .8rem; color: #b3e5fc; }
+  .series-cover-placeholder { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; text-align: center; padding: 8px; background: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%); color: #cfcfcf; }
 
-    .actions-section button {
-      font-weight: 500 !important;
-    }
+  .books-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 16px; }
+  .book-card { display: block; text-decoration: none; color: #ffffff; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 12px; transition: transform .2s ease, background .2s ease; }
+  .book-card:hover { transform: translateY(-2px); background: rgba(255,255,255,0.06); }
+  .cover-wrap { width: 100%; aspect-ratio: 2/3; border-radius: 8px; overflow: hidden; margin-bottom: 8px; border: 1px solid rgba(255,255,255,0.1); }
+  .book-cover { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .book-cover-placeholder { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; text-align: center; padding: 8px; background: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%); color: #cfcfcf; }
+  .placeholder-iconify { font-size: 3rem; width: 3rem; height: 3rem; margin-bottom: 8px; }
+  .book-title { font-size: .95rem; font-weight: 600; line-height: 1.2; margin-bottom: 4px; }
+  .book-series-sub { font-size: .8rem; color: #b3e5fc; }
 
     /* Responsive design */
     @media (max-width: 768px) {
@@ -423,14 +451,12 @@ import { Author } from '../models/author.model';
         align-self: center;
       }
 
-      .author-photo, .author-photo-placeholder {
+  .author-photo, .author-photo-placeholder {
         width: 150px;
         height: 150px;
       }
 
-      .author-name {
-        font-size: 2rem;
-      }
+  .author-name { font-size: 1.8rem; text-align: center; }
 
       .detail-item {
         grid-template-columns: 1fr;
@@ -465,14 +491,20 @@ import { Author } from '../models/author.model';
   `]
 })
 export class AuthorDetailComponent implements OnInit {
+  readonly apiUrl = environment.apiUrl;
   author = signal<Author | null>(null);
   loading = signal(true);
+  authorBooks = signal<Book[]>([]);
+  authorSeries = signal<Array<{ key: string; id?: string; name: string; count: number; imagePath?: string; fallbackImagePath?: string; coverFromBookId?: string }>>([]);
 
   constructor(
     private route: ActivatedRoute,
     private router: Router,
-    private authorService: AuthorService,
-    private snackBar: MatSnackBar
+  private authorService: AuthorService,
+  private bookService: BookService,
+  private seriesService: SeriesService,
+  private snackBar: MatSnackBar,
+  private location: Location
   ) {}
 
   ngOnInit() {
@@ -490,7 +522,7 @@ export class AuthorDetailComponent implements OnInit {
     this.authorService.getAuthorById(id).subscribe({
       next: (author: Author) => {
         this.author.set(author);
-        this.loading.set(false);
+        this.loadAuthorWorks(id);
       },
       error: (error) => {
         console.error('Error loading author details:', error);
@@ -500,8 +532,74 @@ export class AuthorDetailComponent implements OnInit {
     });
   }
 
+  private loadAuthorWorks(authorId: string) {
+    this.bookService.getAllBooks(undefined, 500).subscribe({
+      next: (page) => {
+        const name = this.author()?.name;
+        const books = (page.content || []).filter(b => {
+          const detailed = b.contributorsDetailed?.['author'];
+          const simple = b.contributors?.['author'];
+          const matchDetailed = Array.isArray(detailed) && detailed.some(a => a.id === authorId || (name && a.name === name));
+          const matchSimple = Array.isArray(simple) && name ? simple.includes(name) : false;
+          return matchDetailed || matchSimple;
+        });
+        this.authorBooks.set(books);
+
+    const map = new Map<string, { key: string; id?: string; name: string; count: number; coverFromBookId?: string }>();
+        for (const b of books) {
+          if (b.series) {
+            const key = b.seriesId || `name:${b.series}`;
+            const existing = map.get(key);
+            if (existing) {
+      existing.count += 1;
+      if (!existing.coverFromBookId && b.hasCover) existing.coverFromBookId = b.id;
+            } else {
+      map.set(key, { key, id: b.seriesId, name: b.series, count: 1, coverFromBookId: b.hasCover ? b.id : undefined });
+            }
+          }
+        }
+    const seriesEntries = Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
+    this.authorSeries.set(seriesEntries);
+    this.populateSeriesImages(seriesEntries);
+      },
+      error: (err) => {
+        console.error('Error loading author works:', err);
+        this.loading.set(false);
+      }
+    });
+  }
+
+  private populateSeriesImages(seriesEntries: Array<{ id?: string }>) {
+    const ids = Array.from(new Set(seriesEntries.map(s => s.id).filter(Boolean))) as string[];
+    if (ids.length === 0) {
+      this.loading.set(false);
+      return;
+    }
+    forkJoin(ids.map(id => this.seriesService.getSeriesById(id))).subscribe({
+      next: (seriesList) => {
+        const byId = new Map(seriesList.filter(s => !!s?.id).map(s => [s.id!, s]));
+        this.authorSeries.update(arr => arr.map(s => {
+          if (s.id && byId.has(s.id)) {
+            const ser = byId.get(s.id)!;
+            return { ...s, imagePath: (ser as any).imagePath, fallbackImagePath: (ser as any).fallbackImagePath };
+          }
+          return s;
+        }));
+        this.loading.set(false);
+      },
+      error: (e) => {
+        console.warn('Failed to fetch some series details', e);
+        this.loading.set(false);
+      }
+    });
+  }
+
   goBack() {
-    this.router.navigate(['/authors']);
+    if (window.history.length > 1) {
+      this.location.back();
+    } else {
+      this.router.navigate(['/authors']);
+    }
   }
 
   onImageError(event: any) {
@@ -539,6 +637,10 @@ export class AuthorDetailComponent implements OnInit {
 
   openWebsite(url: string) {
     window.open(url, '_blank');
+  }
+
+  getShortTitle(title: string): string {
+    return title && title.length > 30 ? title.substring(0, 30) + '...' : title;
   }
 
   isArray(value: any): boolean {
