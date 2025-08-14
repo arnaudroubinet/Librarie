@@ -1,5 +1,5 @@
-import { Component, OnInit, OnDestroy, signal } from '@angular/core';
-import { CommonModule, Location } from '@angular/common';
+import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
@@ -10,7 +10,9 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatRippleModule } from '@angular/material/core';
 import { MatBadgeModule } from '@angular/material/badge';
 import { BookService } from '../services/book.service';
-import { Book, CursorPageResponse } from '../models/book.model';
+import { Book } from '../models/book.model';
+import { InfiniteScrollService } from '../services/infinite-scroll.service';
+import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive';
 
 @Component({
   selector: 'app-book-list',
@@ -25,17 +27,18 @@ import { Book, CursorPageResponse } from '../models/book.model';
     MatChipsModule,
     MatSnackBarModule,
     MatRippleModule,
-    MatBadgeModule
+    MatBadgeModule,
+    InfiniteScrollDirective
   ],
   template: `
-    <div class="plex-library">
+    <div class="plex-library" appInfiniteScroll (scrolled)="onScroll()" [disabled]="scrollState.loading()">
       <div class="library-header">
         <div class="header-content">
           <h1 class="library-title">
             <mat-icon class="title-icon">collections</mat-icon>
             Books Library
-            @if (books().length > 0) {
-              <span class="book-count">{{ books().length }} books</span>
+            @if (scrollState.items().length > 0) {
+              <span class="book-count">{{ scrollState.items().length }} books</span>
             }
           </h1>
           <p class="library-subtitle">Discover and explore your digital book collection</p>
@@ -47,104 +50,104 @@ import { Book, CursorPageResponse } from '../models/book.model';
         </div>
       </div>
       
-      @if (loading()) {
+      @if (scrollState.loading() && scrollState.items().length === 0) {
         <div class="loading-section">
           <div class="loading-content">
             <mat-spinner diameter="60" color="accent"></mat-spinner>
-            <h3>Loading your library...</h3>
+            <h3>Loading books...</h3>
             <p>Gathering your books from the digital shelves</p>
           </div>
         </div>
       } @else {
-        @if (books().length === 0) {
+        @if (scrollState.isEmpty()) {
           <div class="empty-library">
             <div class="empty-content">
-              <mat-icon class="empty-icon">collections</mat-icon>
-              <h2>Your library awaits</h2>
-              <p>No books found in your collection. Start building your digital library by scanning your book directory.</p>
+              <mat-icon class="empty-icon">collections_bookmark</mat-icon>
+              <h2>No books found</h2>
+              <p>Your book library is empty. Start building your digital library by scanning your book directory.</p>
               <button mat-raised-button color="accent" routerLink="/library" class="cta-button">
                 <mat-icon>add</mat-icon>
-                Manage Library
+                Scan Library
               </button>
             </div>
           </div>
         } @else {
-          <div class="books-grid">
-            @for (book of books(); track book.id) {
-              <div class="book-poster" matRipple [routerLink]="['/books', book.id]">
-                <div class="poster-container">
+          <div class="library-content">
+            <div class="books-grid">
+              @for (book of scrollState.items(); track asBook(book).id) {
+                <div class="book-card" 
+                     matRipple 
+                     [routerLink]="['/books', asBook(book).id]">
                   <div class="book-cover">
-                    @if (book.hasCover) {
-                      <img [src]="'/api/books/' + book.id + '/cover'" 
-                           [alt]="book.title + ' cover'"
+                    @if (getEffectiveImagePath(asBook(book))) {
+                      <img [src]="getEffectiveImagePath(asBook(book))!" 
+                           [alt]="asBook(book).title + ' cover'"
                            class="cover-image"
                            (error)="onImageError($event)">
                     } @else {
                       <div class="cover-placeholder">
-                        <mat-icon>book</mat-icon>
-                        <span class="title-text">{{ getShortTitle(book.title) }}</span>
+                        <mat-icon>menu_book</mat-icon>
+                        <span class="book-title-text">{{ getShortTitle(asBook(book).title) }}</span>
                       </div>
                     }
-                    <div class="cover-overlay">
-                      <mat-icon class="play-icon">visibility</mat-icon>
+                    <div class="book-overlay">
+                      <div class="book-actions">
+                        <button mat-icon-button class="action-btn" (click)="viewBookDetails($event, asBook(book).id)">
+                          <mat-icon>visibility</mat-icon>
+                        </button>
+                        <button mat-icon-button class="action-btn" (click)="toggleFavorite($event, asBook(book))">
+                          <mat-icon>favorite_border</mat-icon>
+                        </button>
+                        <button mat-icon-button class="action-btn" (click)="shareBook($event, asBook(book))">
+                          <mat-icon>share</mat-icon>
+                        </button>
+                      </div>
                     </div>
                   </div>
                   
                   <div class="book-info">
-                    <h3 class="book-title" [title]="book.title">{{ book.title }}</h3>
-                    @if (book.contributors?.['author']?.length) {
-                      <p class="book-author">{{ book.contributors!['author'][0] }}</p>
+                    <h3 class="book-title" [title]="asBook(book).title">{{ getShortTitle(asBook(book).title) }}</h3>
+                    @if (asBook(book).contributors) {
+                      <p class="book-author">{{ getShortContributors(asBook(book).contributors) }}</p>
                     }
-                    @if (book.publicationDate) {
-                      <p class="book-year">{{ getYear(book.publicationDate) }}</p>
+                    @if (asBook(book).series) {
+                      <p class="book-series">
+                        {{ asBook(book).series }}
+                        @if (asBook(book).seriesIndex) {
+                          #{{ asBook(book).seriesIndex }}
+                        }
+                      </p>
                     }
-                    
-                    <div class="book-metadata">
-                      @if (book.language) {
-                        <mat-chip class="metadata-chip language-chip">{{ book.language }}</mat-chip>
-                      }
-                      @if (book.formats && book.formats.length > 0) {
-                        <mat-chip class="metadata-chip format-chip">{{ book.formats[0] }}</mat-chip>
-                      }
-                    </div>
+                    @if (asBook(book).publicationDate) {
+                      <p class="book-date">{{ getPublicationYear(asBook(book).publicationDate!) }}</p>
+                    }
                   </div>
                 </div>
-                
-                <div class="book-actions">
-                  <button mat-icon-button class="action-btn" (click)="toggleFavorite(book, $event)">
-                    <mat-icon>favorite_border</mat-icon>
-                  </button>
-                  <button mat-icon-button class="action-btn" (click)="viewDetails(book, $event)">
-                    <mat-icon>info</mat-icon>
-                  </button>
-                </div>
+              }
+            </div>
+            
+            <!-- Loading indicator for more items -->
+            @if (scrollState.loading() && scrollState.items().length > 0) {
+              <div class="load-more-container">
+                <mat-spinner diameter="30"></mat-spinner>
+                <p>Loading more books...</p>
               </div>
             }
-          </div>
-          
-          <div class="pagination-section">
-            @if (previousCursor() || nextCursor() || (currentPage > 1)) {
-              <div class="pagination-controls">
-                @if (previousCursor()) {
-                  <button mat-raised-button class="nav-button" (click)="loadPrevious()">
-                    <mat-icon>chevron_left</mat-icon>
-                    Previous
-                  </button>
-                }
-                <div class="pagination-info">
-                  <span>Page {{ currentPage }}</span>
-                </div>
-                @if (nextCursor()) {
-                  <button mat-raised-button class="nav-button" (click)="loadNext()">
-                    Next
-                    <mat-icon>chevron_right</mat-icon>
-                  </button>
-                } @else if (previousCursor() || currentPage > 1) {
-                  <button mat-raised-button class="nav-button back-button" (click)="goBack()">
-                    <mat-icon>arrow_back</mat-icon>
-                    Back
-                  </button>
-                }
+            
+            <!-- Error indicator for loading more -->
+            @if (scrollState.error() && scrollState.items().length > 0) {
+              <div class="load-more-error">
+                <p>{{ scrollState.error() }}</p>
+                <button mat-button color="primary" (click)="scrollState.loadMore()">
+                  Try Again
+                </button>
+              </div>
+            }
+            
+            <!-- End of list indicator -->
+            @if (!scrollState.hasMore() && scrollState.items().length > 0) {
+              <div class="end-of-list">
+                <p>You've reached the end of your book collection</p>
               </div>
             }
           </div>
@@ -167,65 +170,55 @@ import { Book, CursorPageResponse } from '../models/book.model';
       justify-content: space-between;
       align-items: flex-end;
       border-bottom: 1px solid #333;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .library-header::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="books" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse"><rect width="20" height="20" fill="none"/><rect x="2" y="5" width="3" height="12" fill="rgba(229,160,13,0.1)"/><rect x="6" y="3" width="3" height="14" fill="rgba(229,160,13,0.08)"/><rect x="10" y="6" width="3" height="11" fill="rgba(229,160,13,0.06)"/><rect x="14" y="4" width="3" height="13" fill="rgba(229,160,13,0.04)"/></pattern></defs><rect width="100" height="100" fill="url(%23books)"/></svg>') repeat;
-      opacity: 0.1;
-      z-index: 0;
     }
 
     .header-content {
-      position: relative;
-      z-index: 1;
+      flex: 1;
     }
 
     .library-title {
-      font-size: 2.5rem;
+      font-size: 3rem;
       font-weight: 300;
       margin: 0 0 8px 0;
+      color: #ffffff;
       display: flex;
       align-items: center;
       gap: 16px;
     }
 
     .title-icon {
-      font-size: 2.5rem;
-      width: 2.5rem;
-      height: 2.5rem;
-      color: #e5a00d;
+      font-size: 3rem;
+      color: #4fc3f7;
     }
 
     .book-count {
-      font-size: 1rem;
-      color: #888;
+      font-size: 1.1rem;
+      opacity: 0.7;
       font-weight: 400;
       margin-left: 16px;
     }
 
     .library-subtitle {
-      font-size: 1.1rem;
-      color: #ccc;
+      font-size: 1.2rem;
       margin: 0;
-      font-weight: 300;
+      opacity: 0.8;
+      color: #e1f5fe;
     }
 
     .header-actions {
-      position: relative;
-      z-index: 1;
+      display: flex;
+      gap: 16px;
+      align-items: center;
     }
 
     .fab-search {
-      background: linear-gradient(135deg, #e5a00d 0%, #cc9000 100%);
-      color: #000;
+      background: linear-gradient(135deg, #4fc3f7 0%, #29b6f6 100%) !important;
+      color: white !important;
+      box-shadow: 0 8px 32px rgba(79, 195, 247, 0.3) !important;
+    }
+
+    .fab-search:hover {
+      transform: translateY(-2px) !important;
     }
 
     .loading-section {
@@ -233,21 +226,19 @@ import { Book, CursorPageResponse } from '../models/book.model';
       justify-content: center;
       align-items: center;
       min-height: 60vh;
-    }
-
-    .loading-content {
       text-align: center;
     }
 
     .loading-content h3 {
       margin: 24px 0 8px 0;
-      color: #fff;
+      font-size: 1.5rem;
       font-weight: 400;
     }
 
     .loading-content p {
-      color: #ccc;
       margin: 0;
+      opacity: 0.7;
+      font-size: 1rem;
     }
 
     .empty-library {
@@ -255,71 +246,76 @@ import { Book, CursorPageResponse } from '../models/book.model';
       justify-content: center;
       align-items: center;
       min-height: 60vh;
+      text-align: center;
     }
 
     .empty-content {
-      text-align: center;
-      max-width: 400px;
+      max-width: 500px;
+      padding: 48px 24px;
     }
 
     .empty-icon {
-      font-size: 80px;
-      width: 80px;
-      height: 80px;
+      font-size: 6rem;
       color: #555;
       margin-bottom: 24px;
     }
 
     .empty-content h2 {
-      color: #fff;
+      font-size: 2rem;
+      font-weight: 300;
       margin: 0 0 16px 0;
-      font-weight: 400;
+      color: #ffffff;
     }
 
     .empty-content p {
-      color: #ccc;
-      margin: 0 0 32px 0;
+      font-size: 1.1rem;
       line-height: 1.6;
+      opacity: 0.8;
+      margin: 0 0 32px 0;
     }
 
     .cta-button {
-      background: linear-gradient(135deg, #e5a00d 0%, #cc9000 100%);
-      color: #000;
-      font-weight: 600;
+      background: linear-gradient(135deg, #4fc3f7 0%, #29b6f6 100%) !important;
+      color: white !important;
+      padding: 12px 32px !important;
+      font-size: 1.1rem !important;
+    }
+
+    .library-content {
+      padding: 0;
     }
 
     .books-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-      gap: 24px;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 20px;
       padding: 32px;
+      max-width: 1600px;
+      margin: 0 auto;
     }
 
-    .book-poster {
-      cursor: pointer;
-      transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-      position: relative;
-      border-radius: 8px;
+    .book-card {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
       overflow: hidden;
-    }
-
-    .book-poster:hover {
-      transform: scale(1.05) translateY(-8px);
-      z-index: 10;
-    }
-
-    .poster-container {
+      transition: all 0.3s ease;
+      cursor: pointer;
       position: relative;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .book-card:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 25px 50px rgba(0, 0, 0, 0.4);
+      border-color: rgba(79, 195, 247, 0.5);
     }
 
     .book-cover {
       position: relative;
       width: 100%;
-      aspect-ratio: 2/3;
-      border-radius: 8px;
+      height: 240px;
       overflow: hidden;
-      background: linear-gradient(135deg, #333 0%, #555 100%);
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
     }
 
     .cover-image {
@@ -327,6 +323,10 @@ import { Book, CursorPageResponse } from '../models/book.model';
       height: 100%;
       object-fit: cover;
       transition: transform 0.3s ease;
+    }
+
+    .book-card:hover .cover-image {
+      transform: scale(1.05);
     }
 
     .cover-placeholder {
@@ -337,32 +337,29 @@ import { Book, CursorPageResponse } from '../models/book.model';
       align-items: center;
       justify-content: center;
       background: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%);
-      color: #777;
+      color: #666;
+      text-align: center;
+      padding: 16px;
     }
 
     .cover-placeholder mat-icon {
-      font-size: 48px;
-      width: 48px;
-      height: 48px;
-      margin-bottom: 12px;
-      color: #666;
+      font-size: 3rem;
+      margin-bottom: 8px;
     }
 
-    .title-text {
-      font-size: 12px;
-      text-align: center;
-      padding: 0 8px;
+    .book-title-text {
+      font-size: 0.8rem;
       line-height: 1.2;
-      font-weight: 500;
+      word-break: break-word;
     }
 
-    .cover-overlay {
+    .book-overlay {
       position: absolute;
       top: 0;
       left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(0, 0, 0, 0.6);
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.7);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -370,167 +367,107 @@ import { Book, CursorPageResponse } from '../models/book.model';
       transition: opacity 0.3s ease;
     }
 
-    .book-poster:hover .cover-overlay {
+    .book-card:hover .book-overlay {
       opacity: 1;
-    }
-
-    .play-icon {
-      font-size: 48px;
-      width: 48px;
-      height: 48px;
-      color: #e5a00d;
-    }
-
-    .book-info {
-      padding: 12px 0;
-    }
-
-    .book-title {
-      font-size: 14px;
-      font-weight: 600;
-      margin: 0 0 4px 0;
-      color: #fff;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .book-author {
-      font-size: 12px;
-      color: #ccc;
-      margin: 0 0 4px 0;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .book-year {
-      font-size: 11px;
-      color: #888;
-      margin: 0 0 8px 0;
-    }
-
-    .book-metadata {
-      display: flex;
-      gap: 4px;
-      flex-wrap: wrap;
-    }
-
-    .metadata-chip {
-      font-size: 10px;
-      height: 18px;
-      line-height: 18px;
-      padding: 0 6px;
-      border-radius: 9px;
-    }
-
-    .language-chip {
-      background: rgba(229, 160, 13, 0.2);
-      color: #e5a00d;
-    }
-
-    .format-chip {
-      background: rgba(255, 255, 255, 0.1);
-      color: #ccc;
     }
 
     .book-actions {
-      position: absolute;
-      top: 8px;
-      right: 8px;
       display: flex;
-      gap: 4px;
-      opacity: 0;
-      transition: opacity 0.3s ease;
-    }
-
-    .book-poster:hover .book-actions,
-    .book-poster:focus-within .book-actions {
-      opacity: 1;
+      gap: 8px;
     }
 
     .action-btn {
-      background: rgba(0, 0, 0, 0.8);
-      color: #fff;
-      width: 36px;
-      height: 36px;
-      min-width: 36px;
-      border-radius: 50%;
-      border: 2px solid rgba(255, 255, 255, 0.2);
-      transition: all 0.2s ease;
+      background: rgba(255, 255, 255, 0.2) !important;
+      color: white !important;
+      width: 40px !important;
+      height: 40px !important;
+      transition: all 0.3s ease !important;
     }
 
     .action-btn:hover {
-      background: rgba(0, 0, 0, 0.9);
-      border-color: #e5a00d;
-      color: #e5a00d;
-      transform: scale(1.1);
+      background: rgba(79, 195, 247, 0.8) !important;
+      transform: scale(1.1) !important;
     }
 
-    .action-btn mat-icon {
-      font-size: 18px;
-      width: 18px;
-      height: 18px;
+    .book-info {
+      padding: 16px;
+      text-align: center;
     }
 
-    .pagination-section {
-      padding: 32px;
-      border-top: 1px solid #333;
+    .book-title {
+      font-size: 1rem;
+      font-weight: 600;
+      margin: 0 0 8px 0;
+      color: #ffffff;
+      line-height: 1.3;
+      height: 2.6em;
+      overflow: hidden;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
     }
 
-    .pagination-controls {
+    .book-author {
+      font-size: 0.85rem;
+      margin: 0 0 4px 0;
+      opacity: 0.8;
+      color: #b3e5fc;
+    }
+
+    .book-series {
+      font-size: 0.8rem;
+      margin: 0 0 4px 0;
+      opacity: 0.7;
+      color: #81d4fa;
+      font-style: italic;
+    }
+
+    .book-date {
+      font-size: 0.75rem;
+      margin: 0;
+      opacity: 0.6;
+      color: #4fc3f7;
+    }
+
+    .load-more-container {
       display: flex;
+      flex-direction: column;
       align-items: center;
+      padding: 40px 20px;
+      gap: 16px;
+    }
+
+    .load-more-container p {
+      margin: 0;
+      opacity: 0.7;
+    }
+
+    .load-more-error {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 20px;
+      gap: 16px;
+    }
+
+    .load-more-error p {
+      margin: 0;
+      color: #f44336;
+    }
+
+    .end-of-list {
+      display: flex;
       justify-content: center;
-      gap: 24px;
+      padding: 40px 20px;
+      opacity: 0.6;
     }
 
-    .nav-button {
-      background: linear-gradient(135deg, rgba(229, 160, 13, 0.2) 0%, rgba(204, 144, 0, 0.2) 100%);
-      color: #fff;
-      border: 1px solid #555;
-      padding: 8px 16px;
-      min-height: 40px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      transition: all 0.2s ease;
+    .end-of-list p {
+      margin: 0;
+      font-style: italic;
     }
 
-    .nav-button:hover {
-      background: linear-gradient(135deg, rgba(229, 160, 13, 0.4) 0%, rgba(204, 144, 0, 0.4) 100%);
-      border-color: #e5a00d;
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(229, 160, 13, 0.3);
-    }
-
-    .nav-button:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-
-    .nav-button mat-icon {
-      font-size: 20px;
-      width: 20px;
-      height: 20px;
-    }
-
-    .pagination-info {
-      color: #ccc;
-      font-size: 14px;
-    }
-
-    .back-button {
-      background: linear-gradient(135deg, rgba(229, 160, 13, 0.3) 0%, rgba(204, 144, 0, 0.3) 100%);
-      border-color: #e5a00d;
-      color: #e5a00d;
-    }
-
-    .back-button:hover {
-      background: linear-gradient(135deg, rgba(229, 160, 13, 0.5) 0%, rgba(204, 144, 0, 0.5) 100%);
-      box-shadow: 0 4px 12px rgba(229, 160, 13, 0.4);
-    }
-
+    /* Responsive design */
     @media (max-width: 768px) {
       .library-header {
         padding: 24px 16px;
@@ -540,7 +477,7 @@ import { Book, CursorPageResponse } from '../models/book.model';
       }
 
       .library-title {
-        font-size: 2rem;
+        font-size: 2rem !important;
       }
 
       .books-grid {
@@ -560,17 +497,6 @@ import { Book, CursorPageResponse } from '../models/book.model';
         width: 44px;
         height: 44px;
         min-width: 44px; /* Better touch target for mobile */
-      }
-
-      .pagination-controls {
-        flex-direction: column;
-        gap: 16px;
-      }
-
-      .nav-button {
-        padding: 12px 24px;
-        font-size: 16px;
-        min-height: 48px; /* Better touch target */
       }
     }
 
@@ -593,121 +519,82 @@ import { Book, CursorPageResponse } from '../models/book.model';
     }
   `]
 })
-export class BookListComponent implements OnInit, OnDestroy {
-  books = signal<Book[]>([]);
-  loading = signal(true);
-  nextCursor = signal<string | undefined>(undefined);
-  previousCursor = signal<string | undefined>(undefined);
-  limit = signal(20);
-  currentPage = 1;
-  private pageHistory: string[] = [];
-  private popstateListener?: () => void;
+export class BookListComponent implements OnInit {
+  scrollState;
 
   constructor(
     private bookService: BookService,
     private snackBar: MatSnackBar,
-    private location: Location
-  ) {}
+    private infiniteScrollService: InfiniteScrollService
+  ) {
+    // Initialize infinite scroll state
+    this.scrollState = this.infiniteScrollService.createInfiniteScrollState(
+      (cursor, limit) => this.bookService.getAllBooks(cursor, limit),
+      {
+        limit: 20,
+        enableAlphabeticalSeparators: false // Books don't need alphabetical separators
+      }
+    );
+  }
 
   ngOnInit() {
-    this.loadBooks();
-    this.setupBrowserBackSupport();
+    // Initialization is handled by the infinite scroll service
   }
 
-  ngOnDestroy() {
-    if (this.popstateListener) {
-      window.removeEventListener('popstate', this.popstateListener);
+  onScroll() {
+    this.scrollState.loadMore();
+  }
+
+  trackByFn(index: number, book: Book): string {
+    return book.id;
+  }
+
+  asBook(item: any): Book {
+    return item as Book;
+  }
+
+  viewBookDetails(event: Event, bookId: string) {
+    event.stopPropagation();
+    // Router navigation will be handled by template
+  }
+
+  toggleFavorite(event: Event, book: Book) {
+    event.stopPropagation();
+    // TODO: Implement favorite functionality
+    this.snackBar.open('Favorite functionality not implemented yet', 'Close', { duration: 3000 });
+  }
+
+  shareBook(event: Event, book: Book) {
+    event.stopPropagation();
+    // TODO: Implement share functionality
+    this.snackBar.open('Share functionality not implemented yet', 'Close', { duration: 3000 });
+  }
+
+  getEffectiveImagePath(book: Book): string | null {
+    if (book.hasCover && book.id) {
+      // Use book cover endpoint if cover exists
+      return `/api/v1/books/${book.id}/cover`;
     }
+    return null;
   }
 
-  private setupBrowserBackSupport() {
-    this.popstateListener = () => {
-      // Handle browser back/forward navigation
-      const state = window.history.state;
-      if (state && state.bookListPage && state.cursor !== undefined) {
-        this.currentPage = state.bookListPage;
-        this.loadBooks(state.cursor);
-      }
-    };
-    window.addEventListener('popstate', this.popstateListener);
-  }
-
-  private updateBrowserHistory(cursor?: string) {
-    const state = {
-      bookListPage: this.currentPage,
-      cursor: cursor
-    };
-    const url = `/books${cursor ? `?cursor=${encodeURIComponent(cursor)}` : ''}`;
-    window.history.pushState(state, '', url);
-  }
-
-  loadBooks(cursor?: string) {
-    this.loading.set(true);
-    this.bookService.getAllBooks(cursor, this.limit()).subscribe({
-      next: (response: CursorPageResponse<Book>) => {
-        this.books.set(response.content);
-        this.nextCursor.set(response.nextCursor);
-        this.previousCursor.set(response.previousCursor);
-        this.loading.set(false);
-      },
-      error: (error) => {
-        console.error('Error loading books:', error);
-        this.snackBar.open('Failed to load books. Please try again.', 'Close', {
-          duration: 3000
-        });
-        this.loading.set(false);
-      }
-    });
-  }
-
-  loadNext() {
-    if (this.nextCursor()) {
-      this.currentPage++;
-      this.pageHistory.push(this.nextCursor()!);
-      this.updateBrowserHistory(this.nextCursor());
-      this.loadBooks(this.nextCursor());
-    }
-  }
-
-  loadPrevious() {
-    if (this.previousCursor()) {
-      this.currentPage--;
-      this.pageHistory.pop(); // Remove current page from history
-      this.updateBrowserHistory(this.previousCursor());
-      this.loadBooks(this.previousCursor());
-    }
-  }
-
-  goBack() {
-    this.location.back();
-  }
-
-  getYear(dateString: string): string {
-    return new Date(dateString).getFullYear().toString();
+  onImageError(event: any) {
+    event.target.style.display = 'none';
   }
 
   getShortTitle(title: string): string {
     return title.length > 30 ? title.substring(0, 30) + '...' : title;
   }
 
-  onImageError(event: any) {
-    // Hide the broken image and show placeholder
-    event.target.style.display = 'none';
+  getShortContributors(contributors?: Record<string, string[]>): string {
+    if (!contributors) return '';
+    const allContributors = Object.values(contributors).flat();
+    if (allContributors.length === 0) return '';
+    if (allContributors.length === 1) return allContributors[0];
+    return `${allContributors[0]} and ${allContributors.length - 1} more`;
   }
 
-  toggleFavorite(book: Book, event: Event) {
-    event.stopPropagation();
-    event.preventDefault();
-    // TODO: Implement favorite functionality
-    this.snackBar.open('Favorite functionality coming soon!', 'Close', {
-      duration: 2000
-    });
-  }
-
-  viewDetails(book: Book, event: Event) {
-    event.stopPropagation();
-    event.preventDefault();
-    // Navigate to book details
-    window.location.href = `/books/${book.id}`;
+  getPublicationYear(publicationDate: string): number {
+    return new Date(publicationDate).getFullYear();
   }
 }

@@ -33,32 +33,32 @@ public class AuthorRepositoryAdapter implements AuthorRepository {
     
     @Override
     public CursorPageResult<Author> findAll(String cursor, int limit) {
-        // For cursor pagination, we'll use ID and createdAt timestamp
+        // For cursor pagination, we'll use sortName and ID for alphabetical ordering
         PanacheQuery<Author> query;
         
         if (cursor != null && !cursor.trim().isEmpty()) {
             try {
                 CursorUtils.CursorData cursorData = cursorUtils.parseCursor(cursor);
                 UUID lastId = UUID.fromString(cursorData.getId());
-                OffsetDateTime lastTimestamp = OffsetDateTime.parse(cursorData.getTimestamp());
+                String lastSortName = cursorData.getTimestamp(); // Using timestamp field to store sortName
                 
-                // Use composite cursor: first by timestamp, then by ID for consistency
-                query = Author.find("(createdAt > ?1) OR (createdAt = ?1 AND id > ?2)", 
-                                lastTimestamp, lastId)
+                // Use composite cursor: first by sortName, then by ID for consistency
+                query = Author.find("(sortName > ?1) OR (sortName = ?1 AND id > ?2)", 
+                                lastSortName, lastId)
                            .page(Page.ofSize(limit + 1)); // Get one extra to check for next page
             } catch (Exception e) {
                 // Invalid cursor, start from beginning
-                query = Author.findAll(Sort.by("createdAt").and("id"))
+                query = Author.findAll(Sort.by("sortName").and("id"))
                            .page(Page.ofSize(limit + 1));
             }
         } else {
             // First page
-            query = Author.findAll(Sort.by("createdAt").and("id"))
+            query = Author.findAll(Sort.by("sortName").and("id"))
                        .page(Page.ofSize(limit + 1));
         }
         
         List<Author> authors = query.list();
-        return buildCursorPageResult(authors, limit, cursor);
+        return buildCursorPageResultForSortName(authors, limit, cursor);
     }
     
     @Override
@@ -68,7 +68,7 @@ public class AuthorRepositoryAdapter implements AuthorRepository {
     
     @Override
     public CursorPageResult<Author> findByNameContainingIgnoreCase(String name, String cursor, int limit) {
-        // For cursor pagination with name search, we'll use ID and createdAt timestamp
+        // For cursor pagination with name search, we'll use sortName and ID for alphabetical ordering
         PanacheQuery<Author> query;
         String searchPattern = "%" + name.toLowerCase() + "%";
         
@@ -76,11 +76,11 @@ public class AuthorRepositoryAdapter implements AuthorRepository {
             try {
                 CursorUtils.CursorData cursorData = cursorUtils.parseCursor(cursor);
                 UUID lastId = UUID.fromString(cursorData.getId());
-                OffsetDateTime lastTimestamp = OffsetDateTime.parse(cursorData.getTimestamp());
+                String lastSortName = cursorData.getTimestamp(); // Using timestamp field to store sortName
                 
-                // Use composite cursor with name search: first by timestamp, then by ID for consistency
-                query = Author.find("LOWER(name) LIKE ?1 AND ((createdAt > ?2) OR (createdAt = ?2 AND id > ?3))", 
-                                searchPattern, lastTimestamp, lastId)
+                // Use composite cursor with name search: first by sortName, then by ID for consistency
+                query = Author.find("LOWER(name) LIKE ?1 AND ((sortName > ?2) OR (sortName = ?2 AND id > ?3))", 
+                                searchPattern, lastSortName, lastId)
                            .page(Page.ofSize(limit + 1)); // Get one extra to check for next page
             } catch (Exception e) {
                 // Invalid cursor, start from beginning
@@ -94,7 +94,7 @@ public class AuthorRepositoryAdapter implements AuthorRepository {
         }
         
         List<Author> authors = query.list();
-        return buildCursorPageResult(authors, limit, cursor);
+        return buildCursorPageResultForSortName(authors, limit, cursor);
     }
     
     @Override
@@ -142,6 +142,36 @@ public class AuthorRepositoryAdapter implements AuthorRepository {
             Author lastAuthor = resultAuthors.get(resultAuthors.size() - 1);
             if (lastAuthor.getCreatedAt() != null && lastAuthor.getId() != null) {
                 nextCursor = cursorUtils.createCursor(lastAuthor.getId(), lastAuthor.getCreatedAt());
+            }
+        }
+        
+        return CursorPageResult.<Author>builder()
+            .items(resultAuthors)
+            .nextCursor(nextCursor)
+            .previousCursor(null) // Previous cursor logic would need additional implementation
+            .hasNext(hasNext)
+            .hasPrevious(hasPrevious)
+            .limit(limit)
+            .totalCount(null) // Count would require separate query for performance
+            .build();
+    }
+
+    /**
+     * Helper method to build cursor page result from list of authors using sortName for cursor.
+     */
+    private CursorPageResult<Author> buildCursorPageResultForSortName(List<Author> authors, int limit, String currentCursor) {
+        boolean hasNext = authors.size() > limit;
+        boolean hasPrevious = currentCursor != null && !currentCursor.trim().isEmpty();
+        
+        // Remove the extra item if we have more than requested
+        List<Author> resultAuthors = hasNext ? authors.subList(0, limit) : authors;
+        
+        String nextCursor = null;
+        if (hasNext && !resultAuthors.isEmpty()) {
+            Author lastAuthor = resultAuthors.get(resultAuthors.size() - 1);
+            if (lastAuthor.getSortName() != null && lastAuthor.getId() != null) {
+                // Use sortName as the "timestamp" field in cursor for alphabetical ordering
+                nextCursor = cursorUtils.createCursor(lastAuthor.getId(), lastAuthor.getSortName());
             }
         }
         
