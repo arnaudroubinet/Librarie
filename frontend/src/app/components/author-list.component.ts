@@ -38,9 +38,6 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
           <h1 class="library-title">
             <iconify-icon class="title-icon" icon="ph:users-three-thin"></iconify-icon>
             Authors Library
-            @if (scrollState.items().length > 0) {
-              <span class="author-count">{{ getAuthorCount() }} authors</span>
-            }
           </h1>
           <p class="library-subtitle">Discover and explore your favorite authors</p>
         </div>
@@ -185,12 +182,7 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
 
   .title-icon { font-size: 32px; width: 32px; height: 32px; color: #e5a00d; margin-right: 12px; }
 
-    .author-count {
-      font-size: 1.1rem;
-      opacity: 0.7;
-      font-weight: 400;
-      margin-left: 16px;
-    }
+    
 
   .library-subtitle { font-size: 0.95rem; margin: 4px 0 0 0; opacity: 0.9; color: #888; }
 
@@ -540,9 +532,6 @@ export class AuthorListComponent implements OnInit {
     this.scrollState.loadMore();
   }
 
-  getAuthorCount(): number {
-    return this.scrollState.items().filter(item => !this.infiniteScrollService.isSeparator(item)).length;
-  }
 
   trackByFn(index: number, item: Author | AlphabeticalSeparator): string {
     return this.infiniteScrollService.isSeparator(item) ? item.id : item.id;
