@@ -285,9 +285,11 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
 
     .books-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-      gap: 32px;
-      padding: 48px;
+      /* Fixed tile width to keep same size on mobile and desktop */
+      grid-template-columns: repeat(auto-fill, 240px);
+      justify-content: center;
+      gap: 24px;
+      padding: 32px;
       max-width: 1600px;
       margin: 0 auto;
     }
@@ -301,6 +303,9 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
       position: relative;
       backdrop-filter: blur(10px);
       border: 1px solid rgba(255, 255, 255, 0.1);
+  /* Keep card height equal to the picture height */
+  width: 240px;
+  height: 360px;
     }
 
     .book-card:hover {
@@ -312,7 +317,8 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
     .book-cover {
       position: relative;
       width: 100%;
-      height: 480px;
+      /* Match card height so the picture defines the tile size */
+      height: 100%;
       overflow: hidden;
     }
 
@@ -340,16 +346,9 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
       padding: 16px;
     }
 
-    .cover-placeholder mat-icon {
-      font-size: 6rem;
-      margin-bottom: 16px;
-    }
+  .cover-placeholder mat-icon { font-size: 3rem; margin-bottom: 8px; }
 
-    .book-title-text {
-      font-size: 1.6rem;
-      line-height: 1.3;
-      word-break: break-word;
-    }
+  .book-title-text { font-size: 1rem; line-height: 1.2; word-break: break-word; }
 
     .book-overlay {
       position: absolute;
@@ -363,6 +362,7 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
       justify-content: center;
       opacity: 0;
       transition: opacity 0.3s ease;
+  z-index: 2; /* Above info strip */
     }
 
     .book-card:hover .book-overlay {
@@ -388,44 +388,35 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
     }
 
     .book-info {
-      padding: 32px;
-      text-align: center;
+      /* Overlay compact info at bottom of the cover to keep total height equal to the image */
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      padding: 8px 10px;
+      text-align: left;
+      background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.65) 40%, rgba(0,0,0,0.85) 100%);
+      z-index: 1;
     }
 
     .book-title {
-      font-size: 2rem;
+      font-size: 1.1rem;
       font-weight: 600;
-      margin: 0 0 12px 0;
+      margin: 0 0 4px 0;
       color: #ffffff;
-      line-height: 1.3;
-      height: 5.2em;
+      line-height: 1.2;
+      height: 2.4em; /* 2 lines */
       overflow: hidden;
       display: -webkit-box;
       -webkit-line-clamp: 2;
       -webkit-box-orient: vertical;
     }
 
-    .book-author {
-      font-size: 1.7rem;
-      margin: 0 0 8px 0;
-      opacity: 0.85;
-      color: #b3e5fc;
-    }
+  .book-author { font-size: 0.9rem; margin: 0 0 2px 0; opacity: 0.85; color: #b3e5fc; }
 
-    .book-series {
-      font-size: 1.6rem;
-      margin: 0 0 8px 0;
-      opacity: 0.75;
-      color: #81d4fa;
-      font-style: italic;
-    }
+  .book-series { font-size: 0.85rem; margin: 0 0 2px 0; opacity: 0.75; color: #81d4fa; font-style: italic; }
 
-    .book-date {
-      font-size: 1.5rem;
-      margin: 0;
-      opacity: 0.7;
-      color: #4fc3f7;
-    }
+  .book-date { font-size: 0.8rem; margin: 0; opacity: 0.7; color: #4fc3f7; }
 
     .load-more-container {
       display: flex;
@@ -465,7 +456,7 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
       font-style: italic;
     }
 
-    /* Responsive design */
+    /* Responsive design (keep tile size identical across breakpoints) */
     @media (max-width: 768px) {
       .library-header {
         padding: 24px 16px;
@@ -478,13 +469,13 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
         font-size: 2rem !important;
       }
 
+      /* Keep same card width and cover height on mobile */
       .books-grid {
-        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        grid-template-columns: repeat(auto-fill, 240px);
+        justify-content: center;
         gap: 24px;
         padding: 24px;
       }
-
-      .book-cover { height: 360px; }
 
       .book-actions {
         opacity: 1; /* Always visible on mobile for touch devices */
@@ -501,13 +492,13 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
     }
 
     @media (max-width: 480px) {
+      /* Keep same card width and cover height on small phones */
       .books-grid {
-        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        grid-template-columns: repeat(auto-fill, 240px);
+        justify-content: center;
         gap: 16px;
         padding: 16px;
       }
-
-      .book-cover { height: 300px; }
 
       .library-title {
         font-size: 1.75rem;
