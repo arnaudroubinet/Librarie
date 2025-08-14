@@ -58,13 +58,19 @@ public class BookResponseDto {
     private Map<String, Object> metadata;
     
     // Contributor information organized by role
-    @Schema(description = "Contributors organized by role", 
-            example = "{\"author\": [\"J.R.R. Tolkien\"], \"illustrator\": [\"Alan Lee\"], \"translator\": [\"Douglas A. Anderson\"]}")
+    @Schema(description = "Contributors organized by role (names only for backward compatibility)", 
+        example = "{\"author\": [\"J.R.R. Tolkien\"], \"illustrator\": [\"Alan Lee\"], \"translator\": [\"Douglas A. Anderson\"]}")
     private Map<String, List<String>> contributors;
+
+    @Schema(description = "Detailed contributors by role (id and name for each)")
+    private Map<String, List<ContributorRefDto>> contributorsDetailed;
     
     @Schema(description = "Series name", example = "The Lord of the Rings")
     private String series;
     
+    @Schema(description = "Series UUID")
+    private UUID seriesId;
+
     @Schema(description = "Index in series", example = "1")
     private Integer seriesIndex;
     
@@ -200,6 +206,14 @@ public class BookResponseDto {
     public void setContributors(Map<String, List<String>> contributors) {
         this.contributors = contributors;
     }
+
+    public Map<String, List<ContributorRefDto>> getContributorsDetailed() {
+        return contributorsDetailed;
+    }
+
+    public void setContributorsDetailed(Map<String, List<ContributorRefDto>> contributorsDetailed) {
+        this.contributorsDetailed = contributorsDetailed;
+    }
     
     public String getSeries() {
         return series;
@@ -207,6 +221,14 @@ public class BookResponseDto {
     
     public void setSeries(String series) {
         this.series = series;
+    }
+
+    public UUID getSeriesId() {
+        return seriesId;
+    }
+
+    public void setSeriesId(UUID seriesId) {
+        this.seriesId = seriesId;
     }
     
     public Integer getSeriesIndex() {

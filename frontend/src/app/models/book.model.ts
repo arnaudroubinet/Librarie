@@ -14,9 +14,12 @@ export interface Book {
   metadata?: Record<string, any>;
   language?: string;
   publisher?: string;
-  // New fields based on updated DTO
-  contributors?: Record<string, string[]>; // Map of role to list of people
+  // Contributors by role (names only, backward compatible)
+  contributors?: Record<string, string[]>;
+  // Detailed contributors by role (id and name)
+  contributorsDetailed?: Record<string, Array<{ id: string; name: string }>>;
   series?: string;
+  seriesId?: string; // New: backend-provided UUID for series
   seriesIndex?: number;
   description?: string;
   formats?: string[];

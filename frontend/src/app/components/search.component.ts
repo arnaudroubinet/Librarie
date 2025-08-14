@@ -215,8 +215,8 @@ import { environment } from '../../environments/environment';
                       </div>
                       <div class="book-info">
                         <h3 class="book-title" [title]="book.title">{{ book.title }}</h3>
-                        @if (book.contributors?.['author']?.length) {
-                          <p class="book-author">{{ book.contributors!['author'].join(', ') }}</p>
+                        @if (book.contributorsDetailed?.['author']?.length) {
+                          <p class="book-author">{{ book.contributorsDetailed!['author'].map(a => a.name).join(', ') }}</p>
                         }
                         @if (book.publicationDate) {
                           <p class="book-year">{{ getYear(book.publicationDate) }}</p>
@@ -306,8 +306,8 @@ import { environment } from '../../environments/environment';
 
                   <div class="book-info">
                     <h3 class="book-title" [title]="book.title">{{ book.title }}</h3>
-                    @if (book.contributors?.['author']?.length) {
-                      <p class="book-author">{{ book.contributors!['author'].join(', ') }}</p>
+                    @if (book.contributorsDetailed?.['author']?.length) {
+                      <p class="book-author">{{ book.contributorsDetailed!['author'].map(a => a.name).join(', ') }}</p>
                     }
                     @if (book.publicationDate) {
                       <p class="book-year">{{ getYear(book.publicationDate) }}</p>

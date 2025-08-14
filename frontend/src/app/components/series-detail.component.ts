@@ -619,17 +619,19 @@ export class SeriesDetailComponent implements OnInit {
   }
 
   getBookAuthors(book: Book): string[] {
-    if (!book.contributors) return [];
-    return book.contributors['author'] || [];
+    if (book.contributorsDetailed?.['author']?.length) {
+      return book.contributorsDetailed['author'].map(a => a.name);
+    }
+    return [];
   }
 
   getAllContributors(): Array<{name: string, roles: string[], bookCount: number}> {
     const contributorMap = new Map<string, {roles: Set<string>, bookCount: number}>();
     
     this.books().forEach(book => {
-      if (book.contributors) {
-        Object.entries(book.contributors).forEach(([role, names]) => {
-          names.forEach(name => {
+  if (book.contributorsDetailed) {
+        Object.entries(book.contributorsDetailed).forEach(([role, list]) => {
+          list.forEach(({ name }) => {
             if (!contributorMap.has(name)) {
               contributorMap.set(name, { roles: new Set(), bookCount: 0 });
             }
@@ -638,7 +640,7 @@ export class SeriesDetailComponent implements OnInit {
             contributor.bookCount++;
           });
         });
-      }
+  }
     });
 
     return Array.from(contributorMap.entries()).map(([name, data]) => ({

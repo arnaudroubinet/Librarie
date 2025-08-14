@@ -1,6 +1,6 @@
-import { Component, OnInit, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { ActivatedRoute, Router } from '@angular/router';
+import { Component, OnInit, signal, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
+import { CommonModule, Location } from '@angular/common';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -10,13 +10,17 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatDividerModule } from '@angular/material/divider';
 import { BookService } from '../services/book.service';
 import { Book } from '../models/book.model';
+// SeriesService and AuthorService no longer needed; series/author IDs come from backend
 import { environment } from '../../environments/environment';
+// Removed unused rxjs helpers
 
 @Component({
   selector: 'app-book-detail',
   standalone: true,
+  schemas: [CUSTOM_ELEMENTS_SCHEMA],
   imports: [
     CommonModule,
+    RouterModule,
     MatCardModule,
     MatButtonModule,
     MatIconModule,
@@ -26,7 +30,7 @@ import { environment } from '../../environments/environment';
     MatDividerModule
   ],
   template: `
-    <div class="book-detail-container">
+  <div class="book-detail-container plex-library">
       @if (loading()) {
         <div class="loading-container">
           <mat-spinner diameter="50"></mat-spinner>
@@ -36,26 +40,30 @@ import { environment } from '../../environments/environment';
         <div class="book-detail">
           <div class="back-button">
             <button mat-button (click)="goBack()">
-              <mat-icon>arrow_back</mat-icon>
-              Back to Books
+              <iconify-icon icon="lets-icons:back"></iconify-icon>
+              Back
             </button>
           </div>
 
-          <!-- ISBNdb-inspired layout -->
-          <div class="isbndb-layout">
+          <!-- Unified /book detail layout -->
+          <div class="book-layout">
             <!-- Book Cover -->
             <div class="book-cover-container">
               @if (book()!.hasCover) {
-                <img [src]="apiUrl + '/v1/books/' + book()!.id + '/cover'" 
-                     [alt]="book()!.title + ' cover'" 
-                     class="book-cover" />
+                <img [src]="apiUrl + '/v1/books/' + book()!.id + '/cover'"
+                     [alt]="book()!.title + ' cover'"
+                     class="book-cover">
               } @else {
                 <div class="book-cover-placeholder">
                   <div class="placeholder-content">
-                    <div class="placeholder-icon">📖</div>
-                    <div class="placeholder-text">No Image Available</div>
+                    <mat-icon class="placeholder-icon">menu_book</mat-icon>
+                    <div class="placeholder-text">{{ getShortTitle(book()!.title) }}</div>
                   </div>
                 </div>
+              }
+
+              @if (book()!.formats?.length) {
+                <div class="format-badge">{{ book()!.formats!.join(' · ') }}</div>
               }
             </div>
 
@@ -64,124 +72,152 @@ import { environment } from '../../environments/environment';
               <!-- Title Section -->
               <div class="title-section">
                 <h1 class="book-title">{{ book()!.title }}</h1>
-                @if (book()!.titleSort && book()!.titleSort !== book()!.title) {
-                  <div class="book-subtitle">({{ book()!.titleSort }})</div>
+                @if (book()!.series) {
+                  <div class="book-series">
+                    <iconify-icon icon="icon-park-outline:bookshelf"></iconify-icon>
+                    @if (book()!.seriesId) {
+                      <a class="series-link" [routerLink]="['/series', book()!.seriesId]">{{ book()!.series }}</a>
+                    } @else {
+                      <span>{{ book()!.series }}</span>
+                    }
+                    @if (book()!.seriesIndex) {
+                      <span class="series-index">#{{ book()!.seriesIndex }}</span>
+                    }
+                  </div>
+                }
+                @if (getAuthorsDetailed().length > 0) {
+                  <div class="book-authors">
+                    <iconify-icon icon="ph:users-three-thin"></iconify-icon>
+                    <span class="authors-list">
+                      @for (a of getAuthorsDetailed(); track a.id; let last = $last) {
+                        <a class="author-link" [routerLink]="['/authors', a.id]">{{ a.name }}</a>
+                        @if (!last) {<span>, </span>}
+                      }
+                    </span>
+                  </div>
                 }
               </div>
 
               <!-- Details List -->
               <div class="details-list">
-                <div class="detail-item">
-                  <span class="detail-label">Full Title:</span>
-                  <span class="detail-value">{{ book()!.title }}</span>
-                </div>
+                @if (book()!.description) {
+                  <div class="detail-item synopsis">
+                    <span class="detail-label">Synopsis</span>
+                    <span class="detail-value">{{ book()!.description }}</span>
+                  </div>
+                }
+
+                @if (book()!.publisher) {
+                  <div class="detail-item">
+                    <span class="detail-label">Publisher</span>
+                    <span class="detail-value">{{ book()!.publisher }}</span>
+                  </div>
+                }
+
+                @if (book()!.publicationDate) {
+                  <div class="detail-item">
+                    <span class="detail-label">Published</span>
+                    <span class="detail-value">{{ formatDate(book()!.publicationDate!) }}</span>
+                  </div>
+                }
 
                 @if (book()!.isbn) {
                   <div class="detail-item">
-                    <span class="detail-label">ISBN:</span>
+                    <span class="detail-label">ISBN</span>
                     <span class="detail-value">{{ book()!.isbn }}</span>
                   </div>
                 }
 
                 @if (book()!.isbn) {
                   <div class="detail-item">
-                    <span class="detail-label">ISBN13:</span>
+                    <span class="detail-label">ISBN-13</span>
                     <span class="detail-value">{{ formatISBN13(book()!.isbn!) }}</span>
                   </div>
                 }
 
-                @if (getAuthors().length > 0) {
+                @if (book()!.language) {
                   <div class="detail-item">
-                    <span class="detail-label">Authors:</span>
-                    <span class="detail-value author-links">
-                      @for (author of getAuthors(); track author; let last = $last) {
-                        <span class="author-link">{{ author }}</span>@if (!last) {<span>, </span>}
-                      }
-                    </span>
-                  </div>
-                }
-
-                @if (book()!.publisher) {
-                  <div class="detail-item">
-                    <span class="detail-label">Publisher:</span>
-                    <span class="detail-value">{{ book()!.publisher }}</span>
-                  </div>
-                }
-
-                @if (getEdition()) {
-                  <div class="detail-item">
-                    <span class="detail-label">Edition:</span>
-                    <span class="detail-value">{{ getEdition() }}</span>
-                  </div>
-                }
-
-                @if (book()!.publicationDate) {
-                  <div class="detail-item">
-                    <span class="detail-label">Publish Date:</span>
-                    <span class="detail-value">{{ formatDate(book()!.publicationDate!) }}</span>
+                    <span class="detail-label">Language</span>
+                    <span class="detail-value">{{ book()!.language }}</span>
                   </div>
                 }
 
                 @if (getBinding()) {
                   <div class="detail-item">
-                    <span class="detail-label">Binding:</span>
+                    <span class="detail-label">Binding</span>
                     <span class="detail-value">{{ getBinding() }}</span>
                   </div>
                 }
 
                 @if (getPages()) {
                   <div class="detail-item">
-                    <span class="detail-label">Pages:</span>
+                    <span class="detail-label">Pages</span>
                     <span class="detail-value">{{ getPages() }}</span>
                   </div>
                 }
 
-                @if (book()!.description) {
-                  <div class="detail-item synopsis">
-                    <span class="detail-label">Synopsis:</span>
-                    <span class="detail-value">{{ book()!.description }}</span>
+                @if (book()!.fileSize) {
+                  <div class="detail-item">
+                    <span class="detail-label">File Size</span>
+                    <span class="detail-value">{{ formatFileSize(book()!.fileSize!) }}</span>
                   </div>
                 }
 
-                @if (book()!.language) {
+                @if (book()!.createdAt) {
                   <div class="detail-item">
-                    <span class="detail-label">Language:</span>
-                    <span class="detail-value">{{ book()!.language }}</span>
+                    <span class="detail-label">Added</span>
+                    <span class="detail-value">{{ formatDate(book()!.createdAt!) }}</span>
                   </div>
                 }
 
-                @if (getDimensions()) {
+                @if (book()!.updatedAt) {
                   <div class="detail-item">
-                    <span class="detail-label">Dimensions:</span>
-                    <span class="detail-value">{{ getDimensions() }}</span>
+                    <span class="detail-label">Updated</span>
+                    <span class="detail-value">{{ formatDate(book()!.updatedAt!) }}</span>
                   </div>
                 }
 
-                @if (getWeight()) {
+                @if (book()!.formats?.length) {
                   <div class="detail-item">
-                    <span class="detail-label">Weight:</span>
-                    <span class="detail-value">{{ getWeight() }}</span>
-                  </div>
-                }
-
-                @if (getSubjects().length > 0) {
-                  <div class="detail-item">
-                    <span class="detail-label">Subjects:</span>
-                    <span class="detail-value">{{ getSubjects().join(', ') }}</span>
+                    <span class="detail-label">Formats</span>
+                    <span class="detail-value">
+                      <mat-chip-set>
+                        @for (f of book()!.formats!; track f) { <mat-chip>{{ f }}</mat-chip> }
+                      </mat-chip-set>
+                    </span>
                   </div>
                 }
               </div>
+
+              @if (getOtherContributors().length > 0) {
+                <div class="contributors-section">
+                  <h2 class="section-title">
+                    <mat-icon>people</mat-icon>
+                    Other contributors
+                  </h2>
+                  <div class="contributors-list">
+                    @for (c of getOtherContributors(); track c.role) {
+                      <div class="contrib-item">
+                        <span class="contrib-role">{{ c.role }}</span>
+                        <span class="contrib-names">{{ c.names.join(', ') }}</span>
+                      </div>
+                    }
+                  </div>
+                </div>
+              }
+
+              
             </div>
           </div>
         </div>
       } @else {
         <div class="error-state">
-          <mat-icon style="font-size: 64px; height: 64px; width: 64px;">error</mat-icon>
+          <mat-icon class="error-icon">error</mat-icon>
           <h2>Book not found</h2>
           <p>The requested book could not be found.</p>
           <button mat-raised-button color="primary" (click)="goBack()">
-            <mat-icon>arrow_back</mat-icon>
-            Back to Books
+            <iconify-icon icon="lets-icons:back"></iconify-icon>
+            Back
           </button>
         </div>
       }
@@ -189,11 +225,11 @@ import { environment } from '../../environments/environment';
   `,
   styles: [`
     .book-detail-container {
-      max-width: 1000px;
-      margin: 0 auto;
-      padding: 20px;
-      font-family: Arial, sans-serif;
-      background-color: #ffffff;
+      min-height: 100vh;
+      /* Match all books page: keep page-level gradient from parent, not here */
+      background: transparent;
+      color: #ffffff;
+      padding: 0;
     }
 
     .loading-container, .error-state {
@@ -201,218 +237,188 @@ import { environment } from '../../environments/environment';
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      min-height: 400px;
+      min-height: 60vh;
+      padding: 64px 32px;
       text-align: center;
     }
 
-    .loading-container p, .error-state p {
-      margin-top: 16px;
-      color: #666;
-    }
-
-    .error-state h2 {
-      margin: 16px 0;
-      color: #333;
+    .error-icon {
+      font-size: 4rem !important;
+      width: 4rem !important;
+      height: 4rem !important;
+      color: #ff4444;
+      margin-bottom: 16px;
     }
 
     .back-button {
-      margin-bottom: 20px;
+      /* Match all books page header spacing and remove separator */
+      padding: 24px 20px;
+      position: sticky;
+      top: 0;
+      background: transparent;
+      backdrop-filter: none;
+      z-index: 10;
+      border-bottom: none;
     }
 
-    /* ISBNdb-inspired layout */
-    .isbndb-layout {
+    .back-button button {
+      color: #ffffff !important;
+      font-weight: 500 !important;
+    }
+
+    /* Iconify icons inside buttons spacing/size */
+    .back-button iconify-icon,
+    .actions-section iconify-icon,
+    .error-state iconify-icon {
+      margin-right: 8px;
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
+    }
+
+    .book-layout {
       display: flex;
-      gap: 30px;
-      align-items: flex-start;
+      gap: 48px;
+      padding: 48px 32px;
+      max-width: 1200px;
+      margin: 0 auto;
     }
 
     /* Book Cover */
     .book-cover-container {
-      flex: 0 0 200px;
+      flex: 0 0 240px;
+      position: relative;
     }
 
     .book-cover {
-      width: 200px;
-      height: 300px;
-      border: 1px solid #e0e0e0;
-      border-radius: 3px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      width: 240px;
+      height: 360px;
+      object-fit: cover;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
     }
 
     .book-cover-placeholder {
-      width: 200px;
-      height: 300px;
-      border: 1px solid #e0e0e0;
-      border-radius: 3px;
+      width: 240px;
+      height: 360px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%);
       display: flex;
       align-items: center;
       justify-content: center;
-      background-color: #f8f9fa;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    }
-
-    .placeholder-content {
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
       text-align: center;
-      color: #6c757d;
+      padding: 16px;
+      color: #cfcfcf;
     }
 
     .placeholder-icon {
-      font-size: 48px;
+      font-size: 3rem !important;
+      width: 3rem !important;
+      height: 3rem !important;
       margin-bottom: 8px;
     }
 
     .placeholder-text {
+      font-size: 1rem;
+      line-height: 1.2;
+      word-break: break-word;
+    }
+
+    .format-badge {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: rgba(0,0,0,0.8);
+      color: white;
+      padding: 4px 8px;
+      border-radius: 12px;
       font-size: 12px;
       font-weight: 500;
+      backdrop-filter: blur(6px);
+      border: 1px solid rgba(255,255,255,0.15);
     }
 
     /* Book Information */
-    .book-info-container {
-      flex: 1;
-      min-width: 0;
-    }
+    .book-info-container { flex: 1; min-width: 0; }
 
-    .title-section {
-      margin-bottom: 24px;
-    }
+    .title-section { margin-bottom: 24px; }
 
     .book-title {
-      font-size: 26px;
-      font-weight: 600;
-      color: #333;
+      font-size: 2.2rem;
+      font-weight: 700;
       margin: 0 0 8px 0;
-      line-height: 1.3;
+      line-height: 1.2;
+      color: #ffffff;
     }
 
-    .book-subtitle {
-      font-size: 18px;
-      color: #666;
-      font-weight: 400;
-      margin: 0;
+    .book-series, .book-authors {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: #b3e5fc;
+      margin-top: 6px;
     }
 
-    /* Details List - ISBNdb style */
+  .book-series .series-index { color: #81d4fa; font-style: italic; margin-left: 4px; }
+  .book-series .series-link { color: #b3e5fc; text-decoration: none; }
+  .book-series .series-link:hover { text-decoration: underline; }
+  .authors-list .author-link { color: #b3e5fc; text-decoration: none; }
+  .authors-list .author-link:hover { text-decoration: underline; }
+
     .details-list {
-      background-color: #ffffff;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 24px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
     }
 
     .detail-item {
-      display: flex;
-      padding: 10px 0;
-      border-bottom: 1px solid #f0f0f0;
-      align-items: flex-start;
+      display: grid;
+      grid-template-columns: 1fr 2fr;
+      gap: 16px;
+      align-items: start;
+      padding: 12px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     }
 
-    .detail-item:first-child {
-      padding-top: 0;
+    .detail-item:last-child { border-bottom: none; }
+    .detail-item.synopsis { grid-template-columns: 1fr; }
+
+    .detail-label { font-weight: 600; color: #4fc3f7; white-space: nowrap; }
+    .detail-value { word-break: break-word; }
+
+    mat-chip-set {
+      --mdc-chip-container-color: rgba(79, 195, 247, 0.2);
+      --mdc-chip-label-text-color: #ffffff;
     }
 
-    .detail-item:last-child {
-      border-bottom: none;
-      padding-bottom: 0;
-    }
+    .contributors-section { margin-top: 24px; }
+    .section-title { font-size: 1.25rem; margin: 0 0 12px 0; display: flex; align-items: center; gap: 8px; color: #4fc3f7; }
+    .contributors-list { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 16px; }
+    .contrib-item { display: grid; grid-template-columns: 1fr 2fr; gap: 12px; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.08); }
+    .contrib-item:last-child { border-bottom: none; }
+    .contrib-role { color: #81d4fa; font-weight: 600; }
+    .contrib-names { color: #ffffff; opacity: 0.95; }
 
-    .detail-item.synopsis {
-      align-items: flex-start;
-    }
+    .actions-section { display: flex; gap: 12px; margin-top: 16px; }
 
-    .detail-item.synopsis .detail-value {
-      margin-top: 0;
-    }
-
-    .detail-label {
-      flex: 0 0 120px;
-      font-weight: 600;
-      color: #555;
-      font-size: 14px;
-      padding-right: 16px;
-    }
-
-    .detail-value {
-      flex: 1;
-      color: #333;
-      font-size: 14px;
-      line-height: 1.5;
-      word-wrap: break-word;
-    }
-
-    /* Author links styling */
-    .author-links .author-link {
-      color: #0066cc;
-      text-decoration: none;
-      cursor: pointer;
-    }
-
-    .author-links .author-link:hover {
-      text-decoration: underline;
-    }
-
-    /* Responsive Design */
+    /* Responsive */
     @media (max-width: 768px) {
-      .book-detail-container {
-        padding: 16px;
-      }
-      
-      .isbndb-layout {
-        flex-direction: column;
-        gap: 20px;
-        align-items: center;
-      }
-      
-      .book-cover-container {
-        flex: none;
-      }
-      
-      .book-cover, .book-cover-placeholder {
-        width: 160px;
-        height: 240px;
-      }
-      
-      .book-info-container {
-        width: 100%;
-      }
-      
-      .book-title {
-        font-size: 22px;
-        text-align: center;
-      }
-      
-      .book-subtitle {
-        font-size: 16px;
-        text-align: center;
-      }
-      
-      .detail-item {
-        flex-direction: column;
-        gap: 4px;
-        padding: 12px 0;
-      }
-      
-      .detail-label {
-        flex: none;
-        font-weight: 600;
-        margin-bottom: 4px;
-      }
-      
-      .detail-value {
-        padding-left: 0;
-      }
+      .book-layout { flex-direction: column; gap: 32px; padding: 32px 16px; }
+      .book-cover-container { align-self: center; }
+      .book-cover, .book-cover-placeholder { width: 200px; height: 300px; }
+      .book-title { font-size: 1.8rem; text-align: center; }
+      .book-subtitle, .book-series, .book-authors { justify-content: center; }
+      .detail-item { grid-template-columns: 1fr; gap: 6px; }
     }
 
-    /* Tablet breakpoint */
     @media (max-width: 1024px) and (min-width: 769px) {
-      .isbndb-layout {
-        gap: 24px;
-      }
-      
-      .book-cover-container {
-        flex: 0 0 160px;
-      }
-      
-      .book-cover, .book-cover-placeholder {
-        width: 160px;
-        height: 240px;
-      }
+      .book-layout { gap: 32px; }
+      .book-cover, .book-cover-placeholder { width: 200px; height: 300px; }
     }
   `]
 })
@@ -420,13 +426,15 @@ export class BookDetailComponent implements OnInit {
   readonly apiUrl = environment.apiUrl;
   book = signal<Book | null>(null);
   loading = signal(true);
+  // No local series/author ID caches needed
 
   constructor(
     private route: ActivatedRoute,
     private router: Router,
-    private bookService: BookService,
+  private bookService: BookService,
+    private location: Location,
     private snackBar: MatSnackBar
-  ) {}
+  ) { }
 
   ngOnInit() {
     const id = this.route.snapshot.paramMap.get('id');
@@ -442,6 +450,7 @@ export class BookDetailComponent implements OnInit {
     this.bookService.getBookById(id).subscribe({
       next: (book) => {
         this.book.set(book);
+  // Using contributorsDetailed and seriesId from backend; no extra lookups needed
         this.loading.set(false);
       },
       error: (error) => {
@@ -455,7 +464,11 @@ export class BookDetailComponent implements OnInit {
   }
 
   goBack() {
-    this.router.navigate(['/books']);
+    if (window.history.length > 1) {
+      this.location.back();
+    } else {
+      this.router.navigate(['/books']);
+    }
   }
 
   formatDate(dateString: string): string {
@@ -484,25 +497,24 @@ export class BookDetailComponent implements OnInit {
     return isbn;
   }
 
-  getAuthors(): string[] {
-    if (!this.book()?.contributors) return [];
-    return this.book()!.contributors!['author'] || [];
+  // Deprecated; no longer used as we rely solely on contributorsDetailed
+  getAuthors(): string[] { return []; }
+
+  getAuthorsDetailed(): Array<{ id: string; name: string }> {
+    const contribs = this.book()?.contributorsDetailed?.['author'];
+    return Array.isArray(contribs) ? contribs : [];
   }
 
-  getOtherContributors(): Array<{role: string, names: string[]}> {
-    if (!this.book()?.contributors) return [];
-    
-    const result: Array<{role: string, names: string[]}> = [];
-    const contributors = this.book()!.contributors!;
-    
-    for (const [role, names] of Object.entries(contributors)) {
-      if (role !== 'author' && names.length > 0) {
-        // Capitalize first letter of role
+  getOtherContributors(): Array<{ role: string, names: string[] }> {
+    const detailed = this.book()?.contributorsDetailed;
+    if (!detailed) return [];
+    const result: Array<{ role: string, names: string[] }> = [];
+    for (const [role, list] of Object.entries(detailed)) {
+      if (role !== 'author' && Array.isArray(list) && list.length > 0) {
         const displayRole = role.charAt(0).toUpperCase() + role.slice(1);
-        result.push({ role: displayRole, names });
+        result.push({ role: displayRole, names: list.map(x => x.name) });
       }
     }
-    
     return result;
   }
 
@@ -531,7 +543,7 @@ export class BookDetailComponent implements OnInit {
     return !!this.book()?.metadata && Object.keys(this.book()!.metadata!).length > 0;
   }
 
-  getMetadataEntries(): Array<{key: string, value: any}> {
+  getMetadataEntries(): Array<{ key: string, value: any }> {
     if (!this.book()?.metadata) return [];
     return Object.entries(this.book()!.metadata!).map(([key, value]) => ({
       key,
@@ -549,4 +561,10 @@ export class BookDetailComponent implements OnInit {
     }
     return [];
   }
+
+  getShortTitle(title: string): string {
+    return title && title.length > 30 ? title.substring(0, 30) + '...' : title;
+  }
+
+  // No author click handler needed; IDs are provided
 }

@@ -25,7 +25,7 @@ import { Author } from '../models/author.model';
     MatDividerModule
   ],
   template: `
-    <div class="author-detail-container">
+  <div class="author-detail-container plex-library">
       @if (loading()) {
         <div class="loading-container">
           <mat-spinner diameter="50"></mat-spinner>
@@ -173,10 +173,6 @@ import { Author } from '../models/author.model';
                     Visit Website
                   </button>
                 }
-                <button mat-button (click)="goBack()">
-                  <mat-icon>arrow_back</mat-icon>
-                  Back to Authors
-                </button>
               </div>
             </div>
           </div>
@@ -197,7 +193,8 @@ import { Author } from '../models/author.model';
   styles: [`
     .author-detail-container {
       min-height: 100vh;
-      background: linear-gradient(135deg, #1e1e1e 0%, #2a2a2a 100%);
+      /* Match list pages: inherit app background */
+      background: transparent;
       color: #ffffff;
       padding: 0;
     }
@@ -221,13 +218,14 @@ import { Author } from '../models/author.model';
     }
 
     .back-button {
-      padding: 24px 32px 0 32px;
+      /* Align with list page header */
+      padding: 24px 20px;
       position: sticky;
       top: 0;
-      background: rgba(30, 30, 30, 0.95);
-      backdrop-filter: blur(10px);
+      background: transparent;
+      backdrop-filter: none;
       z-index: 10;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      border-bottom: none;
     }
 
     .back-button button {

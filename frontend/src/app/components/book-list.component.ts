@@ -88,21 +88,22 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
                         <span class="book-title-text">{{ getShortTitle(asBook(book).title) }}</span>
                       </div>
                     }
-                    <div class="book-overlay"></div>
-                    <div class="book-actions">
-                      <button mat-icon-button class="action-btn" aria-label="Bookmark" (click)="toggleFavorite($event, asBook(book))">
-                        <iconify-icon [icon]="getBookmarkIcon(asBook(book))"></iconify-icon>
-                      </button>
-                      <button mat-icon-button class="action-btn" aria-label="Share" (click)="shareBook($event, asBook(book))">
-                        <iconify-icon icon="material-symbols-light:share"></iconify-icon>
-                      </button>
+                    <div class="book-overlay">
+                      <div class="book-actions">
+                        <button mat-icon-button class="action-btn" aria-label="Bookmark" (click)="toggleFavorite($event, asBook(book))">
+                          <iconify-icon [icon]="getBookmarkIcon(asBook(book))"></iconify-icon>
+                        </button>
+                        <button mat-icon-button class="action-btn" aria-label="Share" (click)="shareBook($event, asBook(book))">
+                          <iconify-icon icon="material-symbols-light:share"></iconify-icon>
+                        </button>
+                      </div>
                     </div>
                   </div>
                   
                   <div class="book-info">
                     <h3 class="book-title" [title]="asBook(book).title">{{ getShortTitle(asBook(book).title) }}</h3>
-                    @if (asBook(book).contributors) {
-                      <p class="book-author">{{ getShortContributors(asBook(book).contributors) }}</p>
+                    @if (asBook(book).contributorsDetailed || asBook(book).contributors) {
+                      <p class="book-author">{{ getShortContributors(asBook(book).contributors, asBook(book).contributorsDetailed) }}</p>
                     }
                     @if (asBook(book).series) {
                       <p class="book-series">
@@ -150,14 +151,6 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
     </div>
   `,
   styles: [`
-    :host {
-      /* Responsive CSS variables (kept in sync with TS getLayoutMetrics) */
-      --card-w: 240px;
-      --card-h: 360px;
-      --grid-gap: 24px;
-      --grid-pad: 32px;
-    }
-
     .plex-library {
       min-height: 100vh;
       background: transparent;
@@ -285,11 +278,11 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
 
   .books-grid {
       display: grid;
-      /* Fixed-width tracks that adjust via CSS vars per breakpoint */
-      grid-template-columns: repeat(auto-fill, var(--card-w));
+      /* Fixed tile width to keep same size on mobile and desktop */
+      grid-template-columns: repeat(auto-fill, 240px);
       justify-content: center;
-      gap: var(--grid-gap);
-      padding: var(--grid-pad);
+      gap: 24px;
+      padding: 32px;
       margin: 0 auto;
     }
 
@@ -303,8 +296,8 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
       backdrop-filter: blur(10px);
       border: 1px solid rgba(255, 255, 255, 0.1);
   /* Keep card height equal to the picture height */
-  width: var(--card-w);
-  height: var(--card-h);
+  width: 240px;
+  height: 360px;
     }
 
     .book-card:hover {
@@ -375,18 +368,7 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
 
     .book-actions {
       display: flex;
-      gap: 12px;
-      position: absolute;
-      top: 8px;
-      right: 8px;
-      z-index: 3; /* above overlay */
-      opacity: 0;
-      transition: opacity 0.2s ease;
-    }
-
-    /* Show actions on hover for pointer devices */
-    .book-card:hover .book-actions {
-      opacity: 1;
+      gap: 16px;
     }
 
     .action-btn {
@@ -406,7 +388,6 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
       font-size: 28px;
       width: 28px;
       height: 28px;
-  color: #fff;
     }
 
     .book-info {
@@ -478,15 +459,8 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
       font-style: italic;
     }
 
-    /* Breakpoint: medium desktops/tablets */
-    @media (max-width: 1024px) {
-      :host { --card-w: 220px; --card-h: 330px; }
-    }
-
-    /* Breakpoint: tablets/large phones */
+    /* Responsive design (keep tile size identical across breakpoints) */
     @media (max-width: 768px) {
-      :host { --card-w: 200px; --card-h: 300px; --grid-gap: 20px; --grid-pad: 24px; }
-
       .library-header {
         padding: 24px 16px;
         flex-direction: column;
@@ -494,62 +468,59 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
         gap: 16px;
       }
 
-      .library-title { font-size: 1.5rem; }
+      .library-title {
+        font-size: 2rem !important;
+      }
 
-      /* Mobile: keep actions visible and accessible without hover */
-      .book-overlay {
-        opacity: 1;
-        background: linear-gradient(180deg, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.35) 100%);
-  pointer-events: none; /* don't block taps on the card */
+      /* Keep same card width and cover height on mobile */
+      .books-grid {
+        grid-template-columns: repeat(auto-fill, 240px);
+        justify-content: center;
+        gap: 24px;
+        padding: 24px;
       }
+
       .book-actions {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  justify-content: flex-end;
-  gap: 8px;
-  pointer-events: auto; /* allow tapping action buttons */
-  opacity: 1; /* always visible on mobile */
+        opacity: 1; /* Always visible on mobile for touch devices */
+        position: static;
+        margin-top: 8px;
+        justify-content: center;
       }
+
       .action-btn {
-        width: 44px !important;
-        height: 44px !important;
-        min-width: 44px !important;
-        background: rgba(255,255,255,0.18) !important;
-  pointer-events: auto;
+        width: 64px;
+        height: 64px;
+        min-width: 64px; /* Better touch target for mobile */
       }
     }
 
-    /* Breakpoint: small phones */
     @media (max-width: 480px) {
-      :host { --card-w: 180px; --card-h: 270px; --grid-gap: 16px; --grid-pad: 16px; }
+      /* Keep same card width and cover height on small phones */
+      .books-grid {
+        grid-template-columns: repeat(auto-fill, 240px);
+        justify-content: center;
+        gap: 16px;
+        padding: 16px;
+      }
 
-      .library-title { font-size: 1.35rem; }
+      .library-title {
+        font-size: 1.75rem;
+      }
 
-      .action-btn {
-        width: 40px !important;
-        height: 40px !important;
-        min-width: 40px !important;
+      .fab-search {
+        width: 64px;
+        height: 64px;
+        min-width: 64px;
       }
     }
   `]
 })
 export class BookListComponent implements OnInit {
   scrollState;
-  // Responsive layout metrics must stay in sync with CSS variables above
-  private getLayoutMetrics() {
-    const w = window.innerWidth;
-    if (w <= 480) {
-      return { CARD_WIDTH: 180, CARD_HEIGHT: 270, GRID_GAP: 16, PADDING_X: 16 };
-    }
-    if (w <= 768) {
-      return { CARD_WIDTH: 200, CARD_HEIGHT: 300, GRID_GAP: 20, PADDING_X: 24 };
-    }
-    if (w <= 1024) {
-      return { CARD_WIDTH: 220, CARD_HEIGHT: 330, GRID_GAP: 24, PADDING_X: 32 };
-    }
-    return { CARD_WIDTH: 240, CARD_HEIGHT: 360, GRID_GAP: 24, PADDING_X: 32 };
-  }
+  private readonly CARD_WIDTH = 240; // px
+  private readonly CARD_HEIGHT = 360; // px
+  private readonly GRID_GAP = 24; // must match CSS gap for desktop
+  private readonly PADDING_X = 32; // horizontal padding of .books-grid
 
   constructor(
     private bookService: BookService,
@@ -593,40 +564,15 @@ export class BookListComponent implements OnInit {
 
   toggleFavorite(event: Event, book: Book) {
     event.stopPropagation();
-    if (!book?.id) return;
-    if (this.favorites.has(book.id)) {
-      this.favorites.delete(book.id);
-      this.snackBar.open('Removed bookmark', 'Close', { duration: 1500 });
-    } else {
-      this.favorites.add(book.id);
-      this.snackBar.open('Bookmarked', 'Close', { duration: 1500 });
-    }
+    // TODO: Implement bookmark functionality
+    this.snackBar.open('Bookmark functionality not implemented yet', 'Close', { duration: 3000 });
   }
 
   shareBook(event: Event, book: Book) {
     event.stopPropagation();
     const url = `${window.location.origin}/books/${book.id}`;
-    const done = () => this.snackBar.open('Link ready to share', 'Close', { duration: 2000 });
+    const done = () => this.snackBar.open('Book link copied to clipboard', 'Close', { duration: 2000 });
     const fail = () => this.snackBar.open('Failed to copy link', 'Close', { duration: 2500 });
-
-    // Prefer native share sheet on mobile when available
-    const title = book.title || 'Book';
-    if ((navigator as any).share) {
-      (navigator as any)
-        .share({ title, url })
-        .then(() => this.snackBar.open('Shared', 'Close', { duration: 1500 }))
-        .catch(() => {
-          // Fall back to clipboard if user cancels or share fails
-          if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(url).then(done).catch(() => {
-              this.legacyCopy(url) ? done() : fail();
-            });
-          } else {
-            this.legacyCopy(url) ? done() : fail();
-          }
-        });
-      return;
-    }
 
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(url).then(done).catch(() => {
@@ -675,9 +621,13 @@ export class BookListComponent implements OnInit {
     return title.length > 30 ? title.substring(0, 30) + '...' : title;
   }
 
-  getShortContributors(contributors?: Record<string, string[]>): string {
-    if (!contributors) return '';
-    const allContributors = Object.values(contributors).flat();
+  getShortContributors(contributors?: Record<string, string[]>, contributorsDetailed?: Record<string, Array<{id: string; name: string}>>): string {
+    let allContributors: string[] = [];
+    if (contributorsDetailed) {
+      allContributors = Object.values(contributorsDetailed).flat().map(c => c.name);
+    } else if (contributors) {
+      allContributors = Object.values(contributors).flat();
+    }
     if (allContributors.length === 0) return '';
     if (allContributors.length === 1) return allContributors[0];
     return `${allContributors[0]} and ${allContributors.length - 1} more`;
@@ -688,21 +638,20 @@ export class BookListComponent implements OnInit {
   }
 
   private calculatePageSize(): number {
-  const viewportWidth = window.innerWidth;
-  const viewportHeight = window.innerHeight;
-  const { CARD_WIDTH, CARD_HEIGHT, GRID_GAP, PADDING_X } = this.getLayoutMetrics();
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
 
-  // Effective content width accounting for grid side padding
-  const contentWidth = Math.max(0, viewportWidth - PADDING_X * 2);
-  const colWidth = CARD_WIDTH + GRID_GAP;
-  const rowHeight = CARD_HEIGHT + GRID_GAP;
+    // Effective content width accounting for grid side padding
+    const contentWidth = Math.max(0, viewportWidth - this.PADDING_X * 2);
+    const colWidth = this.CARD_WIDTH + this.GRID_GAP;
+    const rowHeight = this.CARD_HEIGHT + this.GRID_GAP;
 
-  const columns = Math.max(1, Math.floor((contentWidth + GRID_GAP) / colWidth));
-  const rows = Math.max(1, Math.floor((viewportHeight + GRID_GAP) / rowHeight));
+    const columns = Math.max(1, Math.floor((contentWidth + this.GRID_GAP) / colWidth));
+    const rows = Math.max(1, Math.floor((viewportHeight + this.GRID_GAP) / rowHeight));
 
-  // Load one extra row as buffer for smoother scrolling
-  const pageSize = columns * (rows + 1);
-  return Math.max(10, pageSize);
+    // Load one extra row as buffer for smoother scrolling
+    const pageSize = columns * (rows + 1);
+    return Math.max(10, pageSize);
   }
 
   getBookmarkIcon(book: Book): string {
@@ -710,9 +659,7 @@ export class BookListComponent implements OnInit {
   }
 
   isBookmarked(book: Book): boolean {
-    return !!book?.id && this.favorites.has(book.id);
+    // TODO: wire to real bookmark state when implemented
+    return false;
   }
-
-  // Local in-memory favorites (visual only for now)
-  private favorites = new Set<string>();
 }

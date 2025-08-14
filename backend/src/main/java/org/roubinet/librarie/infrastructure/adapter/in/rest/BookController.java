@@ -33,7 +33,6 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.Map;
 import java.util.HashMap;
-import java.util.HashMap;
 import java.util.stream.Collectors;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -648,12 +647,36 @@ public class BookController {
         // Handle contributors - extract from relationships or metadata
         Map<String, List<String>> contributors = extractContributorsFromBook(book);
         dto.setContributors(contributors);
+
+        // Detailed contributors with UUIDs for author role (and extendable)
+        Map<String, List<org.roubinet.librarie.infrastructure.adapter.in.rest.dto.ContributorRefDto>> contributorsDetailed = new HashMap<>();
+        List<org.roubinet.librarie.infrastructure.adapter.in.rest.dto.ContributorRefDto> authorRefs = new ArrayList<>();
+        if (book.getOriginalWorks() != null) {
+            for (BookOriginalWork bow : book.getOriginalWorks()) {
+                OriginalWork ow = bow.getOriginalWork();
+                if (ow != null && ow.getAuthors() != null) {
+                    for (OriginalWorkAuthor owa : ow.getAuthors()) {
+                        if (owa.getAuthor() != null) {
+                            var auth = owa.getAuthor();
+                            authorRefs.add(new org.roubinet.librarie.infrastructure.adapter.in.rest.dto.ContributorRefDto(auth.getId(), auth.getName()));
+                        }
+                    }
+                }
+            }
+        }
+        if (!authorRefs.isEmpty()) {
+            contributorsDetailed.put("author", authorRefs);
+        }
+        if (!contributorsDetailed.isEmpty()) {
+            dto.setContributorsDetailed(contributorsDetailed);
+        }
         
         // Handle series - extract from relationships
         if (book.getSeries() != null && !book.getSeries().isEmpty()) {
             BookSeries firstSeries = book.getSeries().iterator().next();
             if (firstSeries.getSeries() != null) {
                 dto.setSeries(firstSeries.getSeries().getName());
+                dto.setSeriesId(firstSeries.getSeries().getId());
                 dto.setSeriesIndex(firstSeries.getSeriesIndex().intValue());
             }
         }
