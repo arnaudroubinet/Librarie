@@ -15,4 +15,12 @@ export class SettingsService {
   getSettings(): Observable<SettingsResponse> {
     return this.http.get<SettingsResponse>(`${this.baseUrl}/v1/settings`);
   }
+
+  getHealthLiveness(): Observable<any> {
+    return this.http.get(`${this.baseUrl}/q/health/live`);
+  }
+
+  getHealthReadiness(): Observable<any> {
+    return this.http.get(`${this.baseUrl}/q/health/ready`);
+  }
 }
