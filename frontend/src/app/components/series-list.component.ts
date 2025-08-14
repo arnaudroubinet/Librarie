@@ -314,11 +314,16 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
       width: 100%;
       height: 100%;
       object-fit: cover;
-      transition: transform 0.3s ease;
+      opacity: 0;
+      transition: opacity 0.3s ease, transform 0.3s ease;
     }
 
     .series-card:hover .cover-image {
       transform: scale(1.05);
+    }
+
+    .cover-image.loaded {
+      opacity: 1;
     }
 
     .cover-placeholder {
