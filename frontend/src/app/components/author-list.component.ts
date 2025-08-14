@@ -299,7 +299,7 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
       display: flex;
       align-items: center;
       gap: 20px;
-      margin: 20px 0;
+      margin: 30px 0 20px 0;
       padding: 0 20px;
     }
 
