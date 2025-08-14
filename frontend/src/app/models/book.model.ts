@@ -7,6 +7,7 @@ export interface Book {
   fileSize?: number;
   fileHash?: string;
   hasCover?: boolean;
+  coverUrl?: string;
   createdAt?: string;
   updatedAt?: string;
   publicationDate?: string;
@@ -49,6 +50,7 @@ export interface BookRequest {
   description?: string;
   series?: string;
   seriesIndex?: number;
+  coverUrl?: string;
 }
 
 export interface CompletionRequest {

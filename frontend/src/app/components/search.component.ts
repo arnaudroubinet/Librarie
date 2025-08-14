@@ -1,4 +1,4 @@
-import { Component, OnDestroy, signal } from '@angular/core';
+import { Component, OnDestroy, signal, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -21,10 +21,11 @@ import { Book, CursorPageResponse, BookSearchCriteria } from '../models/book.mod
 import { Series } from '../models/series.model';
 import { Author } from '../models/author.model';
 import { UnifiedSearchResult } from '../models/search.model';
-
+import { environment } from '../../environments/environment';
 @Component({
   selector: 'app-search',
   standalone: true,
+  schemas: [CUSTOM_ELEMENTS_SCHEMA],
   imports: [
     CommonModule,
     FormsModule,
@@ -45,141 +46,103 @@ import { UnifiedSearchResult } from '../models/search.model';
     MatRippleModule
   ],
   template: `
-    <div class="plex-search">
-      <div class="search-header">
+    <div class="plex-library plex-search">
+      <div class="library-header">
         <div class="header-content">
-          <h1 class="search-title">
-            <mat-icon class="title-icon">search</mat-icon>
+          <h1 class="library-title">
+            <iconify-icon class="title-icon" icon="mdi-light:magnify"></iconify-icon>
             Search Library
           </h1>
-          <p class="search-subtitle">Find exactly what you're looking for in your collection</p>
+          <p class="library-subtitle">Find exactly what you're looking for in your collection</p>
         </div>
       </div>
 
       <div class="search-content">
-        <form [formGroup]="searchForm" class="search-form">
-          <!-- Quick Search -->
+        <form class="search-form" [formGroup]="searchForm" (ngSubmit)="performQuickSearch()">
           <div class="quick-search-section">
             <mat-form-field appearance="outline" class="search-field">
-              <mat-label>Quick Search</mat-label>
-              <input matInput 
-                     formControlName="quickSearch"
-                     placeholder="Search books, authors, series, or ISBN... (Press / to focus)"
-                     (keyup.enter)="performQuickSearch()"
-                     (keyup)="onSearchInput($event)"
-                     autocomplete="off"
-                     #searchInput>
-              <mat-icon matSuffix>search</mat-icon>
-              <mat-hint>Use keywords like "author:name", "series:title", "year:2023"</mat-hint>
+              <mat-label>Quick search</mat-label>
+              <input matInput placeholder="Title, author, series..." formControlName="quickSearch" (input)="onSearchInput($event)" />
             </mat-form-field>
-            <button mat-raised-button 
-                    color="primary" 
-                    type="button"
-                    (click)="performQuickSearch()"
-                    [disabled]="!searchForm.get('quickSearch')?.value?.trim()">
-              <mat-icon>search</mat-icon>
-              Search
-            </button>
+            <button mat-raised-button color="primary" type="submit">Search</button>
           </div>
+        </form>
 
-          <!-- Search Suggestions -->
-          @if (searchSuggestions().length > 0 && showSuggestions()) {
-            <div class="search-suggestions">
-              <div class="suggestions-header">
-                <mat-icon>auto_awesome</mat-icon>
-                Suggestions
-              </div>
-              <div class="suggestions-list">
-                @for (suggestion of searchSuggestions(); track suggestion) {
-                  <button class="suggestion-item" (click)="applySuggestion(suggestion)">
-                    <mat-icon>history</mat-icon>
-                    {{ suggestion }}
-                  </button>
-                }
-              </div>
+        @if (showSuggestions()) {
+          <div class="search-suggestions">
+            <div class="suggestions-header">
+              <mat-icon>tips_and_updates</mat-icon>
+              Suggestions
             </div>
-          }
+            <div class="suggestions-list">
+              @for (s of searchSuggestions(); track s) {
+                <button class="suggestion-item" (click)="applySuggestion(s)">
+                  <mat-icon>north_east</mat-icon>
+                  <span>{{ s }}</span>
+                </button>
+              }
+            </div>
+          </div>
+        }
 
-          <!-- Advanced Search -->
-          <mat-expansion-panel class="advanced-panel">
+        <mat-accordion class="advanced-panel">
+          <mat-expansion-panel>
             <mat-expansion-panel-header>
-              <mat-panel-title>
-                <mat-icon>tune</mat-icon>
-                Advanced Search
-              </mat-panel-title>
-              <mat-panel-description>
-                Use detailed criteria to find specific books
-              </mat-panel-description>
+              <mat-panel-title>Advanced search</mat-panel-title>
+              <mat-panel-description>Filter by fields</mat-panel-description>
             </mat-expansion-panel-header>
 
             <div class="advanced-form">
               <div class="form-row">
                 <mat-form-field appearance="outline">
-                  <mat-label>Title</mat-label>
-                  <input matInput formControlName="title" placeholder="Book title contains...">
+                  <mat-label>Title contains</mat-label>
+                  <input matInput formControlName="title" />
                 </mat-form-field>
-                
                 <mat-form-field appearance="outline">
-                  <mat-label>Authors</mat-label>
-                  <input matInput formControlName="authors" placeholder="Author names (comma separated)">
+                  <mat-label>Authors (comma-separated)</mat-label>
+                  <input matInput formControlName="authors" />
                 </mat-form-field>
               </div>
 
               <div class="form-row">
                 <mat-form-field appearance="outline">
-                  <mat-label>Series</mat-label>
-                  <input matInput formControlName="series" placeholder="Series name">
+                  <mat-label>Series contains</mat-label>
+                  <input matInput formControlName="series" />
                 </mat-form-field>
-                
                 <mat-form-field appearance="outline">
-                  <mat-label>Publisher</mat-label>
-                  <input matInput formControlName="publisher" placeholder="Publisher name">
+                  <mat-label>Publisher contains</mat-label>
+                  <input matInput formControlName="publisher" />
                 </mat-form-field>
               </div>
 
               <div class="form-row">
                 <mat-form-field appearance="outline">
                   <mat-label>Language</mat-label>
-                  <mat-select formControlName="language">
-                    <mat-option value="">Any Language</mat-option>
-                    <mat-option value="English">English</mat-option>
-                    <mat-option value="French">French</mat-option>
-                    <mat-option value="German">German</mat-option>
-                    <mat-option value="Spanish">Spanish</mat-option>
-                    <mat-option value="Chinese">Chinese</mat-option>
-                    <mat-option value="Japanese">Japanese</mat-option>
-                  </mat-select>
+                  <input matInput formControlName="language" />
                 </mat-form-field>
 
                 <mat-form-field appearance="outline">
-                  <mat-label>Format</mat-label>
+                  <mat-label>Formats</mat-label>
                   <mat-select formControlName="formats" multiple>
                     <mat-option value="EPUB">EPUB</mat-option>
                     <mat-option value="PDF">PDF</mat-option>
                     <mat-option value="MOBI">MOBI</mat-option>
                     <mat-option value="AZW3">AZW3</mat-option>
-                    <mat-option value="TXT">TXT</mat-option>
                   </mat-select>
                 </mat-form-field>
               </div>
 
               <div class="form-row">
                 <mat-form-field appearance="outline">
-                  <mat-label>Published After</mat-label>
-                  <input matInput 
-                         [matDatepicker]="afterPicker" 
-                         formControlName="publishedAfter"
-                         placeholder="From date">
+                  <mat-label>Published after</mat-label>
+                  <input matInput [matDatepicker]="afterPicker" formControlName="publishedAfter">
                   <mat-datepicker-toggle matSuffix [for]="afterPicker"></mat-datepicker-toggle>
                   <mat-datepicker #afterPicker></mat-datepicker>
                 </mat-form-field>
 
                 <mat-form-field appearance="outline">
-                  <mat-label>Published Before</mat-label>
-                  <input matInput 
-                         [matDatepicker]="beforePicker" 
-                         formControlName="publishedBefore"
-                         placeholder="To date">
+                  <mat-label>Published before</mat-label>
+                  <input matInput [matDatepicker]="beforePicker" formControlName="publishedBefore">
                   <mat-datepicker-toggle matSuffix [for]="beforePicker"></mat-datepicker-toggle>
                   <mat-datepicker #beforePicker></mat-datepicker>
                 </mat-form-field>
@@ -187,17 +150,14 @@ import { UnifiedSearchResult } from '../models/search.model';
 
               <div class="form-row">
                 <mat-form-field appearance="outline">
-                  <mat-label>Sort By</mat-label>
+                  <mat-label>Sort by</mat-label>
                   <mat-select formControlName="sortBy">
                     <mat-option value="title">Title</mat-option>
-                    <mat-option value="createdAt">Date Added</mat-option>
-                    <mat-option value="publicationDate">Publication Date</mat-option>
-                    <mat-option value="author">Author</mat-option>
+                    <mat-option value="publicationDate">Publication date</mat-option>
                   </mat-select>
                 </mat-form-field>
-
                 <mat-form-field appearance="outline">
-                  <mat-label>Sort Direction</mat-label>
+                  <mat-label>Sort direction</mat-label>
                   <mat-select formControlName="sortDirection">
                     <mat-option value="asc">Ascending</mat-option>
                     <mat-option value="desc">Descending</mat-option>
@@ -206,864 +166,279 @@ import { UnifiedSearchResult } from '../models/search.model';
               </div>
 
               <div class="advanced-actions">
-                <button mat-raised-button color="accent" type="button" (click)="performAdvancedSearch()">
-                  <mat-icon>search</mat-icon>
-                  Advanced Search
-                </button>
-                <button mat-button type="button" (click)="clearForm()">
-                  <mat-icon>clear</mat-icon>
-                  Clear
-                </button>
+                <button mat-stroked-button type="button" (click)="clearForm()">Clear</button>
+                <button mat-raised-button color="primary" type="button" (click)="performAdvancedSearch()">Search</button>
               </div>
             </div>
           </mat-expansion-panel>
-        </form>
+        </mat-accordion>
 
-        <!-- Search Results -->
-        @if (hasSearched() && !loading()) {
-          <div class="results-header">
-            @if (isUnifiedSearch()) {
-              @if (books().length > 0 || series().length > 0 || authors().length > 0) {
-                <h2>Found {{ books().length + series().length + authors().length }} result(s)</h2>
-                @if (lastSearchQuery()) {
-                  <p>for "{{ lastSearchQuery() }}"</p>
-                }
-              } @else {
-                <h2>No results found</h2>
-                @if (lastSearchQuery()) {
-                  <p>for "{{ lastSearchQuery() }}"</p>
-                }
-              }
-            } @else {
-              @if (books().length > 0) {
-                <h2>Found {{ books().length }} book(s)</h2>
-                @if (lastSearchQuery()) {
-                  <p>for "{{ lastSearchQuery() }}"</p>
-                }
-              } @else {
-                <h2>No books found</h2>
-                @if (lastSearchQuery()) {
-                  <p>for "{{ lastSearchQuery() }}"</p>
-                }
-              }
-            }
-          </div>
-        }
-        
         @if (loading()) {
           <div class="loading-section">
             <div class="loading-content">
-              <mat-spinner diameter="60" color="accent"></mat-spinner>
-              <h3>Searching your library...</h3>
-              <p>Finding content that match your criteria</p>
+              <mat-spinner diameter="60"></mat-spinner>
+              <h3>Searching...</h3>
+              <p>Looking through your library</p>
             </div>
           </div>
-        } @else if (isUnifiedSearch()) {
-          <!-- Unified Search Results -->
-          @if (books().length > 0) {
-            <div class="results-section">
-              <h3 class="section-title">
-                <mat-icon>book</mat-icon>
-                Books ({{ books().length }})
-              </h3>
-              <div class="books-grid">
-                @for (book of books(); track book.id) {
-                  <div class="book-poster" matRipple [routerLink]="['/books', book.id]">
-                    <div class="book-cover">
-                      @if (book.hasCover) {
-                        <img [src]="'/api/books/' + book.id + '/cover'" 
-                             [alt]="book.title + ' cover'"
-                             class="cover-image"
-                             (error)="onImageError($event)">
-                      } @else {
-                        <div class="cover-placeholder">
-                          <mat-icon>book</mat-icon>
-                          <span class="title-text">{{ getShortTitle(book.title) }}</span>
+        } @else {
+          @if (!hasSearched()) {
+            <div class="empty-results">
+              <div class="empty-content">
+                <mat-icon class="empty-icon">search</mat-icon>
+                <h2>Start typing to search</h2>
+                <p>Use quick search or expand advanced options</p>
+              </div>
+            </div>
+          } @else if (isUnifiedSearch()) {
+            @if (books().length > 0) {
+              <div class="results-section">
+                <h3 class="section-title">
+                  <mat-icon>menu_book</mat-icon>
+                  Books ({{ books().length }})
+                </h3>
+                <div class="books-grid">
+                  @for (book of books(); track book.id) {
+                    <div class="book-poster" matRipple [routerLink]="['/books', book.id]">
+                      <div class="book-cover">
+                        @if (book.hasCover) {
+                          <img [src]="apiUrl + '/v1/books/' + book.id + '/cover'" [alt]="book.title + ' cover'" class="cover-image" (error)="onImageError($event)">
+                        } @else {
+                          <div class="cover-placeholder">
+                            <mat-icon>book</mat-icon>
+                            <span class="title-text">{{ getShortTitle(book.title) }}</span>
+                          </div>
+                        }
+                        <div class="cover-overlay">
+                          <mat-icon class="play-icon">visibility</mat-icon>
                         </div>
-                      }
-                      <div class="cover-overlay">
-                        <mat-icon class="play-icon">visibility</mat-icon>
+                      </div>
+                      <div class="book-info">
+                        <h3 class="book-title" [title]="book.title">{{ book.title }}</h3>
+                        @if (book.contributors?.['author']?.length) {
+                          <p class="book-author">{{ book.contributors!['author'].join(', ') }}</p>
+                        }
+                        @if (book.publicationDate) {
+                          <p class="book-year">{{ getYear(book.publicationDate) }}</p>
+                        }
                       </div>
                     </div>
-                    
-                    <div class="book-info">
-                      <h3 class="book-title" [title]="book.title">{{ book.title }}</h3>
-                      @if (book.contributors?.['author']?.length) {
-                        <p class="book-author">{{ book.contributors!['author'].join(', ') }}</p>
+                  }
+                </div>
+              </div>
+            }
+
+            @if (series().length > 0) {
+              <div class="results-section">
+                <h3 class="section-title">
+                  <mat-icon>collections_bookmark</mat-icon>
+                  Series ({{ series().length }})
+                </h3>
+                <div class="series-grid">
+                  @for (s of series(); track s.id) {
+                    <div class="series-item" matRipple>
+                      <div class="series-info">
+                        <h4 class="series-name">{{ s.name }}</h4>
+                        @if (s.description) {
+                          <p class="series-description">{{ s.description }}</p>
+                        }
+                        <p class="series-count">{{ s.bookCount }} book(s)</p>
+                      </div>
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+
+            @if (authors().length > 0) {
+              <div class="results-section">
+                <h3 class="section-title">
+                  <mat-icon>person</mat-icon>
+                  Authors ({{ authors().length }})
+                </h3>
+                <div class="authors-grid">
+                  @for (author of authors(); track author.id) {
+                    <div class="author-item" matRipple>
+                      <div class="author-info">
+                        <h4 class="author-name">{{ author.name }}</h4>
+                        @if (author.birthDate || author.deathDate) {
+                          <p class="author-dates">
+                            {{ author.birthDate ? getYear(author.birthDate) : '?' }} -
+                            {{ author.deathDate ? getYear(author.deathDate) : 'Present' }}
+                          </p>
+                        }
+                        @if (author.bio && author.bio['en']) {
+                          <p class="author-bio">{{ author.bio['en'] }}</p>
+                        }
+                      </div>
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+
+            @if (books().length === 0 && series().length === 0 && authors().length === 0) {
+              <div class="empty-results">
+                <div class="empty-content">
+                  <mat-icon class="empty-icon">search_off</mat-icon>
+                  <h2>No results found</h2>
+                  <p>Try adjusting your search.</p>
+                </div>
+              </div>
+            }
+          } @else if (books().length > 0) {
+            <div class="books-grid">
+              @for (book of books(); track book.id) {
+                <div class="book-poster" matRipple [routerLink]="['/books', book.id]">
+                  <div class="book-cover">
+                    @if (book.hasCover) {
+                      <img [src]="apiUrl + '/v1/books/' + book.id + '/cover'" [alt]="book.title + ' cover'" class="cover-image" (error)="onImageError($event)">
+                    } @else {
+                      <div class="cover-placeholder">
+                        <mat-icon>book</mat-icon>
+                        <span class="title-text">{{ getShortTitle(book.title) }}</span>
+                      </div>
+                    }
+                    <div class="cover-overlay">
+                      <mat-icon class="play-icon">visibility</mat-icon>
+                    </div>
+                  </div>
+
+                  <div class="book-info">
+                    <h3 class="book-title" [title]="book.title">{{ book.title }}</h3>
+                    @if (book.contributors?.['author']?.length) {
+                      <p class="book-author">{{ book.contributors!['author'].join(', ') }}</p>
+                    }
+                    @if (book.publicationDate) {
+                      <p class="book-year">{{ getYear(book.publicationDate) }}</p>
+                    }
+                    <div class="book-metadata">
+                      @if (book.language) {
+                        <mat-chip class="metadata-chip language-chip">{{ book.language }}</mat-chip>
                       }
-                      @if (book.publicationDate) {
-                        <p class="book-year">{{ getYear(book.publicationDate) }}</p>
+                      @if (book.formats && book.formats.length > 0) {
+                        @for (format of book.formats; track format) {
+                          <mat-chip class="metadata-chip format-chip">{{ format }}</mat-chip>
+                        }
                       }
                     </div>
                   </div>
-                }
-              </div>
+                </div>
+              }
             </div>
-          }
-          
-          @if (series().length > 0) {
-            <div class="results-section">
-              <h3 class="section-title">
-                <mat-icon>collections_bookmark</mat-icon>
-                Series ({{ series().length }})
-              </h3>
-              <div class="series-grid">
-                @for (s of series(); track s.id) {
-                  <div class="series-item" matRipple [routerLink]="['/series', s.id]">
-                    <div class="series-info">
-                      <h4 class="series-name">{{ s.name }}</h4>
-                      @if (s.description) {
-                        <p class="series-description">{{ s.description }}</p>
-                      }
-                      <p class="series-count">{{ s.bookCount }} book(s)</p>
-                    </div>
-                  </div>
-                }
-              </div>
+
+            <div class="pagination-section">
+              @if (previousCursor() || nextCursor() || hasSearched()) {
+                <div class="pagination-controls">
+                  @if (previousCursor()) {
+                    <button mat-raised-button class="nav-button" (click)="loadPrevious()">
+                      <mat-icon>chevron_left</mat-icon>
+                      Previous
+                    </button>
+                  }
+                  @if (nextCursor()) {
+                    <button mat-raised-button class="nav-button" (click)="loadNext()">
+                      Next
+                      <mat-icon>chevron_right</mat-icon>
+                    </button>
+                  } @else if (previousCursor() || hasSearched()) {
+                    <button mat-raised-button class="nav-button back-button" (click)="goBack()">
+                      <mat-icon>arrow_back</mat-icon>
+                      Back
+                    </button>
+                  }
+                </div>
+              }
             </div>
-          }
-          
-          @if (authors().length > 0) {
-            <div class="results-section">
-              <h3 class="section-title">
-                <mat-icon>person</mat-icon>
-                Authors ({{ authors().length }})
-              </h3>
-              <div class="authors-grid">
-                @for (author of authors(); track author.id) {
-                  <div class="author-item" matRipple>
-                    <div class="author-info">
-                      <h4 class="author-name">{{ author.name }}</h4>
-                      @if (author.birthDate || author.deathDate) {
-                        <p class="author-dates">
-                          {{ author.birthDate ? getYear(author.birthDate) : '?' }} - 
-                          {{ author.deathDate ? getYear(author.deathDate) : 'Present' }}
-                        </p>
-                      }
-                      @if (author.bio && author.bio['en']) {
-                        <p class="author-bio">{{ author.bio['en'] }}</p>
-                      }
-                    </div>
-                  </div>
-                }
-              </div>
-            </div>
-          }
-          
-          @if (books().length === 0 && series().length === 0 && authors().length === 0) {
+          } @else if (hasSearched() && !loading()) {
             <div class="empty-results">
               <div class="empty-content">
                 <mat-icon class="empty-icon">search_off</mat-icon>
-                <h2>No results found</h2>
-                <p>Try adjusting your search criteria or checking your spelling.</p>
+                <h2>No books found</h2>
+                <p>Try adjusting your search.</p>
               </div>
             </div>
           }
-        } @else if (books().length > 0) {
-          <div class="books-grid">
-            @for (book of books(); track book.id) {
-              <div class="book-poster" matRipple [routerLink]="['/books', book.id]">
-                <div class="book-cover">
-                  @if (book.hasCover) {
-                    <img [src]="'/api/books/' + book.id + '/cover'" 
-                         [alt]="book.title + ' cover'"
-                         class="cover-image"
-                         (error)="onImageError($event)">
-                  } @else {
-                    <div class="cover-placeholder">
-                      <mat-icon>book</mat-icon>
-                      <span class="title-text">{{ getShortTitle(book.title) }}</span>
-                    </div>
-                  }
-                  <div class="cover-overlay">
-                    <mat-icon class="play-icon">visibility</mat-icon>
-                  </div>
-                </div>
-                
-                <div class="book-info">
-                  <h3 class="book-title" [title]="book.title">{{ book.title }}</h3>
-                  @if (book.contributors?.['author']?.length) {
-                    <p class="book-author">{{ book.contributors!['author'].join(', ') }}</p>
-                  }
-                  @if (book.publicationDate) {
-                    <p class="book-year">{{ getYear(book.publicationDate) }}</p>
-                  }
-                  
-                  <div class="book-metadata">
-                    @if (book.language) {
-                      <mat-chip class="metadata-chip language-chip">{{ book.language }}</mat-chip>
-                    }
-                    @if (book.formats && book.formats.length > 0) {
-                      @for (format of book.formats; track format) {
-                        <mat-chip class="metadata-chip format-chip">{{ format }}</mat-chip>
-                      }
-                    }
-                  </div>
-                </div>
-              </div>
-            }
-          </div>
-          
-          <div class="pagination-section">
-            @if (previousCursor() || nextCursor() || hasSearched()) {
-              <div class="pagination-controls">
-                @if (previousCursor()) {
-                  <button mat-raised-button class="nav-button" (click)="loadPrevious()">
-                    <mat-icon>chevron_left</mat-icon>
-                    Previous
-                  </button>
-                }
-                @if (nextCursor()) {
-                  <button mat-raised-button class="nav-button" (click)="loadNext()">
-                    Next
-                    <mat-icon>chevron_right</mat-icon>
-                  </button>
-                } @else if (previousCursor() || hasSearched()) {
-                  <button mat-raised-button class="nav-button back-button" (click)="goBack()">
-                    <mat-icon>arrow_back</mat-icon>
-                    Back
-                  </button>
-                }
-              </div>
-            }
-          </div>
-        } @else if (hasSearched() && !loading()) {
-          <div class="empty-results">
-            <div class="empty-content">
-              <mat-icon class="empty-icon">search_off</mat-icon>
-              <h2>No books found</h2>
-              <p>Try adjusting your search criteria or checking your spelling.</p>
-            </div>
-          </div>
         }
       </div>
     </div>
   `,
   styles: [`
-    .plex-search {
-      min-height: 100vh;
-      background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-      color: var(--text-primary);
-      font-family: var(--font-family-primary);
-    }
-
-    .search-header {
-      background: linear-gradient(135deg, var(--primary-color) 0%, #1565c0 100%);
-      padding: 48px 32px;
-      color: white;
-      box-shadow: 0 4px 20px rgba(25, 118, 210, 0.15);
-    }
-
-    .search-title {
-      font-size: 2.75rem;
-      font-weight: 400;
-      margin: 0 0 12px 0;
-      display: flex;
-      align-items: center;
-      gap: 20px;
-      font-family: var(--font-family-display);
-      letter-spacing: -0.02em;
-    }
-
-    .title-icon {
-      font-size: 3rem;
-      width: 3rem;
-      height: 3rem;
-      color: #ffffff;
-      opacity: 0.95;
-    }
-
-    .search-subtitle {
-      font-size: 1.2rem;
-      color: rgba(255, 255, 255, 0.9);
-      margin: 0;
-      font-weight: 300;
-    }
-
-    .search-content {
-      padding: 40px 32px;
-      max-width: 1200px;
-      margin: 0 auto;
-    }
-
-    .search-form {
-      margin-bottom: 40px;
-    }
-
-    .quick-search-section {
-      display: flex;
-      gap: 16px;
-      align-items: flex-end;
-      margin-bottom: 32px;
-      background: white;
-      padding: 24px;
-      border-radius: 12px;
-      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-      border: 1px solid #e0e0e0;
-    }
-
-    .search-field {
-      flex: 1;
-    }
-
-    /* Search Suggestions */
-    .search-suggestions {
-      background: white;
-      border: 1px solid #e0e0e0;
-      border-radius: 8px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-      margin-bottom: 24px;
-      overflow: hidden;
-      z-index: 100;
-    }
-
-    .suggestions-header {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 12px 16px;
-      background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-      border-bottom: 1px solid #e0e0e0;
-      font-size: 12px;
-      font-weight: 500;
-      color: var(--text-secondary);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    .suggestions-header mat-icon {
-      font-size: 16px;
-      width: 16px;
-      height: 16px;
-      color: var(--primary-color);
-    }
-
-    .suggestions-list {
-      max-height: 200px;
-      overflow-y: auto;
-    }
-
-    .suggestion-item {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      width: 100%;
-      padding: 12px 16px;
-      border: none;
-      background: transparent;
-      text-align: left;
-      cursor: pointer;
-      transition: background-color 0.2s ease;
-      font-size: 14px;
-      color: var(--text-primary);
-    }
-
-    .suggestion-item:hover {
-      background: rgba(25, 118, 210, 0.04);
-    }
-
-    .suggestion-item mat-icon {
-      font-size: 18px;
-      width: 18px;
-      height: 18px;
-      color: #9e9e9e;
-    }
-
-    .advanced-panel {
-      background: white;
-      border: 1px solid #e0e0e0;
-      border-radius: 12px;
-      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
-      overflow: hidden;
-    }
-
-    .advanced-form {
-      padding: 24px;
-    }
-
-    .form-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 20px;
-      margin-bottom: 20px;
-    }
-
-    .advanced-actions {
-      display: flex;
-      gap: 16px;
-      margin-top: 32px;
-      padding-top: 20px;
-      border-top: 1px solid #f0f0f0;
-    }
-
-    .results-header {
-      margin-bottom: 32px;
-      padding: 24px;
-      background: white;
-      border-radius: 12px;
-      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-      border: 1px solid #e0e0e0;
-    }
-
-    .results-header h2 {
-      margin: 0 0 8px 0;
-      color: var(--text-primary);
-      font-weight: 500;
-      font-family: var(--font-family-display);
-    }
-
-    .results-header p {
-      margin: 0;
-      color: var(--text-secondary);
-      font-style: normal;
-    }
-
-    .loading-section {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 40vh;
-      background: white;
-      border-radius: 12px;
-      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-    }
-
-    .loading-content {
-      text-align: center;
-      padding: 40px;
-    }
-
-    .loading-content h3 {
-      margin: 24px 0 8px 0;
-      color: var(--text-primary);
-      font-weight: 500;
-    }
-
-    .loading-content p {
-      color: var(--text-secondary);
-      margin: 0;
-    }
-
-    .empty-results {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 40vh;
-      background: white;
-      border-radius: 12px;
-      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-    }
-
-    .empty-content {
-      text-align: center;
-      padding: 40px;
-    }
-
-    .empty-icon {
-      font-size: 80px;
-      width: 80px;
-      height: 80px;
-      color: #9e9e9e;
-      margin-bottom: 24px;
-    }
-
-    .empty-content h2 {
-      color: var(--text-primary);
-      margin: 0 0 16px 0;
-      font-weight: 500;
-    }
-
-    .empty-content p {
-      color: var(--text-secondary);
-      margin: 0;
-      line-height: 1.6;
-    }
-
-    .books-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-      gap: 24px;
-      margin-bottom: 32px;
-      padding: 24px;
-      background: white;
-      border-radius: 12px;
-      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-      border: 1px solid #e0e0e0;
-    }
-
-    .book-poster {
-      cursor: pointer;
-      transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-      position: relative;
-      border-radius: 12px;
-      overflow: hidden;
-      background: white;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    }
-
-    .book-poster:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-      z-index: 10;
-    }
-
-    .book-cover {
-      position: relative;
-      width: 100%;
-      aspect-ratio: 2/3;
-      border-radius: 8px;
-      overflow: hidden;
-      background: linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%);
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    }
-
-    .cover-image {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-
-    .cover-placeholder {
-      width: 100%;
-      height: 100%;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-      color: #6c757d;
-    }
-
-    .cover-placeholder mat-icon {
-      font-size: 48px;
-      width: 48px;
-      height: 48px;
-      margin-bottom: 12px;
-      color: #adb5bd;
-    }
-
-    .title-text {
-      font-size: 12px;
-      text-align: center;
-      padding: 0 8px;
-      line-height: 1.2;
-      font-weight: 500;
-      color: var(--text-secondary);
-    }
-
-    .cover-overlay {
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(25, 118, 210, 0.9);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      opacity: 0;
-      transition: opacity 0.3s ease;
-    }
-
-    .book-poster:hover .cover-overlay {
-      opacity: 1;
-    }
-
-    .play-icon {
-      font-size: 48px;
-      width: 48px;
-      height: 48px;
-      color: white;
-    }
-
-    .book-info {
-      padding: 16px;
-    }
-
-    .book-title {
-      font-size: 14px;
-      font-weight: 600;
-      margin: 0 0 6px 0;
-      color: var(--text-primary);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      line-height: 1.4;
-    }
-
-    .book-author {
-      font-size: 12px;
-      color: var(--text-secondary);
-      margin: 0 0 6px 0;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .book-year {
-      font-size: 11px;
-      color: #9e9e9e;
-      margin: 0 0 12px 0;
-    }
-
-    .book-metadata {
-      display: flex;
-      gap: 6px;
-      flex-wrap: wrap;
-    }
-
-    .metadata-chip {
-      font-size: 10px;
-      height: 20px;
-      line-height: 20px;
-      padding: 0 8px;
-      border-radius: 10px;
-      font-weight: 500;
-    }
-
-    .language-chip {
-      background: rgba(25, 118, 210, 0.1);
-      color: var(--primary-color);
-      border: 1px solid rgba(25, 118, 210, 0.2);
-    }
-
-    .format-chip {
-      background: rgba(158, 158, 158, 0.1);
-      color: #616161;
-      border: 1px solid rgba(158, 158, 158, 0.2);
-    }
-
-    .pagination-section {
-      padding: 32px 24px;
-      background: white;
-      border-radius: 12px;
-      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-      border: 1px solid #e0e0e0;
-    }
-
-    .pagination-controls {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 16px;
-    }
-
-    .nav-button {
-      background: white;
-      color: var(--primary-color);
-      border: 1px solid #e0e0e0;
-      border-radius: 8px;
-      min-width: 120px;
-    }
-
-    .nav-button:hover {
-      background: rgba(25, 118, 210, 0.04);
-      border-color: var(--primary-color);
-    }
-
-    .nav-button:disabled {
-      background: #f5f5f5;
-      color: #bdbdbd;
-      border-color: #e0e0e0;
-    }
-
-    /* Unified Search Styles */
-    .results-section {
-      margin-bottom: 32px;
-      background: white;
-      border-radius: 12px;
-      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-      border: 1px solid #e0e0e0;
-      overflow: hidden;
-    }
-
-    .section-title {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      font-size: 1.5rem;
-      font-weight: 500;
-      margin: 0;
-      color: var(--text-primary);
-      background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-      padding: 20px 24px;
-      border-bottom: 1px solid #e0e0e0;
-      font-family: var(--font-family-display);
-    }
-
-    .section-title mat-icon {
-      color: var(--primary-color);
-      font-size: 1.5rem;
-      width: 1.5rem;
-      height: 1.5rem;
-    }
-
-    .series-grid, .authors-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-      gap: 20px;
-      padding: 24px;
-    }
-
-    .series-item, .author-item {
-      background: white;
-      border: 1px solid #e0e0e0;
-      border-radius: 8px;
-      padding: 20px;
-      transition: all 0.2s ease;
-    }
-
-    .series-item:hover, .author-item:hover {
-      background: rgba(25, 118, 210, 0.02);
-      border-color: rgba(25, 118, 210, 0.3);
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    }
-
-    .series-name, .author-name {
-      font-size: 1.1rem;
-      font-weight: 600;
-      margin: 0 0 8px 0;
-      color: var(--text-primary);
-      font-family: var(--font-family-display);
-    }
-
-    .series-description, .author-bio {
-      font-size: 14px;
-      color: var(--text-secondary);
-      margin: 0 0 12px 0;
-      line-height: 1.5;
-      display: -webkit-box;
-      -webkit-line-clamp: 2;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .series-count, .author-dates {
-      font-size: 12px;
-      color: #9e9e9e;
-      margin: 0;
-      font-weight: 500;
-    }
-    .back-button {
-      background: rgba(25, 118, 210, 0.1);
-      border-color: var(--primary-color);
-      color: var(--primary-color);
-      border-radius: 8px;
-    }
-
-    .back-button:hover {
-      background: rgba(25, 118, 210, 0.15);
-    }
-
-    /* Mobile Responsive Styles */
+    .plex-library.plex-search { min-height: 100vh; background: transparent; color: #ffffff; font-family: var(--font-family-primary); }
+    .library-header { background: transparent; padding: 24px 20px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 0; }
+    .header-content { flex: 1; }
+    .library-title { font-size: 20px; font-weight: 600; margin: 0; color: #ffffff; display: flex; align-items: center; gap: 12px; letter-spacing: -0.5px; }
+    .title-icon { font-size: 32px; width: 32px; height: 32px; color: #e5a00d; margin-right: 12px; }
+    .library-subtitle { font-size: 0.95rem; margin: 4px 0 0 0; opacity: 0.9; color: #888; }
+
+    .search-content { padding: 32px; max-width: 1200px; margin: 0 auto; }
+    .search-form { margin-bottom: 24px; }
+    .quick-search-section { display:flex; gap:16px; align-items:flex-end; margin-bottom:24px; background: rgba(255,255,255,0.05); padding:20px; border-radius:12px; border:1px solid rgba(255,255,255,0.1); }
+    .search-field { flex:1; }
+
+    .search-suggestions { background: rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:8px; margin-bottom:24px; overflow:hidden; z-index:100; }
+    .suggestions-header { display:flex; align-items:center; gap:8px; padding:12px 16px; background: rgba(255,255,255,0.03); border-bottom:1px solid rgba(255,255,255,0.08); font-size:12px; font-weight:500; color:#aaa; text-transform:uppercase; letter-spacing:0.5px; }
+    .suggestions-header mat-icon { font-size:16px; width:16px; height:16px; color:#e5a00d; }
+    .suggestions-list { max-height:200px; overflow-y:auto; }
+    .suggestion-item { display:flex; align-items:center; gap:12px; width:100%; padding:12px 16px; background: transparent; border:none; border-bottom: 1px solid rgba(255,255,255,0.06); text-align:left; font-size:0.95rem; color:#eee; cursor:pointer; transition: background-color 0.2s ease; }
+    .suggestion-item:hover { background: rgba(255,255,255,0.04); }
+
+    .advanced-panel .mat-expansion-panel,
+    .advanced-panel mat-expansion-panel { background: rgba(255,255,255,0.04); color: #eee; border: 1px solid rgba(255,255,255,0.08); border-radius:12px; }
+    .advanced-form { padding: 20px; }
+    .form-row { display:grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+
+    .results-section { margin-bottom: 24px; background: rgba(255,255,255,0.04); border-radius: 12px; border:1px solid rgba(255,255,255,0.08); overflow: hidden; }
+    .section-title { display:flex; align-items:center; gap:8px; font-size:1.25rem; font-weight:600; margin:0; color:#fff; background: rgba(255,255,255,0.03); padding: 16px 20px; border-bottom:1px solid rgba(255,255,255,0.08); }
+
+    .books-grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap:20px; }
+    .book-poster { background: rgba(255,255,255,0.05); border-radius:12px; overflow:hidden; transition: all 0.3s ease; cursor:pointer; position:relative; border:1px solid rgba(255,255,255,0.1); }
+    .book-poster:hover { transform: translateY(-4px); box-shadow: 0 8px 24px rgba(0,0,0,0.4); border-color: rgba(79,195,247,0.5); }
+    .book-cover { position:relative; width:100%; height:220px; overflow:hidden; background: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%); }
+    .cover-image { width:100%; height:100%; object-fit:cover; transition: transform 0.3s ease; }
+    .book-poster:hover .cover-image { transform: scale(1.05); }
+    .cover-placeholder { display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; color:#999; }
+    .cover-overlay { position:absolute; inset:0; background: rgba(0,0,0,0.6); display:flex; align-items:center; justify-content:center; opacity:0; transition: opacity 0.3s ease; }
+    .book-poster:hover .cover-overlay { opacity:1; }
+    .book-info { padding: 12px; text-align:center; }
+    .book-title { font-size:1rem; font-weight:600; margin:0 0 6px 0; color:#fff; }
+    .book-author { font-size:0.85rem; opacity:0.8; color:#b3e5fc; }
+    .book-year { font-size:0.8rem; opacity:0.7; color:#4fc3f7; }
+
+    .series-grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(240px,1fr)); gap:16px; padding:16px; }
+    .series-item { background: rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:16px; transition: all 0.3s ease; }
+    .series-item:hover { transform: translateY(-3px); box-shadow:0 8px 24px rgba(0,0,0,0.4); }
+    .series-name { margin:0 0 6px 0; font-weight:600; color:#fff; }
+    .series-description { margin:0 0 8px 0; opacity:0.8; color:#ffccbc; }
+    .series-count { margin:0; opacity:0.7; font-size:0.85rem; color:#ff8a65; }
+
+    .authors-grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(240px,1fr)); gap: 16px; padding:16px; }
+    .author-item { background: rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:16px; transition: all 0.3s ease; }
+    .author-item:hover { transform: translateY(-3px); box-shadow:0 8px 24px rgba(0,0,0,0.4); }
+    .author-name { margin:0 0 6px 0; font-weight:600; color:#fff; }
+    .author-dates { margin:0 0 6px 0; opacity:0.8; color:#e3f2fd; }
+    .author-bio { margin:0; opacity:0.8; max-height: 3.6em; overflow:hidden; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient: vertical; color:#e3f2fd; }
+
+    .pagination-section { padding: 24px 16px; background: rgba(255,255,255,0.04); border-radius: 12px; border:1px solid rgba(255,255,255,0.08); }
+    .pagination-controls { display:flex; align-items:center; justify-content:center; gap: 12px; }
+    .nav-button { background: transparent; color: #e5a00d; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; min-width: 120px; }
+    .nav-button:hover { background: rgba(255,255,255,0.04); border-color: #e5a00d; }
+    .nav-button:disabled { opacity: 0.5; }
+
+    .loading-section, .empty-results { display:flex; justify-content:center; align-items:center; min-height: 40vh; text-align:center; background: transparent; }
+    .empty-icon { font-size: 4rem; color: #999; margin-bottom: 16px; }
+
+    /* Mobile Responsive */
     @media (max-width: 768px) {
-      .search-header {
-        padding: 32px 16px;
-      }
-
-      .search-content {
-        padding: 20px 16px;
-      }
-
-      .search-title {
-        font-size: 2.2rem;
-        gap: 16px;
-      }
-
-      .title-icon {
-        font-size: 2.5rem;
-        width: 2.5rem;
-        height: 2.5rem;
-      }
-
-      .quick-search-section {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 16px;
-        padding: 20px;
-      }
-
-      .form-row {
-        grid-template-columns: 1fr;
-        gap: 16px;
-      }
-
-      .books-grid {
-        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-        gap: 16px;
-        padding: 20px;
-      }
-
-      .series-grid, .authors-grid {
-        grid-template-columns: 1fr;
-        gap: 16px;
-        padding: 20px;
-      }
-
-      .pagination-controls {
-        flex-direction: column;
-        gap: 12px;
-      }
-
-      .advanced-actions {
-        flex-direction: column;
-        gap: 12px;
-      }
-
-      .nav-button {
-        min-width: 100%;
-      }
-
-      .results-section {
-        margin-bottom: 20px;
-      }
-
-      .section-title {
-        font-size: 1.3rem;
-        padding: 16px 20px;
-      }
-    }
-
-    @media (max-width: 480px) {
-      .search-header {
-        padding: 24px 12px;
-      }
-
-      .search-content {
-        padding: 16px 12px;
-      }
-
-      .search-title {
-        font-size: 1.8rem;
-        flex-direction: column;
-        text-align: center;
-        gap: 12px;
-      }
-
-      .quick-search-section {
-        padding: 16px;
-      }
-
-      .books-grid {
-        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-        gap: 12px;
-        padding: 16px;
-      }
-
-      .series-grid, .authors-grid {
-        padding: 16px;
-      }
-
-      .section-title {
-        font-size: 1.2rem;
-        padding: 12px 16px;
-      }
+      .search-content { padding: 20px 16px; }
+      .form-row { grid-template-columns: 1fr; gap: 12px; }
+      .books-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 16px; }
+      .section-title { font-size: 1.3rem; padding: 14px 16px; }
     }
   `]
 })
 export class SearchComponent implements OnDestroy {
+  readonly apiUrl = environment.apiUrl;
   searchForm: FormGroup;
   books = signal<Book[]>([]);
   series = signal<Series[]>([]);

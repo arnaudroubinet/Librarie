@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
@@ -17,6 +17,7 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
 @Component({
   selector: 'app-series-list',
   standalone: true,
+  schemas: [CUSTOM_ELEMENTS_SCHEMA],
   imports: [
     CommonModule,
     RouterModule,
@@ -35,7 +36,7 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
       <div class="library-header">
         <div class="header-content">
           <h1 class="library-title">
-            <mat-icon class="title-icon">library_books</mat-icon>
+            <iconify-icon class="title-icon" icon="icon-park-outline:bookshelf"></iconify-icon>
             Series Library
             @if (scrollState.items().length > 0) {
               <span class="series-count">{{ scrollState.items().length }} series</span>
@@ -43,11 +44,7 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
           </h1>
           <p class="library-subtitle">Explore your book series collections</p>
         </div>
-        <div class="header-actions">
-          <button mat-fab color="accent" routerLink="/search" class="fab-search">
-            <mat-icon>search</mat-icon>
-          </button>
-        </div>
+        
       </div>
       
       @if (scrollState.loading() && scrollState.items().length === 0) {
@@ -147,18 +144,20 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
   styles: [`
     .plex-library {
       min-height: 100vh;
-      background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+      background: transparent;
       color: #ffffff;
       padding: 0;
     }
 
     .library-header {
-      background: linear-gradient(135deg, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.4) 100%);
-      padding: 40px 32px;
+      background: transparent;
+      padding: 24px 20px;
       display: flex;
       justify-content: space-between;
-      align-items: flex-end;
-      border-bottom: 1px solid #333;
+      align-items: center;
+      /* Remove separator line and gap */
+      /* border-bottom: 1px solid #333; */
+      margin-bottom: 0;
     }
 
     .header-content {
@@ -166,19 +165,17 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
     }
 
     .library-title {
-      font-size: 3rem;
-      font-weight: 300;
-      margin: 0 0 8px 0;
+      font-size: 20px;
+      font-weight: 600;
+      margin: 0;
       color: #ffffff;
       display: flex;
       align-items: center;
-      gap: 16px;
+      gap: 12px;
+      letter-spacing: -0.5px;
     }
 
-    .title-icon {
-      font-size: 3rem;
-      color: #ff7043;
-    }
+  .title-icon { font-size: 32px; width: 32px; height: 32px; color: #e5a00d; margin-right: 12px; }
 
     .series-count {
       font-size: 1.1rem;
@@ -187,12 +184,7 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
       margin-left: 16px;
     }
 
-    .library-subtitle {
-      font-size: 1.2rem;
-      margin: 0;
-      opacity: 0.8;
-      color: #fbe9e7;
-    }
+  .library-subtitle { font-size: 0.95rem; margin: 4px 0 0 0; opacity: 0.9; color: #888; }
 
     .header-actions {
       display: flex;

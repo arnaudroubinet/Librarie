@@ -73,6 +73,9 @@ public class BookResponseDto {
     
     @Schema(description = "Available formats for this book", example = "[\"EPUB\", \"PDF\", \"MOBI\"]")
     private List<String> formats;
+
+    @Schema(description = "External cover image URL if present", example = "https://m.media-amazon.com/images/I/81mJ+KxA1PL.jpg")
+    private String coverUrl;
     
     // Default constructor
     public BookResponseDto() {}
@@ -228,5 +231,13 @@ public class BookResponseDto {
     
     public void setFormats(List<String> formats) {
         this.formats = formats;
+    }
+
+    public String getCoverUrl() {
+        return coverUrl;
+    }
+
+    public void setCoverUrl(String coverUrl) {
+        this.coverUrl = coverUrl;
     }
 }

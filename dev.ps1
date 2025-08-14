@@ -66,7 +66,7 @@ if (-not (Get-Command wt -ErrorAction SilentlyContinue)) {
 $args = @(
   'new-tab', '--title', 'Backend',  '-d', $backendDir,  'pwsh', '-NoExit', '-NoLogo', '-ExecutionPolicy', 'Bypass', '-Command', 'mvn clean quarkus:dev',
   ';',
-  'new-tab', '--title', 'Frontend', '-d', $frontendDir, 'pwsh', '-NoExit', '-NoLogo', '-ExecutionPolicy', 'Bypass', '-Command', 'npm ng serve'
+  'new-tab', '--title', 'Frontend', '-d', $frontendDir, 'pwsh', '-NoExit', '-NoLogo', '-ExecutionPolicy', 'Bypass', '-Command', 'npm start'
 )
 
 Start-Process -FilePath 'wt.exe' -ArgumentList $args | Out-Null

@@ -1,50 +1,42 @@
-import { Component } from '@angular/core';
+import { Component, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
-import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
-import { MatSidenavModule } from '@angular/material/sidenav';
-import { MatListModule } from '@angular/material/list';
-import { MatBadgeModule } from '@angular/material/badge';
 
 @Component({
   selector: 'app-navigation',
   standalone: true,
+  schemas: [CUSTOM_ELEMENTS_SCHEMA],
   imports: [
     CommonModule,
     RouterModule,
-    MatToolbarModule,
     MatButtonModule,
-    MatIconModule,
-    MatSidenavModule,
-    MatListModule,
-    MatBadgeModule
+    
   ],
   template: `
     <div class="plex-container">
       <nav class="plex-sidebar">
         <div class="plex-logo">
-          <mat-icon class="logo-icon">collections</mat-icon>
+          <iconify-icon class="logo-icon" icon="mdi:bookshelf"></iconify-icon>
           <span class="logo-text">Librarie</span>
         </div>
         
         <div class="nav-section">
           <div class="section-title">LIBRARY</div>
           <a mat-button class="nav-item" routerLink="/books" routerLinkActive="active">
-            <mat-icon>collections</mat-icon>
+            <iconify-icon icon="ph:books-thin"></iconify-icon>
             <span>All Books</span>
           </a>
           <a mat-button class="nav-item" routerLink="/series" routerLinkActive="active">
-            <mat-icon>library_books</mat-icon>
+            <iconify-icon icon="icon-park-outline:bookshelf"></iconify-icon>
             <span>Series</span>
           </a>
           <a mat-button class="nav-item" routerLink="/authors" routerLinkActive="active">
-            <mat-icon>people</mat-icon>
+            <iconify-icon icon="ph:users-three-thin"></iconify-icon>
             <span>Authors</span>
           </a>
           <a mat-button class="nav-item" routerLink="/search" routerLinkActive="active">
-            <mat-icon>search</mat-icon>
+            <iconify-icon icon="mdi-light:magnify"></iconify-icon>
             <span>Search</span>
           </a>
         </div>
@@ -52,14 +44,14 @@ import { MatBadgeModule } from '@angular/material/badge';
         <div class="nav-section">
           <div class="section-title">MANAGEMENT</div>
           <a mat-button class="nav-item" routerLink="/settings" routerLinkActive="active">
-            <mat-icon>settings</mat-icon>
+            <iconify-icon icon="mdi:cog"></iconify-icon>
             <span>Settings</span>
           </a>
         </div>
 
         <div class="nav-section nav-footer">
           <div class="version-info">
-            <mat-icon>info</mat-icon>
+            <iconify-icon icon="mdi:information-outline"></iconify-icon>
             <span>Version 1.0.0</span>
           </div>
         </div>
@@ -74,35 +66,34 @@ import { MatBadgeModule } from '@angular/material/badge';
     .plex-container {
       display: flex;
       height: 100vh;
-      background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+  /* Solid app background color */
+  background: #1f1f1f;
       color: #ffffff;
     }
 
     .plex-sidebar {
       width: 240px;
-      background: linear-gradient(180deg, #1f1f1f 0%, #0f0f0f 100%);
-      border-right: 1px solid #333;
+      /* Transparent to let the root gradient flow across the whole page */
+      background: transparent;
+  /* Remove hard separation line to blend with content */
+  /* border-right: 1px solid #333; */
       display: flex;
       flex-direction: column;
       padding: 0;
-      box-shadow: 2px 0 10px rgba(0, 0, 0, 0.3);
+  /* Remove drop shadow separation */
+  /* box-shadow: 2px 0 10px rgba(0, 0, 0, 0.3); */
     }
 
     .plex-logo {
       display: flex;
       align-items: center;
       padding: 24px 20px;
-      border-bottom: 1px solid #333;
+  /* Remove bottom border to avoid a visible seam between top-left and bottom-left */
+  /* border-bottom: 1px solid #333; */
       margin-bottom: 20px;
     }
 
-    .logo-icon {
-      font-size: 32px;
-      width: 32px;
-      height: 32px;
-      color: #e5a00d;
-      margin-right: 12px;
-    }
+  .logo-icon { font-size: 32px; width: 32px; height: 32px; color: #e5a00d; margin-right: 12px; }
 
     .logo-text {
       font-size: 20px;
@@ -162,12 +153,7 @@ import { MatBadgeModule } from '@angular/material/badge';
       background: #fff;
     }
 
-    .nav-item mat-icon {
-      margin-right: 12px;
-      font-size: 20px;
-      width: 20px;
-      height: 20px;
-    }
+  .nav-item :is(mat-icon, iconify-icon) { margin-right: 12px; font-size: 20px; width: 20px; height: 20px; }
 
     .nav-footer {
       margin-top: auto;
@@ -182,31 +168,17 @@ import { MatBadgeModule } from '@angular/material/badge';
       font-size: 12px;
     }
 
-    .version-info mat-icon {
-      margin-right: 8px;
-      font-size: 16px;
-      width: 16px;
-      height: 16px;
-    }
+  .version-info :is(mat-icon, iconify-icon) { margin-right: 8px; font-size: 16px; width: 16px; height: 16px; }
 
     .plex-content {
       flex: 1;
-      background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+      /* Transparent so the root gradient shows through */
+      background: transparent;
       overflow-y: auto;
       position: relative;
     }
-
-    .plex-content::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 100px;
-      background: linear-gradient(180deg, rgba(0,0,0,0.3) 0%, transparent 100%);
-      pointer-events: none;
-      z-index: 1;
-    }
+  /* Remove top overlay that visually separates header and content */
+  /* .plex-content::before { ... } */
 
     @media (max-width: 768px) {
       .plex-sidebar {

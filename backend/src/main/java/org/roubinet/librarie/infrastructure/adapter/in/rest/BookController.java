@@ -35,6 +35,13 @@ import java.util.Map;
 import java.util.HashMap;
 import java.util.HashMap;
 import java.util.stream.Collectors;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.time.Duration;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * REST controller for book operations.
@@ -624,6 +631,9 @@ public class BookController {
         dto.setUpdatedAt(book.getUpdatedAt());
         dto.setPublicationDate(book.getPublicationDate());
         dto.setMetadata(book.getMetadata());
+        if (book.getMetadata() != null && book.getMetadata().get("coverUrl") instanceof String url) {
+            dto.setCoverUrl(url);
+        }
         
         // Handle language
         if (book.getLanguage() != null) {
@@ -738,6 +748,14 @@ public class BookController {
         if (dto.getDescription() != null) {
             metadata.put("description", dto.getDescription());
         }
+        if (dto.getCoverUrl() != null && !dto.getCoverUrl().trim().isEmpty()) {
+            // Basic allowlist: only http/https
+            String url = dto.getCoverUrl().trim();
+            if (url.startsWith("http://") || url.startsWith("https://")) {
+                metadata.put("coverUrl", url);
+                book.setHasCover(true);
+            }
+        }
         if (dto.getSeries() != null) {
             metadata.put("series", dto.getSeries());
         }
@@ -747,5 +765,91 @@ public class BookController {
         book.setMetadata(metadata);
         
         return book;
+    }
+
+    @GET
+    @Path("/{id}/cover")
+    @Operation(summary = "Get book cover image", description = "Streams the cover image bytes resolved from stored coverUrl (supports direct images and Amazon product pages)")
+    @APIResponses(value = {
+        @APIResponse(responseCode = "200", description = "Image bytes returned"),
+        @APIResponse(responseCode = "404", description = "Cover not found")
+    })
+    public Response getBookCover(@PathParam("id") String id) {
+        try {
+            UUID bookId = UUID.fromString(id);
+            Optional<Book> bookOpt = bookUseCase.getBookById(bookId);
+            if (bookOpt.isEmpty()) {
+                return Response.status(Response.Status.NOT_FOUND).entity("Book not found").build();
+            }
+            Book book = bookOpt.get();
+            if (!Boolean.TRUE.equals(book.getHasCover()) || book.getMetadata() == null) {
+                return Response.status(Response.Status.NOT_FOUND).entity("Cover not available").build();
+            }
+            Object urlObj = book.getMetadata().get("coverUrl");
+            if (!(urlObj instanceof String)) {
+                return Response.status(Response.Status.NOT_FOUND).entity("Cover URL missing").build();
+            }
+            String storedUrl = ((String) urlObj).trim();
+            if (!(storedUrl.startsWith("http://") || storedUrl.startsWith("https://"))) {
+                return Response.status(Response.Status.NOT_FOUND).entity("Invalid cover URL").build();
+            }
+
+            return streamImageResolvingIfNeeded(storedUrl);
+        } catch (IllegalArgumentException e) {
+            return Response.status(Response.Status.BAD_REQUEST).entity("Invalid book ID format").build();
+        } catch (Exception e) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Internal server error: " + e.getMessage()).build();
+        }
+    }
+
+    private static final Pattern OG_IMAGE_PATTERN = Pattern.compile(
+        "<meta\\s+(?:property|name)\\s*=\\s*\\\"og:image\\\"\\s+content\\s*=\\s*\\\"([^\\\"]+)\\\"",
+        Pattern.CASE_INSENSITIVE
+    );
+
+    private Response streamImageResolvingIfNeeded(String url) throws Exception {
+        HttpClient client = HttpClient.newBuilder()
+            .connectTimeout(Duration.ofSeconds(5))
+            .followRedirects(HttpClient.Redirect.NORMAL)
+            .build();
+
+        // First request
+        HttpResponse<byte[]> resp = fetch(client, url);
+        String contentType = resp.headers().firstValue("content-type").orElse("").toLowerCase();
+
+        if (contentType.startsWith("image/")) {
+            return Response.ok(resp.body(), contentType).build();
+        }
+
+        // If HTML (e.g., Amazon product page), try to resolve og:image
+        if (contentType.contains("text/html")) {
+            String html = new String(resp.body());
+            Matcher m = OG_IMAGE_PATTERN.matcher(html);
+            if (m.find()) {
+                String ogImage = m.group(1);
+                // Some og:image values are protocol-relative
+                if (ogImage.startsWith("//")) {
+                    ogImage = "https:" + ogImage;
+                }
+                // Fetch actual image
+                HttpResponse<byte[]> imgResp = fetch(client, ogImage);
+                String imgType = imgResp.headers().firstValue("content-type").orElse("image/jpeg");
+                if (imgType.toLowerCase().startsWith("image/")) {
+                    return Response.ok(imgResp.body(), imgType).build();
+                }
+            }
+        }
+
+        return Response.status(Response.Status.NOT_FOUND).entity("Cover image not resolvable").build();
+    }
+
+    private HttpResponse<byte[]> fetch(HttpClient client, String url) throws Exception {
+        HttpRequest req = HttpRequest.newBuilder(URI.create(url))
+            .timeout(Duration.ofSeconds(10))
+            .header("User-Agent", "Librarie/1.0 (+https://localhost)")
+            .header("Accept", "image/avif,image/webp,image/apng,image/*,*/*;q=0.8")
+            .GET()
+            .build();
+        return client.send(req, HttpResponse.BodyHandlers.ofByteArray());
     }
 }

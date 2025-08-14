@@ -10,6 +10,7 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatDividerModule } from '@angular/material/divider';
 import { BookService } from '../services/book.service';
 import { Book } from '../models/book.model';
+import { environment } from '../../environments/environment';
 
 @Component({
   selector: 'app-book-detail',
@@ -45,8 +46,8 @@ import { Book } from '../models/book.model';
             <!-- Book Cover -->
             <div class="book-cover-container">
               @if (book()!.hasCover) {
-                <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0iIzM0NDk1ZSIvPgo8dGV4dCB4PSI1MCUiIHk9IjUwJSIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjE0IiBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9IjAuM2VtIj5Db3ZlciBBdmFpbGFibGU8L3RleHQ+Cjwvc3ZnPg==" 
-                     alt="Book Cover" 
+                <img [src]="apiUrl + '/v1/books/' + book()!.id + '/cover'" 
+                     [alt]="book()!.title + ' cover'" 
                      class="book-cover" />
               } @else {
                 <div class="book-cover-placeholder">
@@ -416,6 +417,7 @@ import { Book } from '../models/book.model';
   `]
 })
 export class BookDetailComponent implements OnInit {
+  readonly apiUrl = environment.apiUrl;
   book = signal<Book | null>(null);
   loading = signal(true);
 

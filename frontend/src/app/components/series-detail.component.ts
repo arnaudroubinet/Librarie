@@ -12,6 +12,7 @@ import { MatGridListModule } from '@angular/material/grid-list';
 import { SeriesService } from '../services/series.service';
 import { Series } from '../models/series.model';
 import { Book, CursorPageResponse } from '../models/book.model';
+import { environment } from '../../environments/environment';
 
 @Component({
   selector: 'app-series-detail',
@@ -131,8 +132,8 @@ import { Book, CursorPageResponse } from '../models/book.model';
                     <div class="book-card" [routerLink]="['/books', book.id]">
                       <div class="book-cover">
                         @if (book.hasCover) {
-                          <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIwIiBoZWlnaHQ9IjE4MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0iIzM0NDk1ZSIvPgo8dGV4dCB4PSI1MCUiIHk9IjUwJSIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjEwIiBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9IjAuM2VtIj5Db3ZlcjwvdGV4dD4KPHN2Zz4K" 
-                               alt="Book Cover"
+                          <img [src]="apiUrl + '/v1/books/' + book.id + '/cover'"
+                               [alt]="book.title + ' cover'"
                                class="cover-image">
                         } @else {
                           <div class="cover-placeholder">
@@ -533,6 +534,7 @@ import { Book, CursorPageResponse } from '../models/book.model';
   `]
 })
 export class SeriesDetailComponent implements OnInit {
+  readonly apiUrl = environment.apiUrl;
   series = signal<Series | null>(null);
   books = signal<Book[]>([]);
   loading = signal(true);

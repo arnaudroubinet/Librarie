@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
@@ -17,6 +17,7 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
 @Component({
   selector: 'app-author-list',
   standalone: true,
+  schemas: [CUSTOM_ELEMENTS_SCHEMA],
   imports: [
     CommonModule,
     RouterModule,
@@ -35,7 +36,7 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
       <div class="library-header">
         <div class="header-content">
           <h1 class="library-title">
-            <mat-icon class="title-icon">people</mat-icon>
+            <iconify-icon class="title-icon" icon="ph:users-three-thin"></iconify-icon>
             Authors Library
             @if (scrollState.items().length > 0) {
               <span class="author-count">{{ getAuthorCount() }} authors</span>
@@ -43,11 +44,7 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
           </h1>
           <p class="library-subtitle">Discover and explore your favorite authors</p>
         </div>
-        <div class="header-actions">
-          <button mat-fab color="accent" routerLink="/search" class="fab-search">
-            <mat-icon>search</mat-icon>
-          </button>
-        </div>
+        
       </div>
       
       @if (scrollState.loading() && scrollState.items().length === 0) {
@@ -113,16 +110,7 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
                     </div>
                   </div>
                   
-                  <div class="author-actions">
-                    <button mat-icon-button class="action-button" (click)="openAuthorDetails($event, item.id)">
-                      <mat-icon>info</mat-icon>
-                    </button>
-                    @if (item.websiteUrl) {
-                      <button mat-icon-button class="action-button" (click)="openWebsite($event, item.websiteUrl!)">
-                        <mat-icon>language</mat-icon>
-                      </button>
-                    }
-                  </div>
+                  
                 </div>
               }
             }
@@ -159,19 +147,20 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
   styles: [`
     .plex-library {
       padding: 0;
-      background: linear-gradient(135deg, #1e1e1e 0%, #2a2a2a 100%);
+      background: transparent;
       min-height: 100vh;
       color: #ffffff;
     }
 
     .library-header {
-      background: linear-gradient(135deg, rgba(25, 118, 210, 0.1) 0%, rgba(255, 64, 129, 0.1) 100%);
-      backdrop-filter: blur(10px);
-      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-      padding: 48px 32px;
+      background: transparent;
+      padding: 24px 20px;
       display: flex;
       justify-content: space-between;
-      align-items: flex-end;
+      align-items: center;
+      /* Remove separator line and gap */
+      /* border-bottom: 1px solid #333; */
+      margin-bottom: 0;
     }
 
     .header-content {
@@ -179,19 +168,17 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
     }
 
     .library-title {
-      font-size: 3rem;
-      font-weight: 300;
-      margin: 0 0 8px 0;
+      font-size: 20px;
+      font-weight: 600;
+      margin: 0;
       color: #ffffff;
       display: flex;
       align-items: center;
-      gap: 16px;
+      gap: 12px;
+      letter-spacing: -0.5px;
     }
 
-    .title-icon {
-      font-size: 3rem;
-      color: #2196f3;
-    }
+  .title-icon { font-size: 32px; width: 32px; height: 32px; color: #e5a00d; margin-right: 12px; }
 
     .author-count {
       font-size: 1.1rem;
@@ -200,12 +187,7 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
       margin-left: 16px;
     }
 
-    .library-subtitle {
-      font-size: 1.2rem;
-      margin: 0;
-      opacity: 0.8;
-      color: #e3f2fd;
-    }
+  .library-subtitle { font-size: 0.95rem; margin: 4px 0 0 0; opacity: 0.9; color: #888; }
 
     .header-actions {
       display: flex;
@@ -437,8 +419,8 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
     .author-dates {
       font-size: 0.85rem;
       margin: 0;
-      opacity: 0.6;
-      color: #90caf9;
+  opacity: 0.8;
+  color: #e3f2fd;
     }
 
     .author-actions {

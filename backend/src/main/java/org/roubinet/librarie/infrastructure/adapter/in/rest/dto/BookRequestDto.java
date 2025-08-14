@@ -25,6 +25,9 @@ public class BookRequestDto {
     
     @Schema(description = "Book description or summary")
     private String description;
+
+    @Schema(description = "External cover image URL (http/https)", example = "https://m.media-amazon.com/images/I/81mJ+KxA1PL.jpg")
+    private String coverUrl;
     
     // Default constructor
     public BookRequestDto() {}
@@ -76,5 +79,13 @@ public class BookRequestDto {
     
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public String getCoverUrl() {
+        return coverUrl;
+    }
+
+    public void setCoverUrl(String coverUrl) {
+        this.coverUrl = coverUrl;
     }
 }

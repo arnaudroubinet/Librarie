@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
@@ -11,12 +11,14 @@ import { MatRippleModule } from '@angular/material/core';
 import { MatBadgeModule } from '@angular/material/badge';
 import { BookService } from '../services/book.service';
 import { Book } from '../models/book.model';
+import { environment } from '../../environments/environment';
 import { InfiniteScrollService } from '../services/infinite-scroll.service';
 import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive';
 
 @Component({
   selector: 'app-book-list',
   standalone: true,
+  schemas: [CUSTOM_ELEMENTS_SCHEMA],
   imports: [
     CommonModule,
     RouterModule,
@@ -35,18 +37,13 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
       <div class="library-header">
         <div class="header-content">
           <h1 class="library-title">
-            <mat-icon class="title-icon">collections</mat-icon>
+            <iconify-icon class="title-icon" icon="ph:books-thin"></iconify-icon>
             Books Library
             @if (scrollState.items().length > 0) {
               <span class="book-count">{{ scrollState.items().length }} books</span>
             }
           </h1>
           <p class="library-subtitle">Discover and explore your digital book collection</p>
-        </div>
-        <div class="header-actions">
-          <button mat-fab color="accent" routerLink="/search" class="fab-search">
-            <mat-icon>search</mat-icon>
-          </button>
         </div>
       </div>
       
@@ -158,18 +155,21 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
   styles: [`
     .plex-library {
       min-height: 100vh;
-      background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+      background: transparent;
       color: #ffffff;
       padding: 0;
     }
 
     .library-header {
-      background: linear-gradient(135deg, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.4) 100%);
-      padding: 40px 32px;
+      /* Transparent to keep a single page gradient */
+      background: transparent;
+      padding: 24px 20px;
       display: flex;
       justify-content: space-between;
-      align-items: flex-end;
-      border-bottom: 1px solid #333;
+      align-items: center;
+      /* Remove bottom border and gap to avoid separation */
+      /* border-bottom: 1px solid #333; */
+      margin-bottom: 0;
     }
 
     .header-content {
@@ -177,19 +177,17 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
     }
 
     .library-title {
-      font-size: 3rem;
-      font-weight: 300;
-      margin: 0 0 8px 0;
+      font-size: 20px;
+      font-weight: 600;
+      margin: 0;
       color: #ffffff;
       display: flex;
       align-items: center;
-      gap: 16px;
+      gap: 12px;
+      letter-spacing: -0.5px;
     }
 
-    .title-icon {
-      font-size: 3rem;
-      color: #4fc3f7;
-    }
+  .title-icon { font-size: 32px; width: 32px; height: 32px; color: #e5a00d; margin-right: 12px; }
 
     .book-count {
       font-size: 1.1rem;
@@ -199,10 +197,10 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
     }
 
     .library-subtitle {
-      font-size: 1.2rem;
-      margin: 0;
-      opacity: 0.8;
-      color: #e1f5fe;
+      font-size: 0.95rem;
+      margin: 4px 0 0 0;
+      opacity: 0.85;
+      color: #cfcfcf;
     }
 
     .header-actions {
@@ -287,9 +285,9 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
 
     .books-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-      gap: 20px;
-      padding: 32px;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 32px;
+      padding: 48px;
       max-width: 1600px;
       margin: 0 auto;
     }
@@ -314,7 +312,7 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
     .book-cover {
       position: relative;
       width: 100%;
-      height: 240px;
+      height: 480px;
       overflow: hidden;
     }
 
@@ -343,13 +341,13 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
     }
 
     .cover-placeholder mat-icon {
-      font-size: 3rem;
-      margin-bottom: 8px;
+      font-size: 6rem;
+      margin-bottom: 16px;
     }
 
     .book-title-text {
-      font-size: 0.8rem;
-      line-height: 1.2;
+      font-size: 1.6rem;
+      line-height: 1.3;
       word-break: break-word;
     }
 
@@ -373,14 +371,14 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
 
     .book-actions {
       display: flex;
-      gap: 8px;
+      gap: 16px;
     }
 
     .action-btn {
       background: rgba(255, 255, 255, 0.2) !important;
       color: white !important;
-      width: 40px !important;
-      height: 40px !important;
+      width: 80px !important;
+      height: 80px !important;
       transition: all 0.3s ease !important;
     }
 
@@ -390,17 +388,17 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
     }
 
     .book-info {
-      padding: 16px;
+      padding: 32px;
       text-align: center;
     }
 
     .book-title {
-      font-size: 1rem;
+      font-size: 2rem;
       font-weight: 600;
-      margin: 0 0 8px 0;
+      margin: 0 0 12px 0;
       color: #ffffff;
       line-height: 1.3;
-      height: 2.6em;
+      height: 5.2em;
       overflow: hidden;
       display: -webkit-box;
       -webkit-line-clamp: 2;
@@ -408,24 +406,24 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
     }
 
     .book-author {
-      font-size: 0.85rem;
-      margin: 0 0 4px 0;
-      opacity: 0.8;
+      font-size: 1.7rem;
+      margin: 0 0 8px 0;
+      opacity: 0.85;
       color: #b3e5fc;
     }
 
     .book-series {
-      font-size: 0.8rem;
-      margin: 0 0 4px 0;
-      opacity: 0.7;
+      font-size: 1.6rem;
+      margin: 0 0 8px 0;
+      opacity: 0.75;
       color: #81d4fa;
       font-style: italic;
     }
 
     .book-date {
-      font-size: 0.75rem;
+      font-size: 1.5rem;
       margin: 0;
-      opacity: 0.6;
+      opacity: 0.7;
       color: #4fc3f7;
     }
 
@@ -481,10 +479,12 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
       }
 
       .books-grid {
-        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-        gap: 16px;
-        padding: 16px;
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        gap: 24px;
+        padding: 24px;
       }
+
+      .book-cover { height: 360px; }
 
       .book-actions {
         opacity: 1; /* Always visible on mobile for touch devices */
@@ -494,27 +494,29 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
       }
 
       .action-btn {
-        width: 44px;
-        height: 44px;
-        min-width: 44px; /* Better touch target for mobile */
+        width: 64px;
+        height: 64px;
+        min-width: 64px; /* Better touch target for mobile */
       }
     }
 
     @media (max-width: 480px) {
       .books-grid {
-        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-        gap: 12px;
-        padding: 12px;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 16px;
+        padding: 16px;
       }
+
+      .book-cover { height: 300px; }
 
       .library-title {
         font-size: 1.75rem;
       }
 
       .fab-search {
-        width: 48px;
-        height: 48px;
-        min-width: 48px;
+        width: 64px;
+        height: 64px;
+        min-width: 64px;
       }
     }
   `]
@@ -573,7 +575,7 @@ export class BookListComponent implements OnInit {
   getEffectiveImagePath(book: Book): string | null {
     if (book.hasCover && book.id) {
       // Use book cover endpoint if cover exists
-      return `/api/v1/books/${book.id}/cover`;
+  return `${environment.apiUrl}/v1/books/${book.id}/cover`;
     }
     return null;
   }

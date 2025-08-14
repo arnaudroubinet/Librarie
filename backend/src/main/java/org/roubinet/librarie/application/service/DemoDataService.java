@@ -244,14 +244,14 @@ public class DemoDataService {
         // The Wheel of Time
         Series wot = new Series("The Wheel of Time", "Wheel of Time, The");
         wot.setDescription("High fantasy series following the Dragon Reborn and the Last Battle against the Dark One. Originally begun by Robert Jordan and completed by Brandon Sanderson after Jordan's death.");
-        wot.setImagePath("https://upload.wikimedia.org/wikipedia/en/thumb/5/56/WoT01_TheEyeOfTheWorld.jpg/256px-WoT01_TheEyeOfTheWorld.jpg");
+        wot.setImagePath("https://m.media-amazon.com/images/I/71SGsrQY+yL._SL1500_.jpg");
         wot.setMetadata(Map.of(
             "genre", "Epic Fantasy",
             "setting", "Randland",
             "totalBooks", 14,
             "originalAuthor", "Robert Jordan",
             "completedBy", "Brandon Sanderson",
-            "seriesImageUrl", "https://upload.wikimedia.org/wikipedia/en/thumb/5/56/WoT01_TheEyeOfTheWorld.jpg/256px-WoT01_TheEyeOfTheWorld.jpg"
+            "seriesImageUrl", "https://m.media-amazon.com/images/I/71SGsrQY+yL._SL1500_.jpg"
         ));
         wot.persist();
         series.put("The Wheel of Time", wot);
@@ -259,12 +259,12 @@ public class DemoDataService {
         // The Dark Tower (Stephen King)
         Series darkTower = new Series("The Dark Tower", "Dark Tower, The");
         darkTower.setDescription("Dark fantasy series blending elements of science fiction, horror, and westerns, following Roland Deschain, the last gunslinger, on his quest for the Dark Tower.");
-        darkTower.setImagePath("https://upload.wikimedia.org/wikipedia/en/thumb/6/6a/TheDarkTower1_TheGunslinger.jpg/256px-TheDarkTower1_TheGunslinger.jpg");
+        darkTower.setImagePath("https://m.media-amazon.com/images/I/91EsBf4G0HL._SL1500_.jpg");
         darkTower.setMetadata(Map.of(
             "genre", "Dark Fantasy",
             "subgenres", List.of("Science Fiction", "Horror", "Western"),
             "totalBooks", 8,
-            "seriesImageUrl", "https://upload.wikimedia.org/wikipedia/en/thumb/6/6a/TheDarkTower1_TheGunslinger.jpg/256px-TheDarkTower1_TheGunslinger.jpg"
+            "seriesImageUrl", "https://m.media-amazon.com/images/I/91EsBf4G0HL._SL1500_.jpg"
         ));
         darkTower.persist();
         series.put("The Dark Tower", darkTower);
@@ -272,12 +272,12 @@ public class DemoDataService {
         // Foundation Series (Isaac Asimov)
         Series foundation = new Series("Foundation", "Foundation");
         foundation.setDescription("Science fiction series about psychohistory and the fall and rebirth of the Galactic Empire, spanning thousands of years.");
-        foundation.setImagePath("https://upload.wikimedia.org/wikipedia/en/thumb/7/73/Foundation_gnome_press.jpg/256px-Foundation_gnome_press.jpg");
+        foundation.setImagePath("https://m.media-amazon.com/images/I/81fbZnrYyoS._SL1500_.jpg");
         foundation.setMetadata(Map.of(
             "genre", "Science Fiction",
             "concepts", List.of("Psychohistory", "Galactic Empire"),
             "totalBooks", 7,
-            "seriesImageUrl", "https://upload.wikimedia.org/wikipedia/en/thumb/7/73/Foundation_gnome_press.jpg/256px-Foundation_gnome_press.jpg"
+            "seriesImageUrl", "https://m.media-amazon.com/images/I/81fbZnrYyoS._SL1500_.jpg"
         ));
         foundation.persist();
         series.put("Foundation", foundation);
@@ -285,12 +285,12 @@ public class DemoDataService {
         // Robot Series (Isaac Asimov)
         Series robot = new Series("Robot", "Robot");
         robot.setDescription("Science fiction series exploring the relationship between humans and robots, featuring the famous Three Laws of Robotics.");
-        robot.setImagePath("https://upload.wikimedia.org/wikipedia/en/thumb/e/ea/I_robot.jpg/256px-I_robot.jpg");
+        robot.setImagePath("https://m.media-amazon.com/images/I/71Vm4mFih+L._SL1500_.jpg");
         robot.setMetadata(Map.of(
             "genre", "Science Fiction",
             "concepts", List.of("Three Laws of Robotics", "Artificial Intelligence"),
             "totalBooks", 4,
-            "seriesImageUrl", "https://upload.wikimedia.org/wikipedia/en/thumb/e/ea/I_robot.jpg/256px-I_robot.jpg"
+            "seriesImageUrl", "https://m.media-amazon.com/images/I/71Vm4mFih+L._SL1500_.jpg"
         ));
         robot.persist();
         series.put("Robot", robot);
@@ -328,9 +328,9 @@ public class DemoDataService {
     private void createTolkienBooks(Language language, Publisher publisher, Author author, Series series) {
         // The Lord of the Rings trilogy
         String[][] lotrBooks = {
-            {"The Fellowship of the Ring", "1954", "https://upload.wikimedia.org/wikipedia/en/thumb/8/8e/The_Lord_of_the_Rings_-_The_Fellowship_of_the_Ring_%282001%29.jpg/256px-The_Lord_of_the_Rings_-_The_Fellowship_of_the_Ring_%282001%29.jpg", "The first volume of The Lord of the Rings follows Frodo Baggins as he begins his journey to destroy the One Ring."},
-            {"The Two Towers", "1954", "https://upload.wikimedia.org/wikipedia/en/thumb/a/ad/The_Lord_of_the_Rings_-_The_Two_Towers_%282002%29.jpg/256px-The_Lord_of_the_Rings_-_The_Two_Towers_%282002%29.jpg", "The second volume follows the continuing quest of the Fellowship as it divides into separate paths."},
-            {"The Return of the King", "1955", "https://upload.wikimedia.org/wikipedia/en/thumb/b/be/The_Lord_of_the_Rings_-_The_Return_of_the_King_%282003%29.jpg/256px-The_Lord_of_the_Rings_-_The_Return_of_the_King_%282003%29.jpg", "The final volume of The Lord of the Rings chronicles the final battle against Sauron and the return of the king."}
+            {"The Fellowship of the Ring", "1954", "https://m.media-amazon.com/images/I/81krXXdKn2L._SL1500_.jpg", "The first volume of The Lord of the Rings follows Frodo Baggins as he begins his journey to destroy the One Ring."},
+            {"The Two Towers", "1954", "https://m.media-amazon.com/images/I/81OWByGqGdL._SL1500_.jpg", "The second volume follows the continuing quest of the Fellowship as it divides into separate paths."},
+            {"The Return of the King", "1955", "https://m.media-amazon.com/images/I/81krXXdKn2L._SL1500_.jpg", "The final volume of The Lord of the Rings chronicles the final battle against Sauron and the return of the king."}
         };
         
         for (int i = 0; i < lotrBooks.length; i++) {
@@ -351,9 +351,12 @@ public class DemoDataService {
         
         // Other Tolkien standalone works
         String[][] standaloneBooks = {
-            {"The Hobbit", "1937", "https://upload.wikimedia.org/wikipedia/en/thumb/4/4a/TheHobbit_FirstEdition.jpg/256px-TheHobbit_FirstEdition.jpg", "A fantasy novel about the hobbit Bilbo Baggins' journey to help reclaim the Lonely Mountain from the dragon Smaug."},
-            {"The Silmarillion", "1977", "https://upload.wikimedia.org/wikipedia/en/thumb/8/86/Silmarillion.gif/256px-Silmarillion.gif", "A collection of mythopoeic stories that forms the history and cosmology of Tolkien's Middle-earth."},
-            {"Unfinished Tales", "1980", "https://upload.wikimedia.org/wikipedia/en/thumb/5/5c/Unfinished_Tales_cover.jpg/256px-Unfinished_Tales_cover.jpg", "A collection of stories and essays by J.R.R. Tolkien, edited and published posthumously by his son Christopher Tolkien."}
+            {"The Hobbit", "1937", "https://m.media-amazon.com/images/I/812AkwqjfgL._SL1500_.jpg", "A fantasy novel about the hobbit Bilbo Baggins' journey to help reclaim the Lonely Mountain from the dragon Smaug."},
+            {"The Silmarillion", "1977", "https://m.media-amazon.com/images/I/81Ygs92I6GL._SL1500_.jpg", "A collection of mythopoeic stories that forms the history and cosmology of Tolkien's Middle-earth."},
+            {"Unfinished Tales", "1980", "https://m.media-amazon.com/images/I/812AkwqjfgL._SL1500_.jpg", "A collection of stories and essays by J.R.R. Tolkien, edited and published posthumously by his son Christopher Tolkien."},
+            {"The Fall of Gondolin", "2018", "https://m.media-amazon.com/images/I/81nH6pilzuL._SL1500_.jpg", "A tale of the hidden city of Gondolin and its tragic fall, assembled by Christopher Tolkien."},
+            {"The Adventures of Tom Bombadil", "1962", "https://m.media-amazon.com/images/I/812AkwqjfgL._SL1500_.jpg", "A collection of whimsical poems related to Middle-earth, featuring Tom Bombadil and others."},
+            {"The Shaping of Middle-earth", "1986", "https://m.media-amazon.com/images/I/81sGDanwTsL._SL1500_.jpg", "Volume 4 of The History of Middle-earth, presenting early drafts and essays charting the development of Tolkien's legendarium."}
         };
         
         for (String[] bookData : standaloneBooks) {
@@ -375,17 +378,17 @@ public class DemoDataService {
     private void createWheelOfTimeBooks(Language language, Publisher publisher, Author jordan, Author sanderson, Series series) {
         // Robert Jordan's books (1-11)
         String[][] jordanBooks = {
-            {"The Eye of the World", "1990", "https://upload.wikimedia.org/wikipedia/en/thumb/5/56/WoT01_TheEyeOfTheWorld.jpg/256px-WoT01_TheEyeOfTheWorld.jpg", "The first book in The Wheel of Time series, introducing Rand al'Thor and his friends as they flee their village."},
-            {"The Great Hunt", "1990", "https://upload.wikimedia.org/wikipedia/en/thumb/6/66/WoT02_TheGreatHunt.jpg/256px-WoT02_TheGreatHunt.jpg", "The second book follows the hunt for the stolen Horn of Valere."},
-            {"The Dragon Reborn", "1991", "https://upload.wikimedia.org/wikipedia/en/thumb/3/39/WoT03_TheDragonReborn.jpg/256px-WoT03_TheDragonReborn.jpg", "The third book focuses on Rand's journey to claim Callandor in the Stone of Tear."},
-            {"The Shadow Rising", "1992", "https://upload.wikimedia.org/wikipedia/en/thumb/1/1c/WoT04_TheShadowRising.jpg/256px-WoT04_TheShadowRising.jpg", "The fourth book explores the history of the Aiel and the Two Rivers."},
-            {"The Fires of Heaven", "1993", "https://upload.wikimedia.org/wikipedia/en/thumb/2/21/WoT05_TheFiresOfHeaven.jpg/256px-WoT05_TheFiresOfHeaven.jpg", "The fifth book deals with civil war in Cairhien and the Aiel Waste."},
-            {"Lord of Chaos", "1994", "https://upload.wikimedia.org/wikipedia/en/thumb/7/77/WoT06_LordOfChaos.jpg/256px-WoT06_LordOfChaos.jpg", "The sixth book culminates in the Battle of Dumai's Wells."},
-            {"A Crown of Swords", "1996", "https://upload.wikimedia.org/wikipedia/en/thumb/8/82/WoT07_ACrownOfSwords.jpg/256px-WoT07_ACrownOfSwords.jpg", "The seventh book follows the aftermath of Dumai's Wells."},
-            {"The Path of Daggers", "1998", "https://upload.wikimedia.org/wikipedia/en/thumb/9/9d/WoT08_ThePathOfDaggers.jpg/256px-WoT08_ThePathOfDaggers.jpg", "The eighth book focuses on the use of the Bowl of the Winds."},
-            {"Winter's Heart", "2000", "https://upload.wikimedia.org/wikipedia/en/thumb/b/bb/WoT09_WintersHeart.jpg/256px-WoT09_WintersHeart.jpg", "The ninth book deals with the cleansing of saidin."},
-            {"Crossroads of Twilight", "2003", "https://upload.wikimedia.org/wikipedia/en/thumb/f/fc/WoT10_CrossroadsOfTwilight.jpg/256px-WoT10_CrossroadsOfTwilight.jpg", "The tenth book explores the aftermath of the cleansing."},
-            {"Knife of Dreams", "2005", "https://upload.wikimedia.org/wikipedia/en/thumb/7/71/WoT11_KnifeOfDreams.jpg/256px-WoT11_KnifeOfDreams.jpg", "The eleventh book was Robert Jordan's final completed novel in the series."}
+            {"The Eye of the World", "1990", "https://m.media-amazon.com/images/I/71SGsrQY+yL._SL1500_.jpg", "The first book in The Wheel of Time series, introducing Rand al'Thor and his friends as they flee their village."},
+            {"The Great Hunt", "1990", "https://m.media-amazon.com/images/I/81txFRYutnL._SL1500_.jpg", "The second book follows the hunt for the stolen Horn of Valere."},
+            {"The Dragon Reborn", "1991", "https://m.media-amazon.com/images/I/81gjpHrpWjL._SL1500_.jpg", "The third book focuses on Rand's journey to claim Callandor in the Stone of Tear."},
+            {"The Shadow Rising", "1992", "https://m.media-amazon.com/images/I/71Eztr2yp+L._SL1500_.jpg", "The fourth book explores the history of the Aiel and the Two Rivers."},
+            {"The Fires of Heaven", "1993", "https://m.media-amazon.com/images/I/81L6SV7D-GL._SL1500_.jpg", "The fifth book deals with civil war in Cairhien and the Aiel Waste."},
+            {"Lord of Chaos", "1994", "https://m.media-amazon.com/images/I/81A7NG6PBjL._SL1500_.jpg", "The sixth book culminates in the Battle of Dumai's Wells."},
+            {"A Crown of Swords", "1996", "https://m.media-amazon.com/images/I/811kwWK2zbL._SL1500_.jpg", "The seventh book follows the aftermath of Dumai's Wells."},
+            {"The Path of Daggers", "1998", "https://m.media-amazon.com/images/I/71v1SCOcDyL._SL1500_.jpg", "The eighth book focuses on the use of the Bowl of the Winds."},
+            {"Winter's Heart", "2000", "https://m.media-amazon.com/images/I/81Ay-Cs5VhL._SY466_.jpg", "The ninth book deals with the cleansing of saidin."},
+            {"Crossroads of Twilight", "2003", "https://m.media-amazon.com/images/I/81LgsYCv3qL._SL1500_.jpg", "The tenth book explores the aftermath of the cleansing."},
+            {"Knife of Dreams", "2005", "https://m.media-amazon.com/images/I/71tgrIVHTWL._SL1500_.jpg", "The eleventh book was Robert Jordan's final completed novel in the series."}
         };
         
         for (int i = 0; i < jordanBooks.length; i++) {
@@ -406,9 +409,9 @@ public class DemoDataService {
         
         // Brandon Sanderson's completing books (12-14)
         String[][] sandersonBooks = {
-            {"The Gathering Storm", "2009", "https://upload.wikimedia.org/wikipedia/en/thumb/3/31/WoT12_TheGatheringStorm.jpg/256px-WoT12_TheGatheringStorm.jpg", "The twelfth book, completed by Brandon Sanderson from Robert Jordan's notes."},
-            {"Towers of Midnight", "2010", "https://upload.wikimedia.org/wikipedia/en/thumb/8/8d/WoT13_TowersOfMidnight.jpg/256px-WoT13_TowersOfMidnight.jpg", "The thirteenth book, continuing Sanderson's completion of the series."},
-            {"A Memory of Light", "2013", "https://upload.wikimedia.org/wikipedia/en/thumb/0/0c/WoT14_AMemoryOfLight.jpg/256px-WoT14_AMemoryOfLight.jpg", "The fourteenth and final book in The Wheel of Time series."}
+            {"The Gathering Storm", "2009", "https://m.media-amazon.com/images/I/81nIiL65y2L._SL1500_.jpg", "The twelfth book, completed by Brandon Sanderson from Robert Jordan's notes."},
+            {"Towers of Midnight", "2010", "https://m.media-amazon.com/images/I/81s8xAwqrXL._SL1500_.jpg", "The thirteenth book, continuing Sanderson's completion of the series."},
+            {"A Memory of Light", "2013", "https://m.media-amazon.com/images/I/819qaQPNKoL._SL1500_.jpg", "The fourteenth and final book in The Wheel of Time series."}
         };
         
         for (int i = 0; i < sandersonBooks.length; i++) {
@@ -434,14 +437,14 @@ public class DemoDataService {
     private void createStephenKingBooks(Language language, Publisher publisher, Author author, Series darkTowerSeries) {
         // The Dark Tower series
         String[][] darkTowerBooks = {
-            {"The Gunslinger", "1982", "https://upload.wikimedia.org/wikipedia/en/thumb/6/6a/TheDarkTower1_TheGunslinger.jpg/256px-TheDarkTower1_TheGunslinger.jpg", "The first book in The Dark Tower series, introducing Roland Deschain, the last gunslinger."},
-            {"The Drawing of the Three", "1987", "https://upload.wikimedia.org/wikipedia/en/thumb/9/91/Drawingthreetower.jpg/256px-Drawingthreetower.jpg", "The second book where Roland draws three companions from our world."},
-            {"The Waste Lands", "1991", "https://upload.wikimedia.org/wikipedia/en/thumb/b/b3/Wastelandstower.jpg/256px-Wastelandstower.jpg", "The third book as the ka-tet travels through the waste lands."},
-            {"Wizard and Glass", "1997", "https://upload.wikimedia.org/wikipedia/en/thumb/c/c7/Wizardglassdark.jpg/256px-Wizardglassdark.jpg", "The fourth book reveals Roland's past in Mejis."},
-            {"Wolves of the Calla", "2003", "https://upload.wikimedia.org/wikipedia/en/thumb/a/ae/Wolves_of_the_calla.jpg/256px-Wolves_of_the_calla.jpg", "The fifth book where the ka-tet defends a farming community."},
-            {"Song of Susannah", "2004", "https://upload.wikimedia.org/wikipedia/en/thumb/d/dc/Song_of_susannah.jpg/256px-Song_of_susannah.jpg", "The sixth book follows Susannah's journey to our world."},
-            {"The Dark Tower", "2004", "https://upload.wikimedia.org/wikipedia/en/thumb/4/4a/The_Dark_Tower_VII.jpg/256px-The_Dark_Tower_VII.jpg", "The seventh book concludes Roland's quest for the Dark Tower."},
-            {"The Wind Through the Keyhole", "2012", "https://upload.wikimedia.org/wikipedia/en/thumb/3/39/The_Wind_Through_the_Keyhole.jpg/256px-The_Wind_Through_the_Keyhole.jpg", "A mid-series book set between Wizard and Glass and Wolves of the Calla."}
+            {"The Gunslinger", "1982", "https://m.media-amazon.com/images/I/91EsBf4G0HL._SL1500_.jpg", "The first book in The Dark Tower series, introducing Roland Deschain, the last gunslinger."},
+            {"The Drawing of the Three", "1987", "https://m.media-amazon.com/images/I/91W49YUjiML._SL1500_.jpg", "The second book where Roland draws three companions from our world."},
+            {"The Waste Lands", "1991", "https://m.media-amazon.com/images/I/91EsBf4G0HL._SL1500_.jpg", "The third book as the ka-tet travels through the waste lands."},
+            {"Wizard and Glass", "1997", "https://m.media-amazon.com/images/I/91xib2N15WL._SL1500_.jpg", "The fourth book reveals Roland's past in Mejis."},
+            {"Wolves of the Calla", "2003", "https://m.media-amazon.com/images/I/91OhrkbeapL._SL1500_.jpg", "The fifth book where the ka-tet defends a farming community."},
+            {"Song of Susannah", "2004", "https://m.media-amazon.com/images/I/91afbsPeg+L._SL1500_.jpg", "The sixth book follows Susannah's journey to our world."},
+            {"The Dark Tower", "2004", "https://m.media-amazon.com/images/I/91EsBf4G0HL._SL1500_.jpg", "The seventh book concludes Roland's quest for the Dark Tower."},
+            {"The Wind Through the Keyhole", "2012", "https://m.media-amazon.com/images/I/91xib2N15WL._SL1500_.jpg", "A mid-series book set between Wizard and Glass and Wolves of the Calla."}
         };
         
         for (int i = 0; i < darkTowerBooks.length; i++) {
@@ -462,14 +465,14 @@ public class DemoDataService {
         
         // Stephen King standalone books
         String[][] standaloneBooks = {
-            {"Carrie", "1974", "https://upload.wikimedia.org/wikipedia/en/thumb/3/31/Carrie_novel.jpg/256px-Carrie_novel.jpg", "King's first published novel about a teenage girl with telekinetic powers."},
-            {"The Shining", "1977", "https://upload.wikimedia.org/wikipedia/en/thumb/4/4c/Shining_novel.jpg/256px-Shining_novel.jpg", "A horror novel about a family isolated in a haunted hotel."},
-            {"The Stand", "1978", "https://upload.wikimedia.org/wikipedia/en/thumb/9/96/The_Stand_cover.jpg/256px-The_Stand_cover.jpg", "An epic post-apocalyptic dark fantasy novel."},
-            {"It", "1986", "https://upload.wikimedia.org/wikipedia/en/thumb/8/8e/It_%281986%29_front_cover%2C_first_edition.jpg/256px-It_%281986%29_front_cover%2C_first_edition.jpg", "A horror novel about a creature that preys on children in the town of Derry."},
-            {"Misery", "1987", "https://upload.wikimedia.org/wikipedia/en/thumb/e/e7/Misery_%28novel%29.jpg/256px-Misery_%28novel%29.jpg", "A psychological horror novel about a writer held captive by his 'number one fan'."},
-            {"Pet Sematary", "1983", "https://upload.wikimedia.org/wikipedia/en/thumb/2/24/Pet_Sematary_%28book_cover%29.jpg/256px-Pet_Sematary_%28book_cover%29.jpg", "A horror novel about a burial ground with supernatural powers."},
-            {"Salem's Lot", "1975", "https://upload.wikimedia.org/wikipedia/en/thumb/5/50/Salem%27s_Lot_cover.jpg/256px-Salem%27s_Lot_cover.jpg", "A horror novel about vampires in a small New England town."},
-            {"The Dead Zone", "1979", "https://upload.wikimedia.org/wikipedia/en/thumb/1/16/The_Dead_Zone_%28novel%29.jpg/256px-The_Dead_Zone_%28novel%29.jpg", "A supernatural thriller about a man who awakens from a coma with psychic abilities."}
+            {"Carrie", "1974", "https://m.media-amazon.com/images/I/71JVmpGUqhL._SL1500_.jpg", "King's first published novel about a teenage girl with telekinetic powers."},
+            {"The Shining", "1977", "https://m.media-amazon.com/images/I/71LWM5fjbRL._SL1500_.jpg", "A horror novel about a family isolated in a haunted hotel."},
+            {"The Stand", "1978", "https://m.media-amazon.com/images/I/815cT8CLaKL._SL1500_.jpg", "An epic post-apocalyptic dark fantasy novel."},
+            {"It", "1986", "https://m.media-amazon.com/images/I/71JVmpGUqhL._SL1500_.jpg", "A horror novel about a creature that preys on children in the town of Derry."},
+            {"Misery", "1987", "https://m.media-amazon.com/images/I/61jxfFuM1jL._SL1500_.jpg", "A psychological horror novel about a writer held captive by his 'number one fan'."},
+            {"Pet Sematary", "1983", "https://m.media-amazon.com/images/I/815cT8CLaKL._SL1500_.jpg", "A horror novel about a burial ground with supernatural powers."},
+            {"Salem's Lot", "1975", "https://m.media-amazon.com/images/I/81+OzuuErmL._SL1500_.jpg", "A horror novel about vampires in a small New England town."},
+            {"The Dead Zone", "1979", "https://m.media-amazon.com/images/I/81+OzuuErmL._SL1500_.jpg", "A supernatural thriller about a man who awakens from a coma with psychic abilities."}
         };
         
         for (String[] bookData : standaloneBooks) {
@@ -491,13 +494,13 @@ public class DemoDataService {
     private void createIsaacAsimovBooks(Language language, Publisher publisher, Author author, Series foundationSeries, Series robotSeries) {
         // Foundation series
         String[][] foundationBooks = {
-            {"Foundation", "1951", "https://upload.wikimedia.org/wikipedia/en/thumb/7/73/Foundation_gnome_press.jpg/256px-Foundation_gnome_press.jpg", "The first book in the Foundation series about Hari Seldon's psychohistory."},
-            {"Foundation and Empire", "1952", "https://upload.wikimedia.org/wikipedia/en/thumb/8/80/Foundation_and_Empire_Cover.jpg/256px-Foundation_and_Empire_Cover.jpg", "The second Foundation book dealing with the rise of the Mule."},
-            {"Second Foundation", "1953", "https://upload.wikimedia.org/wikipedia/en/thumb/a/a8/Second_foundation.jpg/256px-Second_foundation.jpg", "The third book revealing the location of the Second Foundation."},
-            {"Foundation's Edge", "1982", "https://upload.wikimedia.org/wikipedia/en/thumb/2/29/Foundation%27s_Edge.jpg/256px-Foundation%27s_Edge.jpg", "The fourth book set centuries after the original trilogy."},
-            {"Foundation and Earth", "1986", "https://upload.wikimedia.org/wikipedia/en/thumb/9/9c/Foundation_and_Earth_Cover.jpg/256px-Foundation_and_Earth_Cover.jpg", "The fifth book following Golan Trevize's search for Earth."},
-            {"Prelude to Foundation", "1988", "https://upload.wikimedia.org/wikipedia/en/thumb/b/bf/Prelude_to_Foundation.jpg/256px-Prelude_to_Foundation.jpg", "A prequel focusing on young Hari Seldon."},
-            {"Forward the Foundation", "1993", "https://upload.wikimedia.org/wikipedia/en/thumb/6/61/Forward_the_Foundation.jpg/256px-Forward_the_Foundation.jpg", "The final prequel about Seldon's later years."}
+            {"Foundation", "1951", "https://m.media-amazon.com/images/I/81fbZnrYyoS._SL1500_.jpg", "The first book in the Foundation series about Hari Seldon's psychohistory."},
+            {"Foundation and Empire", "1952", "https://m.media-amazon.com/images/I/91GMN74HkyS._SL1500_.jpg", "The second Foundation book dealing with the rise of the Mule."},
+            {"Second Foundation", "1953", "https://m.media-amazon.com/images/I/61yeuxTHLSL._SL1120_.jpg", "The third book revealing the location of the Second Foundation."},
+            {"Foundation's Edge", "1982", "https://m.media-amazon.com/images/I/81fbZnrYyoS._SL1500_.jpg", "The fourth book set centuries after the original trilogy."},
+            {"Foundation and Earth", "1986", "https://m.media-amazon.com/images/I/91woOCSedES._SL1500_.jpg", "The fifth book following Golan Trevize's search for Earth."},
+            {"Prelude to Foundation", "1988", "https://m.media-amazon.com/images/I/91OeL+4W-9S._UF350,350_QL50_.jpg", "A prequel focusing on young Hari Seldon."},
+            {"Forward the Foundation", "1993", "https://m.media-amazon.com/images/I/81fbZnrYyoS._SL1500_.jpg", "The final prequel about Seldon's later years."}
         };
         
         for (int i = 0; i < foundationBooks.length; i++) {
@@ -518,10 +521,10 @@ public class DemoDataService {
         
         // Robot series
         String[][] robotBooks = {
-            {"I, Robot", "1950", "https://upload.wikimedia.org/wikipedia/en/thumb/e/ea/I_robot.jpg/256px-I_robot.jpg", "A collection of nine short stories about robots and the Three Laws of Robotics."},
-            {"The Caves of Steel", "1954", "https://upload.wikimedia.org/wikipedia/en/thumb/f/fc/Caves_of_steel.jpg/256px-Caves_of_steel.jpg", "A science fiction detective novel featuring Elijah Baley and R. Daneel Olivaw."},
-            {"The Naked Sun", "1957", "https://upload.wikimedia.org/wikipedia/en/thumb/d/dc/The_Naked_Sun.jpg/256px-The_Naked_Sun.jpg", "The second robot novel continuing the partnership of Baley and Daneel."},
-            {"The Robots of Dawn", "1983", "https://upload.wikimedia.org/wikipedia/en/thumb/5/50/Robots_of_dawn.jpg/256px-Robots_of_dawn.jpg", "The third robot novel set on the Spacer world of Aurora."}
+            {"I, Robot", "1950", "https://m.media-amazon.com/images/I/51v9O7rn83L.jpg", "A collection of nine short stories about robots and the Three Laws of Robotics."},
+            {"The Caves of Steel", "1954", "https://m.media-amazon.com/images/I/61vi13m2tvL._SL1120_.jpg", "A science fiction detective novel featuring Elijah Baley and R. Daneel Olivaw."},
+            {"The Naked Sun", "1957", "https://m.media-amazon.com/images/I/71mvqJWhTKL._SL1500_.jpg", "The second robot novel continuing the partnership of Baley and Daneel."},
+            {"The Robots of Dawn", "1983", "https://m.media-amazon.com/images/I/71Vm4mFih+L._SL1500_.jpg", "The third robot novel set on the Spacer world of Aurora."}
         };
         
         for (int i = 0; i < robotBooks.length; i++) {
@@ -542,9 +545,9 @@ public class DemoDataService {
         
         // Isaac Asimov standalone books
         String[][] standaloneBooks = {
-            {"The End of Eternity", "1955", "https://upload.wikimedia.org/wikipedia/en/thumb/7/7f/EndOfEternity.jpg/256px-EndOfEternity.jpg", "A science fiction novel about time travel and the organization Eternity."},
-            {"The Gods Themselves", "1972", "https://upload.wikimedia.org/wikipedia/en/thumb/b/b4/TheGodsThemselves%281stEd%29.jpg/256px-TheGodsThemselves%281stEd%29.jpg", "A science fiction novel about parallel universes and energy exchange."},
-            {"Nightfall", "1990", "https://upload.wikimedia.org/wikipedia/en/thumb/c/cb/Nightfall_novel.jpg/256px-Nightfall_novel.jpg", "An expansion of his famous short story about a planet with six suns."}
+            {"The End of Eternity", "1955", "https://m.media-amazon.com/images/I/71GVYzeOtYL._SL1500_.jpg", "A science fiction novel about time travel and the organization Eternity."},
+            {"The Gods Themselves", "1972", "https://m.media-amazon.com/images/I/917nJWgAiBL._SL1500_.jpg", "A science fiction novel about parallel universes and energy exchange."},
+            {"Nightfall", "1990", "https://m.media-amazon.com/images/I/81jNOXtgQWL._SL1500_.jpg", "An expansion of his famous short story about a planet with six suns."}
         };
         
         for (String[] bookData : standaloneBooks) {
