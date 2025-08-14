@@ -38,15 +38,11 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
           <h1 class="library-title">
             <iconify-icon class="title-icon" icon="icon-park-outline:bookshelf"></iconify-icon>
             Series Library
-            @if (scrollState.items().length > 0) {
-              <span class="series-count">{{ scrollState.items().length }} series</span>
-            }
           </h1>
           <p class="library-subtitle">Explore your book series collections</p>
         </div>
-        
       </div>
-      
+
       @if (scrollState.loading() && scrollState.items().length === 0) {
         <div class="loading-section">
           <div class="loading-content">
@@ -77,13 +73,13 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
                      [routerLink]="['/series', asSeries(series).id]">
                   <div class="series-cover">
                     @if (getEffectiveImagePath(asSeries(series))) {
-          <img [src]="getEffectiveImagePath(asSeries(series))!" 
+                      <img [src]="getEffectiveImagePath(asSeries(series))!" 
                            [alt]="asSeries(series).name + ' cover'"
                            class="cover-image"
-            loading="lazy"
-            decoding="async"
-            fetchpriority="low"
-            (load)="onImageLoad($event)"
+                           loading="lazy"
+                           decoding="async"
+                           fetchpriority="low"
+                           (load)="onImageLoad($event)"
                            (error)="onImageError($event)">
                     } @else {
                       <div class="cover-placeholder">
@@ -91,49 +87,40 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
                         <span class="series-title-text">{{ getShortTitle(asSeries(series).name) }}</span>
                       </div>
                     }
-                    <div class="series-overlay"></div>
-                    <div class="series-actions">
-                      <button mat-icon-button class="action-btn" aria-label="Bookmark" (click)="toggleFavorite($event, asSeries(series))">
-                        <iconify-icon [icon]="getBookmarkIcon(asSeries(series))"></iconify-icon>
-                      </button>
-                      <button mat-icon-button class="action-btn" aria-label="Share" (click)="shareSeries($event, asSeries(series))">
-                        <iconify-icon icon="material-symbols-light:share"></iconify-icon>
-                      </button>
+                    <div class="series-overlay">
+                      <div class="series-actions">
+                        <button mat-icon-button class="action-btn" aria-label="Bookmark" (click)="toggleFavorite($event, asSeries(series))">
+                          <iconify-icon [icon]="getBookmarkIcon(asSeries(series))"></iconify-icon>
+                        </button>
+                        <button mat-icon-button class="action-btn" aria-label="Share" (click)="shareSeries($event, asSeries(series))">
+                          <iconify-icon icon="material-symbols-light:share"></iconify-icon>
+                        </button>
+                      </div>
                     </div>
                   </div>
-                  
+
                   <div class="series-info">
                     <h3 class="series-title" [title]="asSeries(series).name">{{ getShortTitle(asSeries(series).name) }}</h3>
-                    @if (asSeries(series).description) {
-                      <p class="series-description">{{ getShortDescription(asSeries(series).description!) }}</p>
-                    }
-                    <p class="book-count">
-                      {{ asSeries(series).bookCount }} {{ asSeries(series).bookCount === 1 ? 'book' : 'books' }}
-                    </p>
+                    <p class="book-count">{{ asSeries(series).bookCount }} {{ asSeries(series).bookCount === 1 ? 'book' : 'books' }}</p>
                   </div>
                 </div>
               }
             </div>
-            
-            <!-- Loading indicator for more items -->
+
             @if (scrollState.loading() && scrollState.items().length > 0) {
               <div class="load-more-container">
                 <mat-spinner diameter="30"></mat-spinner>
                 <p>Loading more series...</p>
               </div>
             }
-            
-            <!-- Error indicator for loading more -->
+
             @if (scrollState.error() && scrollState.items().length > 0) {
               <div class="load-more-error">
                 <p>{{ scrollState.error() }}</p>
-                <button mat-button color="primary" (click)="scrollState.loadMore()">
-                  Try Again
-                </button>
+                <button mat-button color="primary" (click)="scrollState.loadMore()">Try Again</button>
               </div>
             }
-            
-            <!-- End of list indicator -->
+
             @if (!scrollState.hasMore() && scrollState.items().length > 0) {
               <div class="end-of-list">
                 <p>You've reached the end of your series collection</p>
@@ -145,12 +132,6 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
     </div>
   `,
   styles: [`
-    :host {
-      /* Responsive layout variables shared with /books page */
-      --card-w: 220px;
-      --grid-gap: 24px;
-      --grid-pad: 32px;
-    }
     .plex-library {
       min-height: 100vh;
       background: transparent;
@@ -159,19 +140,18 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
     }
 
     .library-header {
+      /* Transparent to keep a single page gradient */
       background: transparent;
       padding: 24px 20px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      /* Remove separator line and gap */
+      /* Remove bottom border and gap to avoid separation */
       /* border-bottom: 1px solid #333; */
       margin-bottom: 0;
     }
 
-    .header-content {
-      flex: 1;
-    }
+    .header-content { flex: 1; }
 
     .library-title {
       font-size: 20px;
@@ -184,105 +164,44 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
       letter-spacing: -0.5px;
     }
 
-  .title-icon { font-size: 32px; width: 32px; height: 32px; color: #e5a00d; margin-right: 12px; }
+    .title-icon { font-size: 32px; width: 32px; height: 32px; color: #e5a00d; margin-right: 12px; }
 
-    .series-count {
-      font-size: 1.1rem;
-      opacity: 0.7;
-      font-weight: 400;
-      margin-left: 16px;
-    }
+    .library-subtitle { font-size: 0.95rem; margin: 4px 0 0 0; opacity: 0.85; color: #cfcfcf; }
 
-  .library-subtitle { font-size: 0.95rem; margin: 4px 0 0 0; opacity: 0.9; color: #888; }
+    .header-actions { display: flex; gap: 16px; align-items: center; }
 
-    .header-actions {
-      display: flex;
-      gap: 16px;
-      align-items: center;
-    }
+    .fab-search { background: linear-gradient(135deg, #4fc3f7 0%, #29b6f6 100%) !important; color: white !important; box-shadow: 0 8px 32px rgba(79, 195, 247, 0.3) !important; }
 
-    .fab-search {
-      background: linear-gradient(135deg, #ff7043 0%, #ff5722 100%) !important;
-      color: white !important;
-      box-shadow: 0 8px 32px rgba(255, 112, 67, 0.3) !important;
-    }
+    .fab-search:hover { transform: translateY(-2px) !important; }
 
-    .fab-search:hover {
-      transform: translateY(-2px) !important;
-    }
+    .loading-section { display: flex; justify-content: center; align-items: center; min-height: 60vh; text-align: center; }
 
-    .loading-section {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 60vh;
-      text-align: center;
-    }
+    .loading-content h3 { margin: 24px 0 8px 0; font-size: 1.5rem; font-weight: 400; }
 
-    .loading-content h3 {
-      margin: 24px 0 8px 0;
-      font-size: 1.5rem;
-      font-weight: 400;
-    }
+    .loading-content p { margin: 0; opacity: 0.7; font-size: 1rem; }
 
-    .loading-content p {
-      margin: 0;
-      opacity: 0.7;
-      font-size: 1rem;
-    }
+    .empty-library { display: flex; justify-content: center; align-items: center; min-height: 60vh; text-align: center; }
 
-    .empty-library {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 60vh;
-      text-align: center;
-    }
+    .empty-content { max-width: 500px; padding: 48px 24px; }
 
-    .empty-content {
-      max-width: 500px;
-      padding: 48px 24px;
-    }
+    .empty-icon { font-size: 6rem; color: #555; margin-bottom: 24px; }
 
-    .empty-icon {
-      font-size: 6rem;
-      color: #555;
-      margin-bottom: 24px;
-    }
+    .empty-content h2 { font-size: 2rem; font-weight: 300; margin: 0 0 16px 0; color: #ffffff; }
 
-    .empty-content h2 {
-      font-size: 2rem;
-      font-weight: 300;
-      margin: 0 0 16px 0;
-      color: #ffffff;
-    }
+    .empty-content p { font-size: 1.1rem; line-height: 1.6; opacity: 0.8; margin: 0 0 32px 0; }
 
-    .empty-content p {
-      font-size: 1.1rem;
-      line-height: 1.6;
-      opacity: 0.8;
-      margin: 0 0 32px 0;
-    }
+    .cta-button { background: linear-gradient(135deg, #4fc3f7 0%, #29b6f6 100%) !important; color: white !important; padding: 12px 32px !important; font-size: 1.1rem !important; }
 
-    .cta-button {
-      background: linear-gradient(135deg, #ff7043 0%, #ff5722 100%) !important;
-      color: white !important;
-      padding: 12px 32px !important;
-      font-size: 1.1rem !important;
-    }
-
-    .library-content {
-      padding: 0;
-    }
+    .library-content { padding: 0; }
 
     .series-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, var(--card-w));
-      gap: var(--grid-gap);
-      padding: var(--grid-pad);
-      max-width: 1600px;
-      margin: 0 auto;
+      /* Fixed tile width to keep same size on mobile and desktop */
+      grid-template-columns: repeat(auto-fill, 240px);
       justify-content: center;
+      gap: 24px;
+      padding: 32px;
+      margin: 0 auto;
     }
 
     .series-card {
@@ -294,219 +213,72 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
       position: relative;
       backdrop-filter: blur(10px);
       border: 1px solid rgba(255, 255, 255, 0.1);
-      width: var(--card-w);
+      /* Keep card height equal to the picture height */
+      width: 240px;
+      height: 360px;
     }
 
-    .series-card:hover {
-      transform: translateY(-8px);
-      box-shadow: 0 25px 50px rgba(0, 0, 0, 0.4);
-      border-color: rgba(255, 112, 67, 0.5);
-    }
+    .series-card:hover { transform: translateY(-8px); box-shadow: 0 25px 50px rgba(0, 0, 0, 0.4); border-color: rgba(79, 195, 247, 0.5); }
 
-    .series-cover {
-      position: relative;
-      width: 100%;
-      height: 180px;
-      overflow: hidden;
-    }
+    .series-cover { position: relative; width: 100%; height: 100%; overflow: hidden; }
 
-    .cover-image {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      opacity: 0;
-      transition: opacity 0.3s ease, transform 0.3s ease;
-    }
+    .cover-image { width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 0.3s ease, transform 0.3s ease; }
 
-    .series-card:hover .cover-image {
-      transform: scale(1.05);
-    }
+    .cover-image.loaded { opacity: 1; }
 
-    .cover-image.loaded {
-      opacity: 1;
-    }
+    .series-card:hover .cover-image { transform: scale(1.05); }
 
-    .cover-placeholder {
-      width: 100%;
-      height: 100%;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      background: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%);
-      color: #666;
-      text-align: center;
-      padding: 16px;
-    }
+    .cover-placeholder { width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; background: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%); color: #666; text-align: center; padding: 16px; }
 
-    .cover-placeholder mat-icon {
-      font-size: 3rem;
-      margin-bottom: 8px;
-    }
+    .cover-placeholder mat-icon { font-size: 3rem; margin-bottom: 8px; }
 
-    .series-title-text {
-      font-size: 0.9rem;
-      line-height: 1.2;
-      word-break: break-word;
-    }
+    .series-title-text { font-size: 1rem; line-height: 1.2; word-break: break-word; }
 
-    .series-overlay {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.7);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      opacity: 0;
-      transition: opacity 0.3s ease;
-      pointer-events: none; /* don't block taps */
-    }
+    .series-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.3s ease; z-index: 2; }
 
-    .series-card:hover .series-overlay {
-      opacity: 1;
-    }
+    .series-card:hover .series-overlay { opacity: 1; }
 
-    .series-actions {
-      display: flex;
-      gap: 8px;
-      position: absolute;
-      top: 8px;
-      right: 8px;
-      z-index: 2;
-      opacity: 0;
-      transition: opacity 0.2s ease;
-      pointer-events: auto; /* allow tapping action buttons */
-    }
+    .series-actions { display: flex; gap: 16px; }
 
-    .series-card:hover .series-actions { opacity: 1; }
+    .action-btn { background: rgba(255, 255, 255, 0.2) !important; color: white !important; width: 80px !important; height: 80px !important; transition: all 0.3s ease !important; }
 
-    .action-btn {
-      background: rgba(255, 255, 255, 0.2) !important;
-      color: white !important;
-      width: 40px !important;
-      height: 40px !important;
-      transition: all 0.3s ease !important;
-    }
+    .action-btn:hover { background: rgba(79, 195, 247, 0.8) !important; transform: scale(1.1) !important; }
 
-    .action-btn:hover {
-      background: rgba(255, 112, 67, 0.8) !important;
-      transform: scale(1.1) !important;
-    }
+    .action-btn iconify-icon { font-size: 28px; width: 28px; height: 28px; }
 
-    .series-info {
-      padding: 16px;
-      text-align: center;
-    }
+    .series-info { position: absolute; left: 0; right: 0; bottom: 0; padding: 8px 10px; text-align: left; background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.65) 40%, rgba(0,0,0,0.85) 100%); z-index: 1; }
 
-    .series-title {
-      font-size: 1.1rem;
-      font-weight: 600;
-      margin: 0 0 8px 0;
-      color: #ffffff;
-      line-height: 1.3;
-      height: 2.6em;
-      overflow: hidden;
-      display: -webkit-box;
-      -webkit-line-clamp: 2;
-      -webkit-box-orient: vertical;
-    }
+    .series-title { font-size: 1.1rem; font-weight: 600; margin: 0 0 4px 0; color: #ffffff; line-height: 1.2; height: 2.4em; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
 
-    .series-description {
-      font-size: 0.85rem;
-      margin: 0 0 8px 0;
-      opacity: 0.8;
-      color: #ffccbc;
-      line-height: 1.4;
-      height: 2.8em;
-      overflow: hidden;
-      display: -webkit-box;
-      -webkit-line-clamp: 2;
-      -webkit-box-orient: vertical;
-    }
+    .book-count { font-size: 0.8rem; margin: 0; opacity: 0.7; color: #4fc3f7; font-weight: 500; }
 
-    .book-count {
-      font-size: 0.8rem;
-      margin: 0;
-      opacity: 0.7;
-      color: #ff8a65;
-      font-weight: 500;
-    }
+    .load-more-container { display: flex; flex-direction: column; align-items: center; padding: 40px 20px; gap: 16px; }
 
-    .load-more-container {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 40px 20px;
-      gap: 16px;
-    }
+    .load-more-container p { margin: 0; opacity: 0.7; }
 
-    .load-more-container p {
-      margin: 0;
-      opacity: 0.7;
-    }
+    .load-more-error { display: flex; flex-direction: column; align-items: center; padding: 40px 20px; gap: 16px; }
 
-    .load-more-error {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 40px 20px;
-      gap: 16px;
-    }
+    .load-more-error p { margin: 0; color: #f44336; }
 
-    .load-more-error p {
-      margin: 0;
-      color: #f44336;
-    }
+    .end-of-list { display: flex; justify-content: center; padding: 40px 20px; opacity: 0.6; }
 
-    .end-of-list {
-      display: flex;
-      justify-content: center;
-      padding: 40px 20px;
-      opacity: 0.6;
-    }
+    .end-of-list p { margin: 0; font-style: italic; }
 
-    .end-of-list p {
-      margin: 0;
-      font-style: italic;
-    }
-
-    /* Responsive design */
-    @media (max-width: 1024px) {
-      :host { --card-w: 210px; }
-    }
-
+    /* Responsive design (keep tile size identical across breakpoints) */
     @media (max-width: 768px) {
-      :host { --card-w: 200px; --grid-gap: 20px; --grid-pad: 24px; }
-      .library-header {
-        padding: 24px 16px;
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 16px;
-      }
-
-      .library-title {
-        font-size: 1.5rem;
-      }
-
-      .series-actions { opacity: 1; }
-      .action-btn { width: 44px !important; height: 44px !important; min-width: 44px !important; }
+      .library-header { padding: 24px 16px; flex-direction: column; align-items: flex-start; gap: 16px; }
+      .library-title { font-size: 2rem !important; }
+      /* Keep same card width and cover height on mobile */
+      .series-grid { grid-template-columns: repeat(auto-fill, 240px); justify-content: center; gap: 24px; padding: 24px; }
+      .series-actions { opacity: 1; position: static; margin-top: 8px; justify-content: center; }
+      .action-btn { width: 64px !important; height: 64px !important; min-width: 64px !important; }
     }
 
     @media (max-width: 480px) {
-      :host { --card-w: 180px; --grid-gap: 16px; --grid-pad: 16px; }
-
-      .library-title {
-        font-size: 1.35rem;
-      }
-
-      .fab-search {
-        width: 48px;
-        height: 48px;
-        min-width: 48px;
-      }
+      /* Keep same card width and cover height on small phones */
+      .series-grid { grid-template-columns: repeat(auto-fill, 240px); justify-content: center; gap: 16px; padding: 16px; }
+      .library-title { font-size: 1.75rem; }
+      .fab-search { width: 64px; height: 64px; min-width: 64px; }
     }
   `]
 })
@@ -534,17 +306,11 @@ export class SeriesListComponent implements OnInit {
     window.addEventListener('resize', this.onResize, { passive: true });
   }
 
-  onScroll() {
-    this.scrollState.loadMore();
-  }
+  onScroll() { this.scrollState.loadMore(); }
 
-  trackByFn(index: number, series: Series): string {
-    return series.id;
-  }
+  trackByFn(index: number, series: Series): string { return series.id; }
 
-  asSeries(item: any): Series {
-    return item as Series;
-  }
+  asSeries(item: any): Series { return item as Series; }
 
   toggleFavorite(event: Event, series: Series) {
     event.stopPropagation();
@@ -590,64 +356,48 @@ export class SeriesListComponent implements OnInit {
     }
   }
 
-  getShortTitle(title: string): string {
-    return title.length > 25 ? title.substring(0, 25) + '...' : title;
-  }
+  getShortTitle(title: string): string { return title.length > 25 ? title.substring(0, 25) + '...' : title; }
 
-  getShortDescription(description: string): string {
-    return description.length > 100 ? description.substring(0, 100) + '...' : description;
-  }
+  getShortDescription(description: string): string { return description.length > 100 ? description.substring(0, 100) + '...' : description; }
 
   getEffectiveImagePath(series: Series): string | null {
-    if (series.imagePath) {
-      return series.imagePath;
-    }
-    if (series.fallbackImagePath) {
-      return series.fallbackImagePath;
-    }
+    if (series.imagePath) return series.imagePath;
+    if (series.fallbackImagePath) return series.fallbackImagePath;
     return null;
   }
 
-  onImageError(event: any) {
-    event.target.style.display = 'none';
-  }
+  onImageError(event: any) { event.target.style.display = 'none'; }
 
-  onImageLoad(event: any) {
-    event.target.classList.add('loaded');
-  }
+  onImageLoad(event: any) { event.target.classList.add('loaded'); }
 
-  private onResize = () => {
-    // limit recalculated lazily via limitProvider
-  };
-
-  private getLayoutMetrics() {
-    const w = window.innerWidth;
-    if (w <= 480) return { CARD_WIDTH: 180, GRID_GAP: 16, PADDING_X: 16, CARD_HEIGHT: 260 };
-    if (w <= 768) return { CARD_WIDTH: 200, GRID_GAP: 20, PADDING_X: 24, CARD_HEIGHT: 280 };
-    if (w <= 1024) return { CARD_WIDTH: 210, GRID_GAP: 24, PADDING_X: 32, CARD_HEIGHT: 300 };
-    return { CARD_WIDTH: 220, GRID_GAP: 24, PADDING_X: 32, CARD_HEIGHT: 300 };
-  }
+  private onResize = () => { /* limit recalculated lazily via limitProvider */ };
 
   private calculatePageSize(): number {
     const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;
-    const { CARD_WIDTH, GRID_GAP, PADDING_X, CARD_HEIGHT } = this.getLayoutMetrics();
+
+    // Match /books layout metrics
+    const CARD_WIDTH = 240; // px
+    const CARD_HEIGHT = 360; // px
+    const GRID_GAP = 24; // must match CSS gap for desktop
+    const PADDING_X = 32; // horizontal padding of .series-grid
+
+    // Effective content width accounting for grid side padding
     const contentWidth = Math.max(0, viewportWidth - PADDING_X * 2);
     const colWidth = CARD_WIDTH + GRID_GAP;
-    const rowHeight = CARD_HEIGHT + GRID_GAP + 80; // include info section approx
+    const rowHeight = CARD_HEIGHT + GRID_GAP;
+
     const columns = Math.max(1, Math.floor((contentWidth + GRID_GAP) / colWidth));
     const rows = Math.max(1, Math.floor((viewportHeight + GRID_GAP) / rowHeight));
+
+    // Load one extra row as buffer for smoother scrolling
     const pageSize = columns * (rows + 1);
     return Math.max(10, pageSize);
   }
 
-  getBookmarkIcon(series: Series): string {
-    return this.isBookmarked(series) ? 'material-symbols:bookmark' : 'material-symbols:bookmark-outline';
-  }
+  getBookmarkIcon(series: Series): string { return this.isBookmarked(series) ? 'material-symbols:bookmark' : 'material-symbols:bookmark-outline'; }
 
-  isBookmarked(series: Series): boolean {
-    return !!series?.id && this.favorites.has(series.id);
-  }
+  isBookmarked(series: Series): boolean { return !!series?.id && this.favorites.has(series.id); }
 
   private favorites = new Set<string>();
 

@@ -30,7 +30,7 @@ import { environment } from '../../environments/environment';
     MatGridListModule
   ],
   template: `
-    <div class="series-detail-container">
+    <div class="series-detail-container plex-library">
       @if (loading()) {
         <div class="loading-container">
           <mat-spinner diameter="50"></mat-spinner>
@@ -202,11 +202,10 @@ import { environment } from '../../environments/environment';
   `,
   styles: [`
     .series-detail-container {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 20px;
-      background-color: #f8f9fa;
       min-height: 100vh;
+      background: transparent;
+      color: #ffffff;
+      padding: 0;
     }
 
     .loading-container, .error-state, .section-loading {
@@ -233,43 +232,54 @@ import { environment } from '../../environments/environment';
     }
 
     .back-button {
-      margin-bottom: 20px;
+      padding: 24px 20px;
+      position: sticky;
+      top: 0;
+      background: transparent;
+      backdrop-filter: none;
+      z-index: 10;
+      border-bottom: none;
+      margin-bottom: 0;
     }
 
     /* Series layout */
     .series-layout {
       display: flex;
-      gap: 30px;
+      gap: 48px;
       align-items: flex-start;
-      margin-bottom: 40px;
+      padding: 48px 32px;
+      max-width: 1200px;
+      margin: 0 auto;
     }
 
     /* Series Cover */
     .series-cover-container {
-      flex: 0 0 200px;
+      flex: 0 0 240px;
       position: relative;
     }
 
     .series-cover {
-      width: 200px;
-      height: 300px;
-      border: 1px solid #e0e0e0;
-      border-radius: 3px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      width: 240px;
+      height: 360px;
       object-fit: cover;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
     }
 
     .series-cover-placeholder {
-      width: 200px;
-      height: 300px;
-      border: 1px solid #e0e0e0;
-      border-radius: 3px;
+      width: 240px;
+      height: 360px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%);
       display: flex;
       align-items: center;
       justify-content: center;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-      color: white;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+      text-align: center;
+      padding: 16px;
+      color: #cfcfcf;
     }
 
     .placeholder-content {
@@ -298,6 +308,8 @@ import { environment } from '../../environments/environment';
       border-radius: 12px;
       font-size: 12px;
       font-weight: 500;
+      backdrop-filter: blur(6px);
+      border: 1px solid rgba(255,255,255,0.15);
     }
 
     /* Series Information */
@@ -306,56 +318,41 @@ import { environment } from '../../environments/environment';
       min-width: 0;
     }
 
-    .title-section {
-      margin-bottom: 24px;
-    }
+  .title-section { margin-bottom: 24px; }
 
     .series-title {
-      font-size: 26px;
-      font-weight: 600;
-      color: #333;
+      font-size: 2.2rem;
+      font-weight: 700;
       margin: 0 0 8px 0;
-      line-height: 1.3;
+      line-height: 1.2;
+      color: #ffffff;
     }
 
-    .series-subtitle {
-      font-size: 18px;
-      color: #666;
-      font-weight: 400;
-      margin: 0;
-    }
+  .series-subtitle { font-size: 1.1rem; color: #cfcfcf; font-weight: 400; margin: 0; }
 
     /* Details List */
     .details-list {
-      background-color: #ffffff;
-      border-radius: 8px;
-      padding: 16px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 24px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
     }
 
     .detail-item {
-      display: flex;
-      padding: 10px 0;
-      border-bottom: 1px solid #f0f0f0;
-      align-items: flex-start;
+      display: grid;
+      grid-template-columns: 1fr 2fr;
+      gap: 16px;
+      align-items: start;
+      padding: 12px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     }
 
-    .detail-item:last-child {
-      border-bottom: none;
-    }
+  .detail-item:last-child { border-bottom: none; }
 
-    .detail-label {
-      min-width: 140px;
-      font-weight: 600;
-      color: #555;
-      margin-right: 16px;
-      flex-shrink: 0;
-    }
+  .detail-label { font-weight: 600; color: #4fc3f7; white-space: nowrap; }
 
-    .detail-value {
-      color: #333;
-      flex: 1;
-    }
+  .detail-value { color: #ffffff; opacity: 0.95; word-break: break-word; }
 
     .synopsis .detail-value {
       line-height: 1.6;
@@ -370,16 +367,13 @@ import { environment } from '../../environments/environment';
       display: flex;
       align-items: center;
       gap: 8px;
-      font-size: 20px;
+      font-size: 1.25rem;
       font-weight: 600;
-      color: #333;
-      margin-bottom: 20px;
+      color: #4fc3f7;
+      margin-bottom: 16px;
     }
 
-    .item-count {
-      color: #666;
-      font-weight: 400;
-    }
+  .item-count { color: #cfcfcf; font-weight: 400; }
 
     /* Books Grid */
     .books-grid {
@@ -389,11 +383,11 @@ import { environment } from '../../environments/environment';
     }
 
     .book-card {
-      background: white;
-      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
       overflow: hidden;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-      transition: transform 0.2s, box-shadow 0.2s;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
       cursor: pointer;
       text-decoration: none;
       color: inherit;
@@ -401,7 +395,8 @@ import { environment } from '../../environments/environment';
 
     .book-card:hover {
       transform: translateY(-2px);
-      box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+      box-shadow: 0 12px 24px rgba(0,0,0,0.3);
+      border-color: rgba(79, 195, 247, 0.5);
     }
 
     .book-cover {
@@ -422,8 +417,8 @@ import { environment } from '../../environments/environment';
       display: flex;
       align-items: center;
       justify-content: center;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
+      background: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%);
+      color: #cfcfcf;
     }
 
     .cover-placeholder mat-icon {
@@ -441,7 +436,7 @@ import { environment } from '../../environments/environment';
       font-weight: 600;
       margin: 0 0 8px 0;
       line-height: 1.3;
-      color: #333;
+      color: #ffffff;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
@@ -449,17 +444,14 @@ import { environment } from '../../environments/environment';
 
     .book-index, .book-authors, .book-date {
       font-size: 12px;
-      color: #666;
+      color: #cfcfcf;
       margin: 4px 0;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
 
-    .book-index {
-      font-weight: 500;
-      color: #007bff;
-    }
+  .book-index { font-weight: 500; color: #4fc3f7; }
 
     /* Contributors Grid */
     .contributors-grid {
@@ -469,38 +461,20 @@ import { environment } from '../../environments/environment';
     }
 
     .contributor-card {
-      background: white;
-      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
       padding: 16px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      border: 1px solid rgba(255, 255, 255, 0.1);
     }
 
-    .contributor-name {
-      font-size: 16px;
-      font-weight: 600;
-      margin: 0 0 8px 0;
-      color: #333;
-    }
+  .contributor-name { font-size: 16px; font-weight: 600; margin: 0 0 8px 0; color: #ffffff; }
 
-    .contributor-roles {
-      font-size: 14px;
-      color: #666;
-      margin: 4px 0;
-      font-style: italic;
-    }
+  .contributor-roles { font-size: 14px; color: #cfcfcf; margin: 4px 0; font-style: italic; }
 
-    .contributor-count {
-      font-size: 12px;
-      color: #999;
-      margin: 4px 0 0 0;
-    }
+  .contributor-count { font-size: 12px; color: #cfcfcf; opacity: 0.8; margin: 4px 0 0 0; }
 
     /* Empty State */
-    .empty-state {
-      text-align: center;
-      padding: 40px;
-      color: #666;
-    }
+  .empty-state { text-align: center; padding: 40px; color: #cfcfcf; }
 
     .empty-state mat-icon {
       font-size: 48px;
