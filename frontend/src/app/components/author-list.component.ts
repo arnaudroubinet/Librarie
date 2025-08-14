@@ -1,4 +1,4 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
@@ -10,7 +10,9 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatRippleModule } from '@angular/material/core';
 import { MatBadgeModule } from '@angular/material/badge';
 import { AuthorService } from '../services/author.service';
-import { Author, AuthorPageResponse } from '../models/author.model';
+import { Author } from '../models/author.model';
+import { InfiniteScrollService, AlphabeticalSeparator } from '../services/infinite-scroll.service';
+import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive';
 
 @Component({
   selector: 'app-author-list',
@@ -25,17 +27,18 @@ import { Author, AuthorPageResponse } from '../models/author.model';
     MatChipsModule,
     MatSnackBarModule,
     MatRippleModule,
-    MatBadgeModule
+    MatBadgeModule,
+    InfiniteScrollDirective
   ],
   template: `
-    <div class="plex-library">
+    <div class="plex-library" appInfiniteScroll (scrolled)="onScroll()" [disabled]="scrollState.loading()">
       <div class="library-header">
         <div class="header-content">
           <h1 class="library-title">
             <mat-icon class="title-icon">people</mat-icon>
             Authors Library
-            @if (authors().length > 0) {
-              <span class="author-count">{{ authors().length }} authors</span>
+            @if (scrollState.items().length > 0) {
+              <span class="author-count">{{ getAuthorCount() }} authors</span>
             }
           </h1>
           <p class="library-subtitle">Discover and explore your favorite authors</p>
@@ -47,7 +50,7 @@ import { Author, AuthorPageResponse } from '../models/author.model';
         </div>
       </div>
       
-      @if (loading()) {
+      @if (scrollState.loading() && scrollState.items().length === 0) {
         <div class="loading-section">
           <div class="loading-content">
             <mat-spinner diameter="60" color="accent"></mat-spinner>
@@ -56,7 +59,7 @@ import { Author, AuthorPageResponse } from '../models/author.model';
           </div>
         </div>
       } @else {
-        @if (authors().length === 0) {
+        @if (scrollState.isEmpty()) {
           <div class="empty-library">
             <div class="empty-content">
               <mat-icon class="empty-icon">people</mat-icon>
@@ -70,78 +73,83 @@ import { Author, AuthorPageResponse } from '../models/author.model';
           </div>
         } @else {
           <div class="authors-grid">
-            @for (author of authors(); track author.id) {
-              <div class="author-card" matRipple [routerLink]="['/authors', author.id]">
-                <div class="card-container">
-                  <div class="author-photo">
-                    @if (author.metadata?.['imageUrl']) {
-                      <img [src]="author.metadata!['imageUrl']" 
-                           [alt]="author.name + ' photo'"
-                           class="photo-image"
-                           (error)="onImageError($event)">
-                    } @else {
-                      <div class="photo-placeholder">
-                        <mat-icon>person</mat-icon>
-                        <span class="name-text">{{ getInitials(author.name) }}</span>
+            @for (item of scrollState.items(); track trackByFn($index, item)) {
+              @if (infiniteScrollService.isSeparator(item)) {
+                <div class="alphabetical-separator">
+                  <div class="separator-line"></div>
+                  <span class="separator-letter">{{ item.letter }}</span>
+                  <div class="separator-line"></div>
+                </div>
+              } @else {
+                <div class="author-card" matRipple [routerLink]="['/authors', item.id]">
+                  <div class="card-container">
+                    <div class="author-photo">
+                      @if (item.metadata?.['imageUrl']) {
+                        <img [src]="item.metadata!['imageUrl']" 
+                             [alt]="item.name + ' photo'"
+                             class="photo-image"
+                             (error)="onImageError($event)">
+                      } @else {
+                        <div class="photo-placeholder">
+                          <mat-icon>person</mat-icon>
+                          <span class="name-text">{{ getInitials(item.name) }}</span>
+                        </div>
+                      }
+                      <div class="photo-overlay">
+                        <mat-icon class="view-icon">visibility</mat-icon>
                       </div>
-                    }
-                    <div class="photo-overlay">
-                      <mat-icon class="view-icon">visibility</mat-icon>
+                    </div>
+                    
+                    <div class="author-info">
+                      <h3 class="author-name" [title]="item.name">{{ item.name }}</h3>
+                      @if (item.bio?.['en']) {
+                        <p class="author-bio">{{ getShortBio(item.bio!['en']) }}</p>
+                      }
+                      @if (item.birthDate || item.deathDate) {
+                        <p class="author-dates">
+                          {{ formatDates(item.birthDate, item.deathDate) }}
+                        </p>
+                      }
                     </div>
                   </div>
                   
-                  <div class="author-info">
-                    <h3 class="author-name" [title]="author.name">{{ author.name }}</h3>
-                    @if (author.bio?.['en']) {
-                      <p class="author-bio">{{ getShortBio(author.bio!['en']) }}</p>
-                    }
-                    @if (author.birthDate || author.deathDate) {
-                      <p class="author-dates">
-                        {{ formatDates(author.birthDate, author.deathDate) }}
-                      </p>
+                  <div class="author-actions">
+                    <button mat-icon-button class="action-button" (click)="openAuthorDetails($event, item.id)">
+                      <mat-icon>info</mat-icon>
+                    </button>
+                    @if (item.websiteUrl) {
+                      <button mat-icon-button class="action-button" (click)="openWebsite($event, item.websiteUrl!)">
+                        <mat-icon>language</mat-icon>
+                      </button>
                     }
                   </div>
                 </div>
-                
-                <div class="author-actions">
-                  <button mat-icon-button class="action-button" (click)="openAuthorDetails($event, author.id)">
-                    <mat-icon>info</mat-icon>
-                  </button>
-                  @if (author.websiteUrl) {
-                    <button mat-icon-button class="action-button" (click)="openWebsite($event, author.websiteUrl!)">
-                      <mat-icon>language</mat-icon>
-                    </button>
-                  }
-                </div>
-              </div>
+              }
             }
           </div>
           
-          <!-- Pagination controls -->
-          @if (hasNext() || hasPrevious()) {
-            <div class="pagination-controls">
-              <button mat-button 
-                      [disabled]="!hasPrevious()" 
-                      (click)="loadPreviousPage()"
-                      class="pagination-button">
-                <mat-icon>chevron_left</mat-icon>
-                Previous
+          <!-- Loading indicator for more items -->
+          @if (scrollState.loading() && scrollState.items().length > 0) {
+            <div class="load-more-container">
+              <mat-spinner diameter="30"></mat-spinner>
+              <p>Loading more authors...</p>
+            </div>
+          }
+          
+          <!-- Error indicator for loading more -->
+          @if (scrollState.error() && scrollState.items().length > 0) {
+            <div class="load-more-error">
+              <p>{{ scrollState.error() }}</p>
+              <button mat-button color="primary" (click)="scrollState.loadMore()">
+                Try Again
               </button>
-              
-              <span class="page-info">
-                Showing {{ authors().length }} authors
-                @if (totalCount() !== undefined) {
-                  of {{ totalCount() }}
-                }
-              </span>
-              
-              <button mat-button 
-                      [disabled]="!hasNext()" 
-                      (click)="loadNextPage()"
-                      class="pagination-button">
-                Next
-                <mat-icon>chevron_right</mat-icon>
-              </button>
+            </div>
+          }
+          
+          <!-- End of list indicator -->
+          @if (!scrollState.hasMore() && scrollState.items().length > 0) {
+            <div class="end-of-list">
+              <p>You've reached the end of the author list</p>
             </div>
           }
         }
@@ -159,91 +167,122 @@ import { Author, AuthorPageResponse } from '../models/author.model';
     .library-header {
       background: linear-gradient(135deg, rgba(25, 118, 210, 0.1) 0%, rgba(255, 64, 129, 0.1) 100%);
       backdrop-filter: blur(10px);
-      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-      padding: 32px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 48px 32px;
       display: flex;
       justify-content: space-between;
-      align-items: center;
-      position: sticky;
-      top: 0;
-      z-index: 10;
+      align-items: flex-end;
     }
 
-    .header-content h1.library-title {
-      font-size: 2.5rem;
-      font-weight: 700;
+    .header-content {
+      flex: 1;
+    }
+
+    .library-title {
+      font-size: 3rem;
+      font-weight: 300;
       margin: 0 0 8px 0;
+      color: #ffffff;
       display: flex;
       align-items: center;
       gap: 16px;
-      background: linear-gradient(45deg, #1976d2, #ff4081);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
     }
 
     .title-icon {
-      font-size: 2.5rem !important;
-      width: 2.5rem !important;
-      height: 2.5rem !important;
-      background: linear-gradient(45deg, #1976d2, #ff4081);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
+      font-size: 3rem;
+      color: #2196f3;
     }
 
     .author-count {
-      font-size: 1rem;
+      font-size: 1.1rem;
+      opacity: 0.7;
       font-weight: 400;
-      opacity: 0.8;
-      background: rgba(255, 255, 255, 0.1);
-      padding: 4px 12px;
-      border-radius: 16px;
+      margin-left: 16px;
     }
 
     .library-subtitle {
-      font-size: 1.1rem;
+      font-size: 1.2rem;
       margin: 0;
       opacity: 0.8;
+      color: #e3f2fd;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 16px;
+      align-items: center;
     }
 
     .fab-search {
-      width: 56px !important;
-      height: 56px !important;
-      background: linear-gradient(45deg, #1976d2, #ff4081) !important;
+      background: linear-gradient(135deg, #2196f3 0%, #ff4081 100%) !important;
+      color: white !important;
+      box-shadow: 0 8px 32px rgba(33, 150, 243, 0.3) !important;
+      transition: all 0.3s ease !important;
     }
 
-    .loading-section, .empty-library {
+    .fab-search:hover {
+      transform: translateY(-2px) !important;
+      box-shadow: 0 12px 40px rgba(33, 150, 243, 0.4) !important;
+    }
+
+    .loading-section {
       display: flex;
       justify-content: center;
       align-items: center;
       min-height: 60vh;
-      padding: 64px 32px;
-    }
-
-    .loading-content, .empty-content {
       text-align: center;
-      max-width: 400px;
     }
 
-    .loading-content h3, .empty-content h2 {
-      margin: 24px 0 16px 0;
+    .loading-content h3 {
+      margin: 24px 0 8px 0;
       font-size: 1.5rem;
-      font-weight: 600;
+      font-weight: 400;
+    }
+
+    .loading-content p {
+      margin: 0;
+      opacity: 0.7;
+      font-size: 1rem;
+    }
+
+    .empty-library {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 60vh;
+      text-align: center;
+    }
+
+    .empty-content {
+      max-width: 500px;
+      padding: 48px 24px;
     }
 
     .empty-icon {
-      font-size: 4rem !important;
-      width: 4rem !important;
-      height: 4rem !important;
-      opacity: 0.5;
-      margin-bottom: 16px;
+      font-size: 6rem;
+      color: #555;
+      margin-bottom: 24px;
+    }
+
+    .empty-content h2 {
+      font-size: 2rem;
+      font-weight: 300;
+      margin: 0 0 16px 0;
+      color: #ffffff;
+    }
+
+    .empty-content p {
+      font-size: 1.1rem;
+      line-height: 1.6;
+      opacity: 0.8;
+      margin: 0 0 32px 0;
     }
 
     .cta-button {
-      margin-top: 24px;
-      background: linear-gradient(45deg, #1976d2, #ff4081) !important;
+      background: linear-gradient(135deg, #2196f3 0%, #ff4081 100%) !important;
       color: white !important;
+      padding: 12px 32px !important;
+      font-size: 1.1rem !important;
     }
 
     .authors-grid {
@@ -251,74 +290,97 @@ import { Author, AuthorPageResponse } from '../models/author.model';
       grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
       gap: 24px;
       padding: 32px;
+      max-width: 1600px;
+      margin: 0 auto;
     }
 
-    .author-card {
-      background: rgba(255, 255, 255, 0.05);
-      border-radius: 16px;
-      overflow: hidden;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      cursor: pointer;
-      position: relative;
-    }
-
-    .author-card:hover {
-      transform: translateY(-8px) scale(1.02);
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-      background: rgba(255, 255, 255, 0.08);
-      border-color: rgba(255, 255, 255, 0.2);
-    }
-
-    .card-container {
-      padding: 24px;
-      min-height: 200px;
+    .alphabetical-separator {
+      grid-column: 1 / -1;
       display: flex;
-      flex-direction: column;
       align-items: center;
+      gap: 20px;
+      margin: 30px 0 20px 0;
+      padding: 0 20px;
+    }
+
+    .separator-line {
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    }
+
+    .separator-letter {
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: #2196f3;
+      padding: 8px 16px;
+      background: rgba(33, 150, 243, 0.1);
+      border-radius: 25px;
+      border: 2px solid rgba(33, 150, 243, 0.3);
+      min-width: 50px;
       text-align: center;
     }
 
+    .author-card {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.04) 100%);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 16px;
+      overflow: hidden;
+      transition: all 0.3s ease;
+      cursor: pointer;
+      position: relative;
+      backdrop-filter: blur(10px);
+    }
+
+    .author-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+      border-color: rgba(33, 150, 243, 0.5);
+    }
+
+    .card-container {
+      padding: 20px;
+    }
+
     .author-photo {
-      width: 80px;
-      height: 80px;
-      border-radius: 50%;
+      position: relative;
+      width: 100%;
+      height: 200px;
+      border-radius: 12px;
       overflow: hidden;
       margin-bottom: 16px;
-      position: relative;
-      background: linear-gradient(45deg, #1976d2, #ff4081);
-      padding: 2px;
+      background: linear-gradient(135deg, #333 0%, #555 100%);
     }
 
     .photo-image {
-      width: calc(100% - 4px);
-      height: calc(100% - 4px);
-      border-radius: 50%;
+      width: 100%;
+      height: 100%;
       object-fit: cover;
-      background: #2a2a2a;
+      transition: transform 0.3s ease;
+    }
+
+    .author-card:hover .photo-image {
+      transform: scale(1.05);
     }
 
     .photo-placeholder {
-      width: calc(100% - 4px);
-      height: calc(100% - 4px);
-      border-radius: 50%;
-      background: #2a2a2a;
+      width: 100%;
+      height: 100%;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      color: rgba(255, 255, 255, 0.7);
+      color: #888;
+      background: linear-gradient(135deg, #2a2a2a 0%, #1e1e1e 100%);
     }
 
     .photo-placeholder mat-icon {
-      font-size: 2rem;
-      width: 2rem;
-      height: 2rem;
-      margin-bottom: 4px;
+      font-size: 4rem;
+      margin-bottom: 8px;
     }
 
     .name-text {
-      font-size: 0.75rem;
+      font-size: 1.2rem;
       font-weight: 600;
     }
 
@@ -326,15 +388,14 @@ import { Author, AuthorPageResponse } from '../models/author.model';
       position: absolute;
       top: 0;
       left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(0, 0, 0, 0.7);
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.6);
       display: flex;
       align-items: center;
       justify-content: center;
       opacity: 0;
       transition: opacity 0.3s ease;
-      border-radius: 50%;
     }
 
     .author-card:hover .photo-overlay {
@@ -343,82 +404,98 @@ import { Author, AuthorPageResponse } from '../models/author.model';
 
     .view-icon {
       color: white;
-      font-size: 1.5rem !important;
+      font-size: 2rem;
     }
 
     .author-info {
-      flex: 1;
+      text-align: center;
     }
 
     .author-name {
-      font-size: 1.25rem;
-      font-weight: 600;
+      font-size: 1.3rem;
+      font-weight: 500;
       margin: 0 0 8px 0;
-      line-height: 1.4;
       color: #ffffff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .author-bio {
       font-size: 0.9rem;
-      line-height: 1.5;
-      opacity: 0.8;
+      line-height: 1.4;
       margin: 0 0 8px 0;
+      opacity: 0.8;
+      color: #e3f2fd;
+      height: 2.8em;
+      overflow: hidden;
       display: -webkit-box;
       -webkit-line-clamp: 2;
       -webkit-box-orient: vertical;
-      overflow: hidden;
     }
 
     .author-dates {
       font-size: 0.85rem;
-      opacity: 0.6;
       margin: 0;
-      font-style: italic;
+      opacity: 0.6;
+      color: #90caf9;
     }
 
     .author-actions {
-      position: absolute;
-      top: 8px;
-      right: 8px;
       display: flex;
-      gap: 4px;
-      opacity: 0;
-      transition: opacity 0.3s ease;
-    }
-
-    .author-card:hover .author-actions {
-      opacity: 1;
+      justify-content: center;
+      gap: 8px;
+      padding: 16px 20px;
+      background: rgba(0, 0, 0, 0.2);
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
     }
 
     .action-button {
-      background: rgba(255, 255, 255, 0.1) !important;
-      color: white !important;
-      width: 32px !important;
-      height: 32px !important;
-      line-height: 32px !important;
+      color: #ffffff !important;
+      transition: all 0.3s ease !important;
     }
 
-    .action-button mat-icon {
-      font-size: 1rem !important;
+    .action-button:hover {
+      background: rgba(33, 150, 243, 0.2) !important;
+      color: #2196f3 !important;
     }
 
-    .pagination-controls {
+    .load-more-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 20px;
+      gap: 16px;
+    }
+
+    .load-more-container p {
+      margin: 0;
+      opacity: 0.7;
+    }
+
+    .load-more-error {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 20px;
+      gap: 16px;
+    }
+
+    .load-more-error p {
+      margin: 0;
+      color: #f44336;
+    }
+
+    .end-of-list {
       display: flex;
       justify-content: center;
-      align-items: center;
-      gap: 24px;
-      padding: 32px;
-      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 40px 20px;
+      opacity: 0.6;
     }
 
-    .pagination-button {
-      color: #ffffff !important;
-      font-weight: 500 !important;
-    }
-
-    .page-info {
-      opacity: 0.8;
-      font-size: 0.9rem;
+    .end-of-list p {
+      margin: 0;
+      font-style: italic;
     }
 
     /* Responsive design */
@@ -438,12 +515,6 @@ import { Author, AuthorPageResponse } from '../models/author.model';
         grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
         gap: 16px;
         padding: 16px;
-      }
-
-      .pagination-controls {
-        padding: 24px 16px;
-        flex-direction: column;
-        gap: 16px;
       }
     }
 
@@ -467,54 +538,38 @@ import { Author, AuthorPageResponse } from '../models/author.model';
   `]
 })
 export class AuthorListComponent implements OnInit {
-  authors = signal<Author[]>([]);
-  loading = signal(true);
-  nextCursor = signal<string | undefined>(undefined);
-  previousCursor = signal<string | undefined>(undefined);
-  hasNext = signal(false);
-  hasPrevious = signal(false);
-  totalCount = signal<number | undefined>(undefined);
-  limit = signal(20);
+  scrollState;
 
   constructor(
     private authorService: AuthorService,
-    private snackBar: MatSnackBar
-  ) {}
+    private snackBar: MatSnackBar,
+    protected infiniteScrollService: InfiniteScrollService
+  ) {
+    // Initialize infinite scroll state with alphabetical separators
+    this.scrollState = this.infiniteScrollService.createInfiniteScrollState(
+      (cursor, limit) => this.authorService.getAllAuthors(cursor, limit),
+      {
+        limit: 20,
+        enableAlphabeticalSeparators: true,
+        sortProperty: 'sortName'
+      }
+    );
+  }
 
   ngOnInit() {
-    this.loadAuthors();
+    // Initialization is handled by the infinite scroll service
   }
 
-  loadAuthors(cursor?: string) {
-    this.loading.set(true);
-    this.authorService.getAllAuthors(cursor, this.limit()).subscribe({
-      next: (response: AuthorPageResponse) => {
-        this.authors.set(response.content);
-        this.nextCursor.set(response.nextCursor);
-        this.previousCursor.set(response.previousCursor);
-        this.hasNext.set(response.hasNext || false);
-        this.hasPrevious.set(response.hasPrevious || false);
-        this.totalCount.set(response.totalCount);
-        this.loading.set(false);
-      },
-      error: (error) => {
-        console.error('Error loading authors:', error);
-        this.snackBar.open('Failed to load authors', 'Close', { duration: 3000 });
-        this.loading.set(false);
-      }
-    });
+  onScroll() {
+    this.scrollState.loadMore();
   }
 
-  loadNextPage() {
-    if (this.hasNext() && this.nextCursor()) {
-      this.loadAuthors(this.nextCursor());
-    }
+  getAuthorCount(): number {
+    return this.scrollState.items().filter(item => !this.infiniteScrollService.isSeparator(item)).length;
   }
 
-  loadPreviousPage() {
-    if (this.hasPrevious() && this.previousCursor()) {
-      this.loadAuthors(this.previousCursor());
-    }
+  trackByFn(index: number, item: Author | AlphabeticalSeparator): string {
+    return this.infiniteScrollService.isSeparator(item) ? item.id : item.id;
   }
 
   onImageError(event: any) {
@@ -551,6 +606,7 @@ export class AuthorListComponent implements OnInit {
     event.stopPropagation();
     // Router navigation will be handled by the template
   }
+  
   openWebsite(event: Event, url: string) {
     event.stopPropagation();
     window.open(url, '_blank');
