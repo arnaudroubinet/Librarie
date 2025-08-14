@@ -145,6 +145,11 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
     </div>
   `,
   styles: [`
+    :host {
+      --card-w: 240px;
+      --grid-gap: 24px;
+      --grid-pad: 32px;
+    }
     .plex-library {
       padding: 0;
       background: transparent;
@@ -269,11 +274,12 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
 
     .authors-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: 24px;
-      padding: 32px;
+      grid-template-columns: repeat(auto-fill, var(--card-w));
+      gap: var(--grid-gap);
+      padding: var(--grid-pad);
       max-width: 1600px;
       margin: 0 auto;
+      justify-content: center;
     }
 
     .alphabetical-separator {
@@ -312,6 +318,7 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
       cursor: pointer;
       position: relative;
       backdrop-filter: blur(10px);
+  width: var(--card-w);
     }
 
     .author-card:hover {
@@ -481,7 +488,11 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
     }
 
     /* Responsive design */
+    @media (max-width: 1024px) {
+      :host { --card-w: 220px; }
+    }
     @media (max-width: 768px) {
+      :host { --card-w: 200px; --grid-gap: 20px; --grid-pad: 24px; }
       .library-header {
         padding: 24px 16px;
         flex-direction: column;
@@ -490,32 +501,13 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
       }
 
       .library-title {
-        font-size: 2rem !important;
-      }
-
-      .authors-grid {
-        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-        gap: 16px;
-        padding: 16px;
+        font-size: 1.5rem;
       }
     }
 
     @media (max-width: 480px) {
-      .authors-grid {
-        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-        gap: 12px;
-        padding: 12px;
-      }
-
-      .library-title {
-        font-size: 1.75rem !important;
-      }
-
-      .fab-search {
-        width: 48px !important;
-        height: 48px !important;
-        min-width: 48px !important;
-      }
+      :host { --card-w: 180px; --grid-gap: 16px; --grid-pad: 16px; }
+      .library-title { font-size: 1.35rem; }
     }
   `]
 })
@@ -532,14 +524,16 @@ export class AuthorListComponent implements OnInit {
       (cursor, limit) => this.authorService.getAllAuthors(cursor, limit),
       {
         limit: 20,
-        enableAlphabeticalSeparators: true,
-        sortProperty: 'sortName'
+    enableAlphabeticalSeparators: true,
+    sortProperty: 'sortName',
+    limitProvider: () => this.calculatePageSize()
       }
     );
   }
 
   ngOnInit() {
-    // Initialization is handled by the infinite scroll service
+  // Initialization is handled by the infinite scroll service
+  window.addEventListener('resize', this.onResize, { passive: true });
   }
 
   onScroll() {
@@ -556,6 +550,29 @@ export class AuthorListComponent implements OnInit {
 
   onImageError(event: any) {
     event.target.style.display = 'none';
+  }
+
+  private onResize = () => { /* recalculated via limitProvider */ };
+
+  private getLayoutMetrics() {
+    const w = window.innerWidth;
+    if (w <= 480) return { CARD_WIDTH: 180, GRID_GAP: 16, PADDING_X: 16, CARD_HEIGHT: 320 };
+    if (w <= 768) return { CARD_WIDTH: 200, GRID_GAP: 20, PADDING_X: 24, CARD_HEIGHT: 340 };
+    if (w <= 1024) return { CARD_WIDTH: 220, GRID_GAP: 24, PADDING_X: 32, CARD_HEIGHT: 360 };
+    return { CARD_WIDTH: 240, GRID_GAP: 24, PADDING_X: 32, CARD_HEIGHT: 360 };
+  }
+
+  private calculatePageSize(): number {
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    const { CARD_WIDTH, GRID_GAP, PADDING_X, CARD_HEIGHT } = this.getLayoutMetrics();
+    const contentWidth = Math.max(0, viewportWidth - PADDING_X * 2);
+    const colWidth = CARD_WIDTH + GRID_GAP;
+    const rowHeight = CARD_HEIGHT + GRID_GAP + 120; // include bio and name area
+    const columns = Math.max(1, Math.floor((contentWidth + GRID_GAP) / colWidth));
+    const rows = Math.max(1, Math.floor((viewportHeight + GRID_GAP) / rowHeight));
+    const pageSize = columns * (rows + 1);
+    return Math.max(10, pageSize);
   }
 
   getInitials(name: string): string {

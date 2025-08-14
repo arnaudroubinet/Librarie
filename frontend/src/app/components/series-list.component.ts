@@ -77,9 +77,13 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
                      [routerLink]="['/series', asSeries(series).id]">
                   <div class="series-cover">
                     @if (getEffectiveImagePath(asSeries(series))) {
-                      <img [src]="getEffectiveImagePath(asSeries(series))!" 
+          <img [src]="getEffectiveImagePath(asSeries(series))!" 
                            [alt]="asSeries(series).name + ' cover'"
                            class="cover-image"
+            loading="lazy"
+            decoding="async"
+            fetchpriority="low"
+            (load)="onImageLoad($event)"
                            (error)="onImageError($event)">
                     } @else {
                       <div class="cover-placeholder">
@@ -87,15 +91,14 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
                         <span class="series-title-text">{{ getShortTitle(asSeries(series).name) }}</span>
                       </div>
                     }
-                    <div class="series-overlay">
-                      <div class="series-actions">
-                        <button mat-icon-button class="action-btn" (click)="viewDetails($event, asSeries(series))">
-                          <mat-icon>info</mat-icon>
-                        </button>
-                        <button mat-icon-button class="action-btn" (click)="toggleFavorite($event, asSeries(series))">
-                          <mat-icon>favorite_border</mat-icon>
-                        </button>
-                      </div>
+                    <div class="series-overlay"></div>
+                    <div class="series-actions">
+                      <button mat-icon-button class="action-btn" aria-label="Bookmark" (click)="toggleFavorite($event, asSeries(series))">
+                        <iconify-icon [icon]="getBookmarkIcon(asSeries(series))"></iconify-icon>
+                      </button>
+                      <button mat-icon-button class="action-btn" aria-label="Share" (click)="shareSeries($event, asSeries(series))">
+                        <iconify-icon icon="material-symbols-light:share"></iconify-icon>
+                      </button>
                     </div>
                   </div>
                   
@@ -142,6 +145,12 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
     </div>
   `,
   styles: [`
+    :host {
+      /* Responsive layout variables shared with /books page */
+      --card-w: 220px;
+      --grid-gap: 24px;
+      --grid-pad: 32px;
+    }
     .plex-library {
       min-height: 100vh;
       background: transparent;
@@ -268,11 +277,12 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
 
     .series-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-      gap: 24px;
-      padding: 32px;
+      grid-template-columns: repeat(auto-fill, var(--card-w));
+      gap: var(--grid-gap);
+      padding: var(--grid-pad);
       max-width: 1600px;
       margin: 0 auto;
+      justify-content: center;
     }
 
     .series-card {
@@ -284,6 +294,7 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
       position: relative;
       backdrop-filter: blur(10px);
       border: 1px solid rgba(255, 255, 255, 0.1);
+      width: var(--card-w);
     }
 
     .series-card:hover {
@@ -346,6 +357,7 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
       justify-content: center;
       opacity: 0;
       transition: opacity 0.3s ease;
+      pointer-events: none; /* don't block taps */
     }
 
     .series-card:hover .series-overlay {
@@ -355,7 +367,16 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
     .series-actions {
       display: flex;
       gap: 8px;
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      z-index: 2;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+      pointer-events: auto; /* allow tapping action buttons */
     }
+
+    .series-card:hover .series-actions { opacity: 1; }
 
     .action-btn {
       background: rgba(255, 255, 255, 0.2) !important;
@@ -448,7 +469,12 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
     }
 
     /* Responsive design */
+    @media (max-width: 1024px) {
+      :host { --card-w: 210px; }
+    }
+
     @media (max-width: 768px) {
+      :host { --card-w: 200px; --grid-gap: 20px; --grid-pad: 24px; }
       .library-header {
         padding: 24px 16px;
         flex-direction: column;
@@ -457,38 +483,18 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
       }
 
       .library-title {
-        font-size: 2rem !important;
+        font-size: 1.5rem;
       }
 
-      .series-grid {
-        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-        gap: 16px;
-        padding: 16px;
-      }
-
-      .series-actions {
-        opacity: 1; /* Always visible on mobile for touch devices */
-        position: static;
-        margin-top: 8px;
-        justify-content: center;
-      }
-
-      .action-btn {
-        width: 44px;
-        height: 44px;
-        min-width: 44px; /* Better touch target for mobile */
-      }
+      .series-actions { opacity: 1; }
+      .action-btn { width: 44px !important; height: 44px !important; min-width: 44px !important; }
     }
 
     @media (max-width: 480px) {
-      .series-grid {
-        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-        gap: 12px;
-        padding: 12px;
-      }
+      :host { --card-w: 180px; --grid-gap: 16px; --grid-pad: 16px; }
 
       .library-title {
-        font-size: 1.75rem;
+        font-size: 1.35rem;
       }
 
       .fab-search {
@@ -512,13 +518,15 @@ export class SeriesListComponent implements OnInit {
       (cursor, limit) => this.seriesService.getAllSeries(cursor, limit),
       {
         limit: 20,
-        enableAlphabeticalSeparators: false // Series don't need alphabetical separators
+        enableAlphabeticalSeparators: false,
+        limitProvider: () => this.calculatePageSize()
       }
     );
   }
 
   ngOnInit() {
-    // Initialization is handled by the infinite scroll service
+    // Recalculate on resize
+    window.addEventListener('resize', this.onResize, { passive: true });
   }
 
   onScroll() {
@@ -533,15 +541,48 @@ export class SeriesListComponent implements OnInit {
     return item as Series;
   }
 
-  viewDetails(event: Event, series: Series) {
-    event.stopPropagation();
-    // Router navigation will be handled by template
-  }
-
   toggleFavorite(event: Event, series: Series) {
     event.stopPropagation();
-    // TODO: Implement favorite functionality
-    this.snackBar.open('Favorite functionality not implemented yet', 'Close', { duration: 3000 });
+    if (!series?.id) return;
+    if (this.favorites.has(series.id)) {
+      this.favorites.delete(series.id);
+      this.snackBar.open('Removed bookmark', 'Close', { duration: 1500 });
+    } else {
+      this.favorites.add(series.id);
+      this.snackBar.open('Bookmarked', 'Close', { duration: 1500 });
+    }
+  }
+
+  shareSeries(event: Event, series: Series) {
+    event.stopPropagation();
+    const url = `${window.location.origin}/series/${series.id}`;
+    const done = () => this.snackBar.open('Link ready to share', 'Close', { duration: 2000 });
+    const fail = () => this.snackBar.open('Failed to copy link', 'Close', { duration: 2500 });
+
+    const title = series.name || 'Series';
+    if ((navigator as any).share) {
+      (navigator as any)
+        .share({ title, url })
+        .then(() => this.snackBar.open('Shared', 'Close', { duration: 1500 }))
+        .catch(() => {
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(url).then(done).catch(() => {
+              this.legacyCopy(url) ? done() : fail();
+            });
+          } else {
+            this.legacyCopy(url) ? done() : fail();
+          }
+        });
+      return;
+    }
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url).then(done).catch(() => {
+        this.legacyCopy(url) ? done() : fail();
+      });
+    } else {
+      this.legacyCopy(url) ? done() : fail();
+    }
   }
 
   getShortTitle(title: string): string {
@@ -564,5 +605,61 @@ export class SeriesListComponent implements OnInit {
 
   onImageError(event: any) {
     event.target.style.display = 'none';
+  }
+
+  onImageLoad(event: any) {
+    event.target.classList.add('loaded');
+  }
+
+  private onResize = () => {
+    // limit recalculated lazily via limitProvider
+  };
+
+  private getLayoutMetrics() {
+    const w = window.innerWidth;
+    if (w <= 480) return { CARD_WIDTH: 180, GRID_GAP: 16, PADDING_X: 16, CARD_HEIGHT: 260 };
+    if (w <= 768) return { CARD_WIDTH: 200, GRID_GAP: 20, PADDING_X: 24, CARD_HEIGHT: 280 };
+    if (w <= 1024) return { CARD_WIDTH: 210, GRID_GAP: 24, PADDING_X: 32, CARD_HEIGHT: 300 };
+    return { CARD_WIDTH: 220, GRID_GAP: 24, PADDING_X: 32, CARD_HEIGHT: 300 };
+  }
+
+  private calculatePageSize(): number {
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    const { CARD_WIDTH, GRID_GAP, PADDING_X, CARD_HEIGHT } = this.getLayoutMetrics();
+    const contentWidth = Math.max(0, viewportWidth - PADDING_X * 2);
+    const colWidth = CARD_WIDTH + GRID_GAP;
+    const rowHeight = CARD_HEIGHT + GRID_GAP + 80; // include info section approx
+    const columns = Math.max(1, Math.floor((contentWidth + GRID_GAP) / colWidth));
+    const rows = Math.max(1, Math.floor((viewportHeight + GRID_GAP) / rowHeight));
+    const pageSize = columns * (rows + 1);
+    return Math.max(10, pageSize);
+  }
+
+  getBookmarkIcon(series: Series): string {
+    return this.isBookmarked(series) ? 'material-symbols:bookmark' : 'material-symbols:bookmark-outline';
+  }
+
+  isBookmarked(series: Series): boolean {
+    return !!series?.id && this.favorites.has(series.id);
+  }
+
+  private favorites = new Set<string>();
+
+  private legacyCopy(text: string): boolean {
+    try {
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.style.position = 'fixed';
+      textarea.style.left = '-9999px';
+      document.body.appendChild(textarea);
+      textarea.focus();
+      textarea.select();
+      const success = document.execCommand('copy');
+      document.body.removeChild(textarea);
+      return success;
+    } catch {
+      return false;
+    }
   }
 }
