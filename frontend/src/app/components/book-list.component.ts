@@ -276,14 +276,13 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
       padding: 0;
     }
 
-    .books-grid {
+  .books-grid {
       display: grid;
       /* Fixed tile width to keep same size on mobile and desktop */
       grid-template-columns: repeat(auto-fill, 240px);
       justify-content: center;
       gap: 24px;
       padding: 32px;
-      max-width: 1600px;
       margin: 0 auto;
     }
 
@@ -518,6 +517,10 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
 })
 export class BookListComponent implements OnInit {
   scrollState;
+  private readonly CARD_WIDTH = 240; // px
+  private readonly CARD_HEIGHT = 360; // px
+  private readonly GRID_GAP = 24; // must match CSS gap for desktop
+  private readonly PADDING_X = 32; // horizontal padding of .books-grid
 
   constructor(
     private bookService: BookService,
@@ -529,18 +532,25 @@ export class BookListComponent implements OnInit {
       (cursor, limit) => this.bookService.getAllBooks(cursor, limit),
       {
         limit: 20,
-        enableAlphabeticalSeparators: false // Books don't need alphabetical separators
+        enableAlphabeticalSeparators: false,
+        limitProvider: () => this.calculatePageSize()
       }
     );
   }
 
   ngOnInit() {
-    // Initialization is handled by the infinite scroll service
+  // Initialization is handled by the infinite scroll service
+  // Recalculate on resize to keep loads efficient
+  window.addEventListener('resize', this.onResize, { passive: true });
   }
 
   onScroll() {
     this.scrollState.loadMore();
   }
+
+  private onResize = () => {
+    // No immediate action required; limitProvider is read on each load
+  };
 
   trackByFn(index: number, book: Book): string {
     return book.id;
@@ -621,6 +631,23 @@ export class BookListComponent implements OnInit {
 
   getPublicationYear(publicationDate: string): number {
     return new Date(publicationDate).getFullYear();
+  }
+
+  private calculatePageSize(): number {
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+
+    // Effective content width accounting for grid side padding
+    const contentWidth = Math.max(0, viewportWidth - this.PADDING_X * 2);
+    const colWidth = this.CARD_WIDTH + this.GRID_GAP;
+    const rowHeight = this.CARD_HEIGHT + this.GRID_GAP;
+
+    const columns = Math.max(1, Math.floor((contentWidth + this.GRID_GAP) / colWidth));
+    const rows = Math.max(1, Math.floor((viewportHeight + this.GRID_GAP) / rowHeight));
+
+    // Load one extra row as buffer for smoother scrolling
+    const pageSize = columns * (rows + 1);
+    return Math.max(10, pageSize);
   }
 
   getBookmarkIcon(book: Book): string {

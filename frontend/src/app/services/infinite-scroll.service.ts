@@ -44,12 +44,14 @@ export class InfiniteScrollService {
       limit?: number;
       enableAlphabeticalSeparators?: boolean;
       sortProperty?: keyof T; // property to use for alphabetical sorting (e.g., 'sortName')
+      limitProvider?: () => number; // dynamic limit per load
     } = {}
   ) {
     const { 
       limit = 20, 
       enableAlphabeticalSeparators = false, 
-      sortProperty 
+      sortProperty,
+      limitProvider
     } = options;
 
     // Internal state
@@ -119,7 +121,8 @@ export class InfiniteScrollService {
       _loading.set(true);
       _error.set(null);
 
-      loadDataFn(_nextCursor(), limit).subscribe({
+  const effectiveLimit = typeof limitProvider === 'function' ? limitProvider() : limit;
+  loadDataFn(_nextCursor(), effectiveLimit).subscribe({
         next: (response) => {
           const processedItems = addAlphabeticalSeparators(response.content);
           _items.update(existing => [...existing, ...processedItems]);
