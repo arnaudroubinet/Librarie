@@ -216,7 +216,7 @@ import { environment } from '../../environments/environment';
                       <div class="book-info">
                         <h3 class="book-title" [title]="book.title">{{ book.title }}</h3>
                         @if (book.contributorsDetailed?.['author']?.length) {
-                          <p class="book-author">{{ book.contributorsDetailed!['author'].map(a => a.name).join(', ') }}</p>
+                          <p class="book-author">{{ getBookAuthorsLine(book) }}</p>
                         }
                         @if (book.publicationDate) {
                           <p class="book-year">{{ getYear(book.publicationDate) }}</p>
@@ -307,7 +307,7 @@ import { environment } from '../../environments/environment';
                   <div class="book-info">
                     <h3 class="book-title" [title]="book.title">{{ book.title }}</h3>
                     @if (book.contributorsDetailed?.['author']?.length) {
-                      <p class="book-author">{{ book.contributorsDetailed!['author'].map(a => a.name).join(', ') }}</p>
+                      <p class="book-author">{{ getBookAuthorsLine(book) }}</p>
                     }
                     @if (book.publicationDate) {
                       <p class="book-year">{{ getYear(book.publicationDate) }}</p>
@@ -854,5 +854,14 @@ export class SearchComponent implements OnDestroy {
 
   onImageError(event: any) {
     event.target.style.display = 'none';
+  }
+
+  // Helper to render authors without arrow functions in template
+  getBookAuthorsLine(book: Book): string {
+    const authors = book.contributorsDetailed?.['author'];
+    if (Array.isArray(authors) && authors.length > 0) {
+      return authors.map(a => a.name).join(', ');
+    }
+    return '';
   }
 }

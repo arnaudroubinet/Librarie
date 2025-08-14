@@ -1,5 +1,5 @@
-import { Component, OnInit, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, signal, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
+import { CommonModule, Location } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
@@ -9,14 +9,19 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatGridListModule } from '@angular/material/grid-list';
+import { MatRippleModule } from '@angular/material/core';
 import { SeriesService } from '../services/series.service';
+import { AuthorService } from '../services/author.service';
 import { Series } from '../models/series.model';
 import { Book, CursorPageResponse } from '../models/book.model';
+import { Author } from '../models/author.model';
 import { environment } from '../../environments/environment';
+import { forkJoin, of } from 'rxjs';
 
 @Component({
   selector: 'app-series-detail',
   standalone: true,
+  schemas: [CUSTOM_ELEMENTS_SCHEMA],
   imports: [
     CommonModule,
     RouterModule,
@@ -27,7 +32,8 @@ import { environment } from '../../environments/environment';
     MatChipsModule,
     MatSnackBarModule,
     MatDividerModule,
-    MatGridListModule
+  MatGridListModule,
+  MatRippleModule
   ],
   template: `
     <div class="series-detail-container plex-library">
@@ -40,8 +46,8 @@ import { environment } from '../../environments/environment';
         <div class="series-detail">
           <div class="back-button">
             <button mat-button (click)="goBack()">
-              <mat-icon>arrow_back</mat-icon>
-              Back to Series
+              <iconify-icon icon="lets-icons:back"></iconify-icon>
+              Back
             </button>
           </div>
 
@@ -57,7 +63,7 @@ import { environment } from '../../environments/environment';
               } @else {
                 <div class="series-cover-placeholder">
                   <div class="placeholder-content">
-                    <div class="placeholder-icon">📚</div>
+                    <iconify-icon class="placeholder-icon" icon="icon-park-outline:bookshelf"></iconify-icon>
                     <div class="placeholder-text">{{ getShortTitle(series()!.name) }}</div>
                   </div>
                 </div>
@@ -119,7 +125,7 @@ import { environment } from '../../environments/environment';
           } @else {
             <div class="books-section">
               <h2 class="section-title">
-                <mat-icon>collections</mat-icon>
+                <iconify-icon icon="icon-park-outline:bookshelf"></iconify-icon>
                 Books in this Series
                 @if (books().length > 0) {
                   <span class="item-count">({{ books().length }})</span>
@@ -146,8 +152,13 @@ import { environment } from '../../environments/environment';
                         @if (book.seriesIndex) {
                           <p class="book-index">Book {{ book.seriesIndex }}</p>
                         }
-                        @if (getBookAuthors(book).length > 0) {
-                          <p class="book-authors">{{ getBookAuthors(book).join(', ') }}</p>
+                        @if (getBookAuthorsDetailed(book).length > 0) {
+                          <p class="book-authors">
+                            @for (a of getBookAuthorsDetailed(book); track a.id; let last = $last) {
+                              <a class="author-link" [routerLink]="['/authors', a.id]" (click)="$event.stopPropagation()">{{ a.name }}</a>
+                              @if (!last) {<span>, </span>}
+                            }
+                          </p>
                         }
                         @if (book.publicationDate) {
                           <p class="book-date">{{ formatDate(book.publicationDate!) }}</p>
@@ -166,23 +177,58 @@ import { environment } from '../../environments/environment';
           }
 
           <!-- Contributors Section -->
-          @if (getAllContributors().length > 0) {
+          @if (contributors().length > 0) {
             <div class="contributors-section">
               <h2 class="section-title">
-                <mat-icon>people</mat-icon>
+                <iconify-icon icon="ph:users-three-thin"></iconify-icon>
                 People who worked on this series
-                <span class="item-count">({{ getAllContributors().length }})</span>
+                <span class="item-count">({{ contributors().length }})</span>
               </h2>
               
               <div class="contributors-grid">
-                @for (contributor of getAllContributors(); track contributor.name) {
-                  <div class="contributor-card">
-                    <div class="contributor-info">
-                      <h3 class="contributor-name">{{ contributor.name }}</h3>
-                      <p class="contributor-roles">{{ contributor.roles.join(', ') }}</p>
-                      <p class="contributor-count">{{ contributor.bookCount }} {{ contributor.bookCount === 1 ? 'book' : 'books' }}</p>
+                @for (c of contributors(); track c.id ? c.id : c.name) {
+                  @if (getAuthorFor(c); as a) {
+                    <div class="author-card" matRipple [routerLink]="['/authors', a.id]">
+                      <div class="card-container">
+                        <div class="author-photo">
+                          @if (a.metadata?.['imageUrl'] && !hasAuthorImageError(a.id)) {
+                            <img [src]="getAuthorImageUrl(a)" [alt]="a.name + ' photo'" class="photo-image" (error)="onAuthorImageError($event, a.id)">
+                          } @else {
+                            <div class="photo-placeholder">
+                              <mat-icon>person</mat-icon>
+                              <span class="name-text">{{ getInitials(a.name) }}</span>
+                            </div>
+                          }
+                          <div class="photo-overlay">
+                            <mat-icon class="view-icon">visibility</mat-icon>
+                          </div>
+                        </div>
+                        <div class="author-info">
+                          <h3 class="author-name" [title]="a.name">{{ a.name }}</h3>
+                          @if (a.bio?.['en']) {
+                            <p class="author-bio">{{ getShortBio(a.bio!['en']) }}</p>
+                          }
+                          @if (a.birthDate || a.deathDate) {
+                            <p class="author-dates">{{ formatAuthorDates(a.birthDate, a.deathDate) }}</p>
+                          }
+                        </div>
+                      </div>
                     </div>
-                  </div>
+                  } @else {
+                    <div class="author-card">
+                      <div class="card-container">
+                        <div class="author-photo">
+                          <div class="photo-placeholder">
+                            <mat-icon>person</mat-icon>
+                            <span class="name-text">{{ getInitials(c.name) }}</span>
+                          </div>
+                        </div>
+                        <div class="author-info">
+                          <h3 class="author-name" [title]="c.name">{{ c.name }}</h3>
+                        </div>
+                      </div>
+                    </div>
+                  }
                 }
               </div>
             </div>
@@ -190,11 +236,12 @@ import { environment } from '../../environments/environment';
         </div>
       } @else {
         <div class="error-state">
-          <mat-icon>error</mat-icon>
+          <mat-icon class="error-icon">error</mat-icon>
           <h2>Series not found</h2>
           <p>The series you are looking for could not be found.</p>
           <button mat-raised-button color="primary" (click)="goBack()">
-            Back to Series
+            <iconify-icon icon="lets-icons:back"></iconify-icon>
+            Back
           </button>
         </div>
       }
@@ -221,17 +268,12 @@ import { environment } from '../../environments/environment';
       min-height: 200px;
     }
 
-    .loading-container p, .error-state p, .section-loading p {
-      margin-top: 16px;
-      color: #666;
-    }
-
-    .error-state h2 {
-      margin: 16px 0;
-      color: #333;
-    }
+    .loading-container p, .error-state p, .section-loading p { margin-top: 16px; color: #cfcfcf; }
+    .error-state h2 { margin: 16px 0; color: #ffffff; }
+    .error-icon { font-size: 4rem !important; width: 4rem !important; height: 4rem !important; color: #ff4444; margin-bottom: 16px; }
 
     .back-button {
+      /* Match all books page header spacing and remove separator */
       padding: 24px 20px;
       position: sticky;
       top: 0;
@@ -240,6 +282,18 @@ import { environment } from '../../environments/environment';
       z-index: 10;
       border-bottom: none;
       margin-bottom: 0;
+    }
+
+    .back-button button { color: #ffffff !important; font-weight: 500 !important; }
+
+    /* Iconify icons inside buttons spacing/size */
+    .back-button iconify-icon,
+    .section-title iconify-icon,
+    .error-state iconify-icon {
+      margin-right: 8px;
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
     }
 
     /* Series layout */
@@ -452,26 +506,27 @@ import { environment } from '../../environments/environment';
     }
 
   .book-index { font-weight: 500; color: #4fc3f7; }
+  .book-authors .author-link { color: #b3e5fc; text-decoration: none; }
+  .book-authors .author-link:hover { text-decoration: underline; }
 
-    /* Contributors Grid */
-    .contributors-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-      gap: 16px;
-    }
-
-    .contributor-card {
-      background: rgba(255, 255, 255, 0.05);
-      border-radius: 12px;
-      padding: 16px;
-      border: 1px solid rgba(255, 255, 255, 0.1);
-    }
-
-  .contributor-name { font-size: 16px; font-weight: 600; margin: 0 0 8px 0; color: #ffffff; }
-
-  .contributor-roles { font-size: 14px; color: #cfcfcf; margin: 4px 0; font-style: italic; }
-
-  .contributor-count { font-size: 12px; color: #cfcfcf; opacity: 0.8; margin: 4px 0 0 0; }
+  /* Contributors Grid using author-list styles */
+  .contributors-grid { display: grid; grid-template-columns: repeat(auto-fill, 240px); gap: 16px; justify-content: center; }
+  .author-card { background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.04) 100%); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 16px; overflow: hidden; transition: all 0.3s ease; cursor: pointer; position: relative; backdrop-filter: blur(10px); width: 240px; }
+  .author-card:hover { transform: translateY(-4px); box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3); border-color: rgba(33, 150, 243, 0.5); }
+  .card-container { padding: 20px; }
+  .author-photo { position: relative; width: 100%; height: 200px; border-radius: 12px; overflow: hidden; margin-bottom: 16px; background: linear-gradient(135deg, #333 0%, #555 100%); }
+  .photo-image { width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s ease; }
+  .author-card:hover .photo-image { transform: scale(1.05); }
+  .photo-placeholder { width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #888; background: linear-gradient(135deg, #2a2a2a 0%, #1e1e1e 100%); }
+  .photo-placeholder mat-icon { font-size: 4rem; margin-bottom: 8px; }
+  .name-text { font-size: 1.2rem; font-weight: 600; }
+  .photo-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6); display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.3s ease; }
+  .author-card:hover .photo-overlay { opacity: 1; }
+  .view-icon { color: white; font-size: 2rem; }
+  .author-info { text-align: center; }
+  .author-name { font-size: 1.3rem; font-weight: 500; margin: 0 0 8px 0; color: #ffffff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .author-bio { font-size: 0.9rem; line-height: 1.4; margin: 0 0 8px 0; opacity: 0.8; color: #e3f2fd; height: 2.8em; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+  .author-dates { font-size: 0.85rem; margin: 0; opacity: 0.8; color: #e3f2fd; }
 
     /* Empty State */
   .empty-state { text-align: center; padding: 40px; color: #cfcfcf; }
@@ -501,9 +556,7 @@ import { environment } from '../../environments/environment';
         gap: 16px;
       }
       
-      .contributors-grid {
-        grid-template-columns: 1fr;
-      }
+  .contributors-grid { grid-template-columns: repeat(auto-fill, 200px); gap: 16px; justify-content: center; }
     }
   `]
 })
@@ -511,14 +564,20 @@ export class SeriesDetailComponent implements OnInit {
   readonly apiUrl = environment.apiUrl;
   series = signal<Series | null>(null);
   books = signal<Book[]>([]);
+  // Aggregated contributors and loaded author details
+  contributors = signal<Array<{ id?: string; name: string; roles: string[]; bookCount: number }>>([]);
+  authorsMap = signal<Record<string, Author>>({});
+  private authorImageErrors = new Set<string>();
   loading = signal(true);
   booksLoading = signal(true);
 
   constructor(
     private route: ActivatedRoute,
     private router: Router,
-    private seriesService: SeriesService,
-    private snackBar: MatSnackBar
+  private seriesService: SeriesService,
+  private authorService: AuthorService,
+  private snackBar: MatSnackBar,
+  private location: Location
   ) {}
 
   ngOnInit() {
@@ -554,6 +613,10 @@ export class SeriesDetailComponent implements OnInit {
       next: (response: CursorPageResponse<Book>) => {
         this.books.set(response.content || []);
         this.booksLoading.set(false);
+  // After books are loaded, aggregate contributors and fetch author details
+  const agg = this.getAllContributors();
+  this.contributors.set(agg);
+  this.loadContributorAuthors(agg);
       },
       error: (error) => {
         console.error('Error loading series books:', error);
@@ -566,7 +629,11 @@ export class SeriesDetailComponent implements OnInit {
   }
 
   goBack() {
-    this.router.navigate(['/series']);
+    if (window.history.length > 1) {
+      this.location.back();
+    } else {
+      this.router.navigate(['/series']);
+    }
   }
 
   getEffectiveImagePath(series: Series): string | null {
@@ -599,30 +666,113 @@ export class SeriesDetailComponent implements OnInit {
     return [];
   }
 
-  getAllContributors(): Array<{name: string, roles: string[], bookCount: number}> {
-    const contributorMap = new Map<string, {roles: Set<string>, bookCount: number}>();
-    
+  getBookAuthorsDetailed(book: Book): Array<{ id: string; name: string }> {
+    const contribs = book.contributorsDetailed?.['author'];
+    return Array.isArray(contribs) ? contribs : [];
+  }
+
+  getAllContributors(): Array<{ id?: string; name: string; roles: string[]; bookCount: number }> {
+    const contributorMap = new Map<string, { id?: string; name: string; roles: Set<string>; bookCount: number }>();
+
     this.books().forEach(book => {
-  if (book.contributorsDetailed) {
+      if (book.contributorsDetailed) {
         Object.entries(book.contributorsDetailed).forEach(([role, list]) => {
-          list.forEach(({ name }) => {
-            if (!contributorMap.has(name)) {
-              contributorMap.set(name, { roles: new Set(), bookCount: 0 });
+          list.forEach(({ id, name }) => {
+            const key = id || name;
+            if (!contributorMap.has(key)) {
+              contributorMap.set(key, { id, name, roles: new Set(), bookCount: 0 });
             }
-            const contributor = contributorMap.get(name)!;
+            const contributor = contributorMap.get(key)!;
             contributor.roles.add(role);
             contributor.bookCount++;
           });
         });
-  }
+      }
     });
 
-    return Array.from(contributorMap.entries()).map(([name, data]) => ({
-      name,
-      roles: Array.from(data.roles).map(role => 
-        role.charAt(0).toUpperCase() + role.slice(1)
-      ),
-      bookCount: data.bookCount
-    })).sort((a, b) => b.bookCount - a.bookCount);
+    return Array.from(contributorMap.values())
+      .map(c => ({
+        id: c.id,
+        name: c.name,
+        roles: Array.from(c.roles).map(role => role.charAt(0).toUpperCase() + role.slice(1)),
+        bookCount: c.bookCount,
+      }))
+      .sort((a, b) => b.bookCount - a.bookCount || a.name.localeCompare(b.name));
+  }
+
+  getInitials(name: string): string {
+    return name
+      .split(' ')
+      .map(part => part.charAt(0))
+      .join('')
+      .toUpperCase()
+      .substring(0, 2);
+  }
+
+  private loadContributorAuthors(contributors: Array<{ id?: string; name?: string }>) {
+    const ids = Array.from(new Set(contributors.map(c => c.id).filter((id): id is string => !!id)));
+    const names = Array.from(new Set(contributors.filter(c => !c.id && c.name).map(c => c.name!)));
+
+    const idCalls = ids.map(id => this.authorService.getAuthorById(id));
+    const nameCalls = names.map(n => this.authorService.searchAuthorsSimple(n));
+
+    forkJoin([
+      idCalls.length ? forkJoin(idCalls) : of([] as Author[]),
+      nameCalls.length ? forkJoin(nameCalls) : of([] as Author[][])
+    ]).subscribe({
+      next: ([authors, searchResults]: [Author[], Author[][]]) => {
+        const map: Record<string, Author> = {};
+        authors.forEach(a => { map[a.id] = a; });
+        searchResults.forEach((arr, idx) => {
+          const name = names[idx];
+          if (!arr || arr.length === 0) return;
+          const match = arr.find(a => a.name.toLowerCase() === name.toLowerCase()) || arr[0];
+          if (match) {
+            map['name:' + name.toLowerCase()] = match;
+          }
+        });
+        this.authorsMap.set(map);
+      },
+      error: (err) => {
+        console.error('Failed to load author details for contributors', err);
+      }
+    });
+  }
+
+  getAuthorFor(c: { id?: string; name?: string }): Author | null {
+    const map = this.authorsMap();
+    if (c.id && map[c.id]) return map[c.id];
+    if (c.name && map['name:' + c.name.toLowerCase()]) return map['name:' + c.name.toLowerCase()];
+    return null;
+  }
+
+  hasAuthorImageError(authorId: string): boolean {
+    return this.authorImageErrors.has(authorId);
+  }
+
+  getAuthorImageUrl(author: Author): string {
+    const raw = author.metadata?.['imageUrl'];
+    if (!raw) return '';
+    // If it's an absolute URL (http/https/data), return as-is
+    if (/^(https?:)?\/\//i.test(raw) || raw.startsWith('data:')) return raw;
+    // Otherwise treat as relative to API base
+    return `${this.apiUrl}${raw.startsWith('/') ? '' : '/'}${raw}`;
+  }
+
+  formatAuthorDates(birthDate?: string, deathDate?: string): string {
+    const birth = birthDate ? new Date(birthDate).getFullYear() : '?';
+    const death = deathDate ? new Date(deathDate).getFullYear() : '';
+    return death ? `${birth} - ${death}` : `Born ${birth}`;
+  }
+
+  getShortBio(bio: string): string {
+    if (!bio) return '';
+    const maxLength = 120;
+    return bio.length > maxLength ? bio.substring(0, maxLength) + '...' : bio;
+  }
+
+  onAuthorImageError(event: any, authorId?: string) {
+    if (authorId) this.authorImageErrors.add(authorId);
+    event.target.style.display = 'none';
   }
 }
