@@ -162,27 +162,81 @@ public class BookRepositoryAdapter implements BookRepository {
     
     @Override
     public CursorPageResult<Book> findByCriteria(BookSearchCriteria criteria, String cursor, int limit) {
-        // For now, let's implement a simpler approach by getting all books and filtering in memory
-        // This is not optimal for large datasets, but works for demo purposes
-        
-        PanacheQuery<Book> baseQuery;
-        List<Object> parameters = new ArrayList<>();
         StringBuilder queryBuilder = new StringBuilder();
+        List<Object> parameters = new ArrayList<>();
+        int paramIndex = 1;
         
-        // Start with basic query
+        // Build WHERE clause based on criteria
+        List<String> conditions = new ArrayList<>();
+        
+        // Handle contributor search using proper JPA joins
+        if (criteria.getContributorsContain() != null && !criteria.getContributorsContain().isEmpty()) {
+            StringBuilder contributorCondition = new StringBuilder();
+            contributorCondition.append("id IN (SELECT DISTINCT b.id FROM Book b ");
+            contributorCondition.append("JOIN b.originalWorks bow ");
+            contributorCondition.append("JOIN bow.originalWork ow ");
+            contributorCondition.append("JOIN ow.authors owa ");
+            contributorCondition.append("JOIN owa.author a WHERE ");
+            
+            List<String> authorConditions = new ArrayList<>();
+            for (String contributorSearch : criteria.getContributorsContain()) {
+                authorConditions.add("LOWER(a.name) LIKE LOWER(?" + paramIndex + ")");
+                parameters.add("%" + contributorSearch + "%");
+                paramIndex++;
+            }
+            contributorCondition.append(String.join(" OR ", authorConditions));
+            contributorCondition.append(")");
+            conditions.add(contributorCondition.toString());
+        }
+        
+        // Handle title search
+        if (criteria.getTitleContains() != null && !criteria.getTitleContains().trim().isEmpty()) {
+            conditions.add("LOWER(title) LIKE LOWER(?" + paramIndex + ")");
+            parameters.add("%" + criteria.getTitleContains() + "%");
+            paramIndex++;
+        }
+        
+        // Handle language filter
+        if (criteria.getLanguageEquals() != null && !criteria.getLanguageEquals().trim().isEmpty()) {
+            conditions.add("language.name = ?" + paramIndex);
+            parameters.add(criteria.getLanguageEquals());
+            paramIndex++;
+        }
+        
+        // Handle publisher filter
+        if (criteria.getPublisherContains() != null && !criteria.getPublisherContains().trim().isEmpty()) {
+            conditions.add("LOWER(publisher.name) LIKE LOWER(?" + paramIndex + ")");
+            parameters.add("%" + criteria.getPublisherContains() + "%");
+            paramIndex++;
+        }
+        
+        // Handle series filter
+        if (criteria.getSeriesContains() != null && !criteria.getSeriesContains().trim().isEmpty()) {
+            conditions.add("id IN (SELECT DISTINCT b.id FROM Book b JOIN b.series bs JOIN bs.series s WHERE LOWER(s.name) LIKE LOWER(?" + paramIndex + "))");
+            parameters.add("%" + criteria.getSeriesContains() + "%");
+            paramIndex++;
+        }
+        
+        // Handle cursor pagination
         if (cursor != null && !cursor.trim().isEmpty()) {
             try {
                 CursorUtils.CursorData cursorData = cursorUtils.parseCursor(cursor);
                 UUID lastId = UUID.fromString(cursorData.getId());
                 OffsetDateTime lastTimestamp = OffsetDateTime.parse(cursorData.getTimestamp());
                 
-                queryBuilder.append("(createdAt > ?1) OR (createdAt = ?1 AND id > ?2)");
+                conditions.add("((createdAt > ?" + paramIndex + ") OR (createdAt = ?" + paramIndex + " AND id > ?" + (paramIndex + 1) + "))");
+                parameters.add(lastTimestamp);
                 parameters.add(lastTimestamp);
                 parameters.add(lastId);
+                paramIndex += 3;
             } catch (Exception e) {
-                // Invalid cursor, ignore and start from beginning
-                queryBuilder.append("1=1");
+                // Invalid cursor, ignore
             }
+        }
+        
+        // Build the final query
+        if (!conditions.isEmpty()) {
+            queryBuilder.append(String.join(" AND ", conditions));
         } else {
             queryBuilder.append("1=1");
         }
@@ -190,65 +244,17 @@ public class BookRepositoryAdapter implements BookRepository {
         // Add sorting
         String sortField = criteria.getSortBy() != null ? criteria.getSortBy() : "createdAt";
         String sortDirection = criteria.getSortDirection() != null ? criteria.getSortDirection() : "desc";
-        queryBuilder.append(" ORDER BY ").append(sortField).append(" ").append(sortDirection).append(", id ").append(sortDirection);
-        
-        // Get more books than needed to allow for filtering
-        baseQuery = Book.find(queryBuilder.toString(), parameters.toArray())
-                        .page(Page.ofSize(Math.min(limit * 10, 1000))); // Get more for filtering
-        
-        List<Book> allBooks = baseQuery.list();
-        List<Book> filteredBooks = new ArrayList<>();
-        
-        // Apply filtering
-        for (Book book : allBooks) {
-            boolean matches = true;
-            
-            // Filter by contributors if specified
-            if (matches && criteria.getContributorsContain() != null && !criteria.getContributorsContain().isEmpty()) {
-                matches = false; // Start with false, need to find a match
-                
-                // Check each contributor criteria
-                for (String contributorSearch : criteria.getContributorsContain()) {
-                    // Use the extractContributorsFromBook logic or check title for now
-                    if (book.getTitle() != null && book.getTitle().toLowerCase().contains(contributorSearch.toLowerCase())) {
-                        matches = true;
-                        break;
-                    }
-                    // For demo purposes, also check if it's in the title sort field which might contain author info
-                    if (book.getTitleSort() != null && book.getTitleSort().toLowerCase().contains(contributorSearch.toLowerCase())) {
-                        matches = true;
-                        break;
-                    }
-                }
-            }
-            
-            // Filter by title if specified
-            if (matches && criteria.getTitleContains() != null && !criteria.getTitleContains().trim().isEmpty()) {
-                matches = book.getTitle() != null && 
-                         book.getTitle().toLowerCase().contains(criteria.getTitleContains().toLowerCase());
-            }
-            
-            // Filter by language if specified
-            if (matches && criteria.getLanguageEquals() != null && !criteria.getLanguageEquals().trim().isEmpty()) {
-                matches = book.getLanguage() != null && book.getLanguage().getName() != null &&
-                         criteria.getLanguageEquals().equals(book.getLanguage().getName());
-            }
-            
-            // Filter by publisher if specified
-            if (matches && criteria.getPublisherContains() != null && !criteria.getPublisherContains().trim().isEmpty()) {
-                matches = book.getPublisher() != null && book.getPublisher().getName() != null &&
-                         book.getPublisher().getName().toLowerCase().contains(criteria.getPublisherContains().toLowerCase());
-            }
-            
-            if (matches) {
-                filteredBooks.add(book);
-                if (filteredBooks.size() >= limit + 1) { // Get one extra for hasNext check
-                    break;
-                }
-            }
+        queryBuilder.append(" ORDER BY ").append(sortField).append(" ").append(sortDirection);
+        if (!"id".equals(sortField)) {
+            queryBuilder.append(", id ").append(sortDirection);
         }
         
-        return buildCursorPageResult(filteredBooks, limit, cursor);
+        // Execute the query
+        PanacheQuery<Book> query = Book.find(queryBuilder.toString(), parameters.toArray())
+                                      .page(Page.ofSize(limit + 1)); // Get one extra to check for next page
+        
+        List<Book> books = query.list();
+        return buildCursorPageResult(books, limit, cursor);
     }
     
     /**
