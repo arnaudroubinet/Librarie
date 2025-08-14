@@ -22,6 +22,16 @@ html, body {
   --text-secondary: rgba(0, 0, 0, 0.54);
   --font-family-primary: 'Poppins', 'Inter', 'Roboto', sans-serif;
   --font-family-display: 'Inter', 'Poppins', 'Roboto', sans-serif;
+  
+  /* Material Design 3 variables */
+  --m3-primary: #6750A4;
+  --m3-on-primary: #FFFFFF;
+  --m3-surface: #FEF7FF;
+  --m3-on-surface: #1D1B20;
+  --m3-on-surface-variant: #49454F;
+  --m3-surface-container: #F3EDF7;
+  --m3-outline: #CAC4D0;
+  --m3-outline-variant: #ECE6F0;
 }
 
 /* Utility classes */
