@@ -64,18 +64,41 @@ import { UnifiedSearchResult } from '../models/search.model';
               <mat-label>Quick Search</mat-label>
               <input matInput 
                      formControlName="quickSearch"
-                     placeholder="Search books, authors, series, or ISBN..."
-                     (keyup.enter)="performQuickSearch()">
+                     placeholder="Search books, authors, series, or ISBN... (Press / to focus)"
+                     (keyup.enter)="performQuickSearch()"
+                     (keyup)="onSearchInput($event)"
+                     autocomplete="off"
+                     #searchInput>
               <mat-icon matSuffix>search</mat-icon>
+              <mat-hint>Use keywords like "author:name", "series:title", "year:2023"</mat-hint>
             </mat-form-field>
             <button mat-raised-button 
-                    color="accent" 
+                    color="primary" 
                     type="button"
                     (click)="performQuickSearch()"
                     [disabled]="!searchForm.get('quickSearch')?.value?.trim()">
+              <mat-icon>search</mat-icon>
               Search
             </button>
           </div>
+
+          <!-- Search Suggestions -->
+          @if (searchSuggestions().length > 0 && showSuggestions()) {
+            <div class="search-suggestions">
+              <div class="suggestions-header">
+                <mat-icon>auto_awesome</mat-icon>
+                Suggestions
+              </div>
+              <div class="suggestions-list">
+                @for (suggestion of searchSuggestions(); track suggestion) {
+                  <button class="suggestion-item" (click)="applySuggestion(suggestion)">
+                    <mat-icon>history</mat-icon>
+                    {{ suggestion }}
+                  </button>
+                }
+              </div>
+            </div>
+          }
 
           <!-- Advanced Search -->
           <mat-expansion-panel class="advanced-panel">
@@ -419,96 +442,180 @@ import { UnifiedSearchResult } from '../models/search.model';
   styles: [`
     .plex-search {
       min-height: 100vh;
-      background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
-      color: #ffffff;
+      background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+      color: var(--text-primary);
+      font-family: var(--font-family-primary);
     }
 
     .search-header {
-      background: linear-gradient(135deg, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.4) 100%);
-      padding: 40px 32px;
-      border-bottom: 1px solid #333;
+      background: linear-gradient(135deg, var(--primary-color) 0%, #1565c0 100%);
+      padding: 48px 32px;
+      color: white;
+      box-shadow: 0 4px 20px rgba(25, 118, 210, 0.15);
     }
 
     .search-title {
-      font-size: 2.5rem;
-      font-weight: 300;
-      margin: 0 0 8px 0;
+      font-size: 2.75rem;
+      font-weight: 400;
+      margin: 0 0 12px 0;
       display: flex;
       align-items: center;
-      gap: 16px;
+      gap: 20px;
+      font-family: var(--font-family-display);
+      letter-spacing: -0.02em;
     }
 
     .title-icon {
-      font-size: 2.5rem;
-      width: 2.5rem;
-      height: 2.5rem;
-      color: #e5a00d;
+      font-size: 3rem;
+      width: 3rem;
+      height: 3rem;
+      color: #ffffff;
+      opacity: 0.95;
     }
 
     .search-subtitle {
-      font-size: 1.1rem;
-      color: #ccc;
+      font-size: 1.2rem;
+      color: rgba(255, 255, 255, 0.9);
       margin: 0;
       font-weight: 300;
     }
 
     .search-content {
-      padding: 32px;
+      padding: 40px 32px;
+      max-width: 1200px;
+      margin: 0 auto;
     }
 
     .search-form {
-      margin-bottom: 32px;
+      margin-bottom: 40px;
     }
 
     .quick-search-section {
       display: flex;
       gap: 16px;
       align-items: flex-end;
-      margin-bottom: 24px;
+      margin-bottom: 32px;
+      background: white;
+      padding: 24px;
+      border-radius: 12px;
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+      border: 1px solid #e0e0e0;
     }
 
     .search-field {
       flex: 1;
     }
 
+    /* Search Suggestions */
+    .search-suggestions {
+      background: white;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      margin-bottom: 24px;
+      overflow: hidden;
+      z-index: 100;
+    }
+
+    .suggestions-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 16px;
+      background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+      border-bottom: 1px solid #e0e0e0;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .suggestions-header mat-icon {
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+      color: var(--primary-color);
+    }
+
+    .suggestions-list {
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    .suggestion-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      width: 100%;
+      padding: 12px 16px;
+      border: none;
+      background: transparent;
+      text-align: left;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+      font-size: 14px;
+      color: var(--text-primary);
+    }
+
+    .suggestion-item:hover {
+      background: rgba(25, 118, 210, 0.04);
+    }
+
+    .suggestion-item mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+      color: #9e9e9e;
+    }
+
     .advanced-panel {
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid #333;
+      background: white;
+      border: 1px solid #e0e0e0;
+      border-radius: 12px;
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+      overflow: hidden;
     }
 
     .advanced-form {
-      padding: 16px 0;
+      padding: 24px;
     }
 
     .form-row {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 16px;
-      margin-bottom: 16px;
+      gap: 20px;
+      margin-bottom: 20px;
     }
 
     .advanced-actions {
       display: flex;
       gap: 16px;
-      margin-top: 24px;
+      margin-top: 32px;
+      padding-top: 20px;
+      border-top: 1px solid #f0f0f0;
     }
 
     .results-header {
-      margin-bottom: 24px;
-      padding: 16px 0;
-      border-bottom: 1px solid #333;
+      margin-bottom: 32px;
+      padding: 24px;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+      border: 1px solid #e0e0e0;
     }
 
     .results-header h2 {
       margin: 0 0 8px 0;
-      color: #fff;
-      font-weight: 400;
+      color: var(--text-primary);
+      font-weight: 500;
+      font-family: var(--font-family-display);
     }
 
     .results-header p {
       margin: 0;
-      color: #ccc;
-      font-style: italic;
+      color: var(--text-secondary);
+      font-style: normal;
     }
 
     .loading-section {
@@ -516,20 +623,24 @@ import { UnifiedSearchResult } from '../models/search.model';
       justify-content: center;
       align-items: center;
       min-height: 40vh;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
     }
 
     .loading-content {
       text-align: center;
+      padding: 40px;
     }
 
     .loading-content h3 {
       margin: 24px 0 8px 0;
-      color: #fff;
-      font-weight: 400;
+      color: var(--text-primary);
+      font-weight: 500;
     }
 
     .loading-content p {
-      color: #ccc;
+      color: var(--text-secondary);
       margin: 0;
     }
 
@@ -538,49 +649,61 @@ import { UnifiedSearchResult } from '../models/search.model';
       justify-content: center;
       align-items: center;
       min-height: 40vh;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
     }
 
     .empty-content {
       text-align: center;
+      padding: 40px;
     }
 
     .empty-icon {
       font-size: 80px;
       width: 80px;
       height: 80px;
-      color: #555;
+      color: #9e9e9e;
       margin-bottom: 24px;
     }
 
     .empty-content h2 {
-      color: #fff;
+      color: var(--text-primary);
       margin: 0 0 16px 0;
-      font-weight: 400;
+      font-weight: 500;
     }
 
     .empty-content p {
-      color: #ccc;
+      color: var(--text-secondary);
       margin: 0;
       line-height: 1.6;
     }
 
     .books-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
       gap: 24px;
       margin-bottom: 32px;
+      padding: 24px;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+      border: 1px solid #e0e0e0;
     }
 
     .book-poster {
       cursor: pointer;
       transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
       position: relative;
-      border-radius: 8px;
+      border-radius: 12px;
       overflow: hidden;
+      background: white;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     }
 
     .book-poster:hover {
-      transform: scale(1.05) translateY(-8px);
+      transform: translateY(-4px);
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
       z-index: 10;
     }
 
@@ -590,8 +713,8 @@ import { UnifiedSearchResult } from '../models/search.model';
       aspect-ratio: 2/3;
       border-radius: 8px;
       overflow: hidden;
-      background: linear-gradient(135deg, #333 0%, #555 100%);
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+      background: linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     }
 
     .cover-image {
@@ -607,8 +730,8 @@ import { UnifiedSearchResult } from '../models/search.model';
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      background: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%);
-      color: #777;
+      background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+      color: #6c757d;
     }
 
     .cover-placeholder mat-icon {
@@ -616,7 +739,7 @@ import { UnifiedSearchResult } from '../models/search.model';
       width: 48px;
       height: 48px;
       margin-bottom: 12px;
-      color: #666;
+      color: #adb5bd;
     }
 
     .title-text {
@@ -625,6 +748,7 @@ import { UnifiedSearchResult } from '../models/search.model';
       padding: 0 8px;
       line-height: 1.2;
       font-weight: 500;
+      color: var(--text-secondary);
     }
 
     .cover-overlay {
@@ -633,7 +757,7 @@ import { UnifiedSearchResult } from '../models/search.model';
       left: 0;
       right: 0;
       bottom: 0;
-      background: rgba(0, 0, 0, 0.6);
+      background: rgba(25, 118, 210, 0.9);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -649,27 +773,28 @@ import { UnifiedSearchResult } from '../models/search.model';
       font-size: 48px;
       width: 48px;
       height: 48px;
-      color: #e5a00d;
+      color: white;
     }
 
     .book-info {
-      padding: 12px 0;
+      padding: 16px;
     }
 
     .book-title {
       font-size: 14px;
       font-weight: 600;
-      margin: 0 0 4px 0;
-      color: #fff;
+      margin: 0 0 6px 0;
+      color: var(--text-primary);
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      line-height: 1.4;
     }
 
     .book-author {
       font-size: 12px;
-      color: #ccc;
-      margin: 0 0 4px 0;
+      color: var(--text-secondary);
+      margin: 0 0 6px 0;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -677,111 +802,137 @@ import { UnifiedSearchResult } from '../models/search.model';
 
     .book-year {
       font-size: 11px;
-      color: #888;
-      margin: 0 0 8px 0;
+      color: #9e9e9e;
+      margin: 0 0 12px 0;
     }
 
     .book-metadata {
       display: flex;
-      gap: 4px;
+      gap: 6px;
       flex-wrap: wrap;
     }
 
     .metadata-chip {
       font-size: 10px;
-      height: 18px;
-      line-height: 18px;
-      padding: 0 6px;
-      border-radius: 9px;
+      height: 20px;
+      line-height: 20px;
+      padding: 0 8px;
+      border-radius: 10px;
+      font-weight: 500;
     }
 
     .language-chip {
-      background: rgba(229, 160, 13, 0.2);
-      color: #e5a00d;
+      background: rgba(25, 118, 210, 0.1);
+      color: var(--primary-color);
+      border: 1px solid rgba(25, 118, 210, 0.2);
     }
 
     .format-chip {
-      background: rgba(255, 255, 255, 0.1);
-      color: #ccc;
+      background: rgba(158, 158, 158, 0.1);
+      color: #616161;
+      border: 1px solid rgba(158, 158, 158, 0.2);
     }
 
     .pagination-section {
-      padding: 32px 0;
-      border-top: 1px solid #333;
+      padding: 32px 24px;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+      border: 1px solid #e0e0e0;
     }
 
     .pagination-controls {
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 24px;
+      gap: 16px;
     }
 
     .nav-button {
-      background: rgba(255, 255, 255, 0.1);
-      color: #fff;
-      border: 1px solid #555;
+      background: white;
+      color: var(--primary-color);
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      min-width: 120px;
     }
 
     .nav-button:hover {
-      background: rgba(229, 160, 13, 0.2);
-      border-color: #e5a00d;
+      background: rgba(25, 118, 210, 0.04);
+      border-color: var(--primary-color);
+    }
+
+    .nav-button:disabled {
+      background: #f5f5f5;
+      color: #bdbdbd;
+      border-color: #e0e0e0;
     }
 
     /* Unified Search Styles */
     .results-section {
       margin-bottom: 32px;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+      border: 1px solid #e0e0e0;
+      overflow: hidden;
     }
 
     .section-title {
       display: flex;
       align-items: center;
-      gap: 8px;
-      font-size: 1.4rem;
+      gap: 12px;
+      font-size: 1.5rem;
       font-weight: 500;
-      margin: 0 0 16px 0;
-      color: #fff;
-      border-bottom: 2px solid #e5a00d;
-      padding-bottom: 8px;
+      margin: 0;
+      color: var(--text-primary);
+      background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+      padding: 20px 24px;
+      border-bottom: 1px solid #e0e0e0;
+      font-family: var(--font-family-display);
     }
 
     .section-title mat-icon {
-      color: #e5a00d;
+      color: var(--primary-color);
+      font-size: 1.5rem;
+      width: 1.5rem;
+      height: 1.5rem;
     }
 
     .series-grid, .authors-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-      gap: 16px;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 20px;
+      padding: 24px;
     }
 
     .series-item, .author-item {
-      background: rgba(255, 255, 255, 0.08);
-      border: 1px solid #333;
+      background: white;
+      border: 1px solid #e0e0e0;
       border-radius: 8px;
-      padding: 16px;
-      cursor: pointer;
+      padding: 20px;
       transition: all 0.2s ease;
     }
 
     .series-item:hover, .author-item:hover {
-      background: rgba(255, 255, 255, 0.12);
-      border-color: #e5a00d;
+      background: rgba(25, 118, 210, 0.02);
+      border-color: rgba(25, 118, 210, 0.3);
       transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     }
 
     .series-name, .author-name {
       font-size: 1.1rem;
       font-weight: 600;
       margin: 0 0 8px 0;
-      color: #fff;
+      color: var(--text-primary);
+      font-family: var(--font-family-display);
     }
 
     .series-description, .author-bio {
       font-size: 14px;
-      color: #ccc;
-      margin: 0 0 8px 0;
-      line-height: 1.4;
+      color: var(--text-secondary);
+      margin: 0 0 12px 0;
+      line-height: 1.5;
       display: -webkit-box;
       -webkit-line-clamp: 2;
       -webkit-box-orient: vertical;
@@ -791,61 +942,123 @@ import { UnifiedSearchResult } from '../models/search.model';
 
     .series-count, .author-dates {
       font-size: 12px;
-      color: #888;
+      color: #9e9e9e;
       margin: 0;
+      font-weight: 500;
     }
-
     .back-button {
-      background: rgba(229, 160, 13, 0.15);
-      border-color: #e5a00d;
-      color: #e5a00d;
+      background: rgba(25, 118, 210, 0.1);
+      border-color: var(--primary-color);
+      color: var(--primary-color);
+      border-radius: 8px;
     }
 
     .back-button:hover {
-      background: rgba(229, 160, 13, 0.3);
+      background: rgba(25, 118, 210, 0.15);
     }
 
+    /* Mobile Responsive Styles */
     @media (max-width: 768px) {
       .search-header {
-        padding: 24px 16px;
+        padding: 32px 16px;
       }
 
       .search-content {
-        padding: 16px;
+        padding: 20px 16px;
       }
 
       .search-title {
-        font-size: 2rem;
+        font-size: 2.2rem;
+        gap: 16px;
+      }
+
+      .title-icon {
+        font-size: 2.5rem;
+        width: 2.5rem;
+        height: 2.5rem;
       }
 
       .quick-search-section {
         flex-direction: column;
         align-items: stretch;
-        gap: 12px;
+        gap: 16px;
+        padding: 20px;
       }
 
       .form-row {
         grid-template-columns: 1fr;
-        gap: 12px;
+        gap: 16px;
       }
 
       .books-grid {
-        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
         gap: 16px;
+        padding: 20px;
       }
 
       .series-grid, .authors-grid {
         grid-template-columns: 1fr;
-        gap: 12px;
+        gap: 16px;
+        padding: 20px;
       }
 
       .pagination-controls {
         flex-direction: column;
-        gap: 16px;
+        gap: 12px;
       }
 
       .advanced-actions {
         flex-direction: column;
+        gap: 12px;
+      }
+
+      .nav-button {
+        min-width: 100%;
+      }
+
+      .results-section {
+        margin-bottom: 20px;
+      }
+
+      .section-title {
+        font-size: 1.3rem;
+        padding: 16px 20px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .search-header {
+        padding: 24px 12px;
+      }
+
+      .search-content {
+        padding: 16px 12px;
+      }
+
+      .search-title {
+        font-size: 1.8rem;
+        flex-direction: column;
+        text-align: center;
+        gap: 12px;
+      }
+
+      .quick-search-section {
+        padding: 16px;
+      }
+
+      .books-grid {
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        gap: 12px;
+        padding: 16px;
+      }
+
+      .series-grid, .authors-grid {
+        padding: 16px;
+      }
+
+      .section-title {
+        font-size: 1.2rem;
+        padding: 12px 16px;
       }
     }
   `]
@@ -865,6 +1078,12 @@ export class SearchComponent implements OnDestroy {
   isUnifiedSearch = signal(false);
   private pageHistory: string[] = [];
   private popstateListener?: () => void;
+  
+  // Modern search features
+  searchSuggestions = signal<string[]>([]);
+  showSuggestions = signal(false);
+  private searchTimeout?: any;
+  private searchHistory: string[] = [];
 
   constructor(
     private bookService: BookService,
@@ -887,6 +1106,8 @@ export class SearchComponent implements OnDestroy {
       sortDirection: ['asc']
     });
     this.setupBrowserBackSupport();
+    this.setupKeyboardShortcuts();
+    this.loadSearchHistory();
   }
 
   ngOnDestroy() {
@@ -945,7 +1166,7 @@ export class SearchComponent implements OnDestroy {
       query: this.lastSearchQuery(),
       criteria: this.lastCriteria
     };
-    const url = `/search${cursor ? `?cursor=${encodeURIComponent(cursor)}` : ''}`;
+    const url = '/search' + (cursor ? '?cursor=' + encodeURIComponent(cursor) : '');
     window.history.pushState(state, '', url);
   }
 
@@ -958,6 +1179,10 @@ export class SearchComponent implements OnDestroy {
     this.lastSearchQuery.set(query);
     this.lastCriteria = null;
     this.isUnifiedSearch.set(true);
+    this.showSuggestions.set(false);
+    
+    // Save to search history
+    this.saveSearchHistory(query);
 
     this.searchService.unifiedSearch(query, 10).subscribe({
       next: (response: UnifiedSearchResult) => {
@@ -1138,6 +1363,107 @@ export class SearchComponent implements OnDestroy {
     this.lastSearchQuery.set('');
     this.lastCriteria = null;
     this.isUnifiedSearch.set(false);
+    this.showSuggestions.set(false);
+  }
+
+  // Modern search features
+  private setupKeyboardShortcuts() {
+    document.addEventListener('keydown', (event) => {
+      // Focus search input when '/' is pressed
+      if (event.key === '/' && !event.ctrlKey && !event.metaKey) {
+        const activeElement = document.activeElement;
+        if (activeElement?.tagName !== 'INPUT' && activeElement?.tagName !== 'TEXTAREA') {
+          event.preventDefault();
+          const searchInput = document.querySelector('input[formControlName="quickSearch"]') as HTMLInputElement;
+          if (searchInput) {
+            searchInput.focus();
+            searchInput.select();
+          }
+        }
+      }
+      // Clear search with Escape
+      if (event.key === 'Escape') {
+        this.showSuggestions.set(false);
+      }
+    });
+  }
+
+  private loadSearchHistory() {
+    const history = localStorage.getItem('searchHistory');
+    if (history) {
+      this.searchHistory = JSON.parse(history);
+    }
+  }
+
+  private saveSearchHistory(query: string) {
+    if (!query.trim()) return;
+    
+    // Remove existing entry if present
+    this.searchHistory = this.searchHistory.filter(item => item !== query);
+    // Add to beginning
+    this.searchHistory.unshift(query);
+    // Keep only last 10 searches
+    this.searchHistory = this.searchHistory.slice(0, 10);
+    
+    localStorage.setItem('searchHistory', JSON.stringify(this.searchHistory));
+  }
+
+  onSearchInput(event: any) {
+    const query = event.target.value?.trim();
+    
+    // Clear previous timeout
+    if (this.searchTimeout) {
+      clearTimeout(this.searchTimeout);
+    }
+
+    // Show suggestions after short delay
+    this.searchTimeout = setTimeout(() => {
+      if (query && query.length > 0) {
+        this.updateSearchSuggestions(query);
+      } else {
+        this.showSuggestions.set(false);
+      }
+    }, 300);
+  }
+
+  private updateSearchSuggestions(query: string) {
+    // Filter search history based on current query
+    const suggestions = this.searchHistory
+      .filter(item => item.toLowerCase().includes(query.toLowerCase()) && item !== query)
+      .slice(0, 5);
+    
+    // Add smart suggestions based on query patterns
+    const smartSuggestions = this.generateSmartSuggestions(query);
+    
+    const allSuggestions = [...suggestions, ...smartSuggestions]
+      .filter((item, index, arr) => arr.indexOf(item) === index) // Remove duplicates
+      .slice(0, 5);
+    
+    this.searchSuggestions.set(allSuggestions);
+    this.showSuggestions.set(allSuggestions.length > 0);
+  }
+
+  private generateSmartSuggestions(query: string): string[] {
+    const suggestions: string[] = [];
+    
+    // If query looks like a year, suggest year searches
+    if (/^\d{4}$/.test(query)) {
+      suggestions.push('year:' + query);
+    }
+    
+    // If query has multiple words, suggest author and series searches
+    if (query.includes(' ') && !query.includes(':')) {
+      suggestions.push('author:"' + query + '"');
+      suggestions.push('series:"' + query + '"');
+    }
+    
+    return suggestions;
+  }
+
+  applySuggestion(suggestion: string) {
+    this.searchForm.patchValue({ quickSearch: suggestion });
+    this.showSuggestions.set(false);
+    this.performQuickSearch();
   }
 
   getYear(dateString: string): string {
