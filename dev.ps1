@@ -19,14 +19,19 @@ function Ensure-DockerRunning {
 
   Write-Host "Docker is not running. Starting Docker Desktop..." -ForegroundColor Yellow
 
-  $candidatePaths = @(
-    Join-Path $env:ProgramFiles            'Docker\Docker\Docker Desktop.exe',
-    Join-Path ${env:ProgramFiles(x86)}     'Docker\Docker\Docker Desktop.exe',
-    'C:\Program Files\Docker\Docker\Docker Desktop.exe',
-    'C:\Program Files (x86)\Docker\Docker\Docker Desktop.exe'
-  ) | Where-Object { $_ }
+  # Build candidate paths without Join-Path to avoid parameter binding issues
+  $pf  = $env:ProgramFiles
+  $pf86 = ${env:ProgramFiles(x86)}
+  $candidatePaths = @()
+  if ($pf)  { $candidatePaths += "$pf\Docker\Docker\Docker Desktop.exe" }
+  if ($pf86){ $candidatePaths += "$pf86\Docker\Docker\Docker Desktop.exe" }
+  $candidatePaths += @(
+    'C:\\Program Files\\Docker\\Docker\\Docker Desktop.exe',
+    'C:\\Program Files (x86)\\Docker\\Docker\\Docker Desktop.exe'
+  )
+  $candidatePaths = $candidatePaths | Where-Object { $_ -and (Test-Path $_) }
 
-  $dockerDesktop = $candidatePaths | Where-Object { Test-Path $_ } | Select-Object -First 1
+  $dockerDesktop = $candidatePaths | Select-Object -First 1
   if (-not $dockerDesktop) {
     Write-Error "Could not locate 'Docker Desktop.exe'. Please start Docker manually, then rerun this script."
     exit 1
