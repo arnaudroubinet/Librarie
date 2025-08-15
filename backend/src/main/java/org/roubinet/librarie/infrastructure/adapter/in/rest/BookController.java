@@ -24,46 +24,38 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
-import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.*;
 
-import java.util.List;
-import java.util.ArrayList;
-import java.util.Optional;
-import java.util.UUID;
-import java.util.Map;
-import java.util.HashMap;
+import java.util.*;
 import java.util.stream.Collectors;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.time.Duration;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import org.roubinet.librarie.infrastructure.media.ImageCachingService;
 
 /**
  * REST controller for book operations.
- * Feature-based API with version 1 path structure.
- * OIDC token will control access rights.
  */
 @Path("/v1/books")
 @Tag(name = "Books", description = "Book management operations")
 public class BookController {
-    
+
     private final BookUseCase bookUseCase;
     private final InputSanitizationService sanitizationService;
     private final LibrarieConfigProperties config;
-    
+    private final ImageCachingService imageCachingService;
+
+    @Context
+    Request httpRequest;
+
     @Inject
     public BookController(BookUseCase bookUseCase,
-                         InputSanitizationService sanitizationService,
-                         LibrarieConfigProperties config) {
+                          InputSanitizationService sanitizationService,
+                          LibrarieConfigProperties config,
+                          ImageCachingService imageCachingService) {
         this.bookUseCase = bookUseCase;
         this.sanitizationService = sanitizationService;
         this.config = config;
+        this.imageCachingService = imageCachingService;
     }
-    
+
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     @Operation(summary = "Get all books with cursor-based pagination", description = "Retrieve all books using keyset pagination")
@@ -72,50 +64,43 @@ public class BookController {
             content = @Content(schema = @Schema(implementation = PageResponseDto.class)))
     })
     public Response getAllBooks(
-            @Parameter(description = "Cursor for pagination", example = "eyJpZCI6IjEyMyIsInRpbWVzdGFtcCI6IjIwMjQtMDEtMDFUMTA6MDA6MDBaIn0=")
+            @Parameter(description = "Cursor for pagination")
             @QueryParam("cursor") String cursor,
             @Parameter(description = "Number of items to return", example = "20")
             @DefaultValue("20") @QueryParam("limit") int limit) {
-        
+
         try {
-            // Validate and sanitize inputs
             if (limit <= 0) {
                 limit = config.pagination().defaultPageSize();
             }
             if (limit > config.pagination().maxPageSize()) {
                 limit = config.pagination().maxPageSize();
             }
-            
-            // Use cursor pagination
+
             CursorPageResult<Book> pageResult = bookUseCase.getAllBooks(cursor, limit);
-            
+
             List<BookResponseDto> bookDtos = pageResult.getItems().stream()
                 .map(this::toDto)
                 .collect(Collectors.toList());
-            
+
             PageResponseDto<BookResponseDto> response = new PageResponseDto<>(
-                bookDtos, 
-                pageResult.getNextCursor(), 
-                pageResult.getPreviousCursor(), 
+                bookDtos,
+                pageResult.getNextCursor(),
+                pageResult.getPreviousCursor(),
                 pageResult.getLimit(),
                 pageResult.isHasNext(),
                 pageResult.isHasPrevious(),
                 pageResult.getTotalCount()
             );
-            
+
             return Response.ok(response).build();
-            
-        } catch (SecurityException e) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                .entity("Security validation failed: " + e.getMessage())
-                .build();
         } catch (Exception e) {
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
                 .entity("Internal server error: " + e.getMessage())
                 .build();
         }
     }
-    
+
     @GET
     @Path("/{id}")
     @Produces(MediaType.APPLICATION_JSON)
@@ -123,23 +108,19 @@ public class BookController {
     @APIResponses(value = {
         @APIResponse(responseCode = "200", description = "Book found",
             content = @Content(schema = @Schema(implementation = BookResponseDto.class))),
-        @APIResponse(responseCode = "404", description = "Book not found")
+        @APIResponse(responseCode = "404", description = "Book not found"),
+        @APIResponse(responseCode = "400", description = "Invalid book ID format")
     })
     public Response getBookById(
             @Parameter(description = "Book UUID", required = true)
             @PathParam("id") String id) {
-        
         try {
             UUID bookId = UUID.fromString(id);
             Optional<Book> book = bookUseCase.getBookById(bookId);
-            
             if (book.isPresent()) {
                 return Response.ok(toDto(book.get())).build();
-            } else {
-                return Response.status(Response.Status.NOT_FOUND)
-                    .entity("Book not found")
-                    .build();
             }
+            return Response.status(Response.Status.NOT_FOUND).entity("Book not found").build();
         } catch (IllegalArgumentException e) {
             return Response.status(Response.Status.BAD_REQUEST)
                 .entity("Invalid book ID format")
@@ -150,7 +131,7 @@ public class BookController {
                 .build();
         }
     }
-    
+
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
@@ -805,74 +786,51 @@ public class BookController {
                 return Response.status(Response.Status.NOT_FOUND).entity("Book not found").build();
             }
             Book book = bookOpt.get();
-            if (!Boolean.TRUE.equals(book.getHasCover()) || book.getMetadata() == null) {
-                return Response.status(Response.Status.NOT_FOUND).entity("Cover not available").build();
-            }
-            Object urlObj = book.getMetadata().get("coverUrl");
-            if (!(urlObj instanceof String)) {
-                return Response.status(Response.Status.NOT_FOUND).entity("Cover URL missing").build();
-            }
-            String storedUrl = ((String) urlObj).trim();
-            if (!(storedUrl.startsWith("http://") || storedUrl.startsWith("https://"))) {
-                return Response.status(Response.Status.NOT_FOUND).entity("Invalid cover URL").build();
+
+            String storedUrl = null;
+            if (Boolean.TRUE.equals(book.getHasCover()) && book.getMetadata() != null) {
+                Object urlObj = book.getMetadata().get("coverUrl");
+                if (urlObj instanceof String s && (s.startsWith("http://") || s.startsWith("https://"))) {
+                    storedUrl = s.trim();
+                }
             }
 
-            return streamImageResolvingIfNeeded(storedUrl);
+            java.nio.file.Path baseDir = java.nio.file.Paths.get(config.storage().baseDir());
+            return imageCachingService.serveLocalFirstStrongETag(
+                httpRequest,
+                baseDir,
+                "books",
+                "covers",
+                id,
+                storedUrl,
+                getFailoverSvg()
+            );
         } catch (IllegalArgumentException e) {
             return Response.status(Response.Status.BAD_REQUEST).entity("Invalid book ID format").build();
         } catch (Exception e) {
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Internal server error: " + e.getMessage()).build();
         }
     }
-
-    private static final Pattern OG_IMAGE_PATTERN = Pattern.compile(
-        "<meta\\s+(?:property|name)\\s*=\\s*\\\"og:image\\\"\\s+content\\s*=\\s*\\\"([^\\\"]+)\\\"",
-        Pattern.CASE_INSENSITIVE
-    );
-
-    private Response streamImageResolvingIfNeeded(String url) throws Exception {
-        HttpClient client = HttpClient.newBuilder()
-            .connectTimeout(Duration.ofSeconds(5))
-            .followRedirects(HttpClient.Redirect.NORMAL)
-            .build();
-
-        // First request
-        HttpResponse<byte[]> resp = fetch(client, url);
-        String contentType = resp.headers().firstValue("content-type").orElse("").toLowerCase();
-
-        if (contentType.startsWith("image/")) {
-            return Response.ok(resp.body(), contentType).build();
+        // Simple inline SVG placeholder for missing covers
+        private static byte[] getFailoverSvg() {
+                String svg = """
+                        <svg xmlns='http://www.w3.org/2000/svg' width='320' height='480' viewBox='0 0 320 480'>
+                            <defs>
+                                <linearGradient id='g' x1='0' y1='0' x2='1' y2='1'>
+                                    <stop offset='0%' stop-color='#f0f0f0'/>
+                                    <stop offset='100%' stop-color='#d8d8d8'/>
+                                </linearGradient>
+                            </defs>
+                            <rect width='100%' height='100%' fill='url(#g)'/>
+                            <g fill='#9a9a9a'>
+                                <rect x='60' y='120' width='200' height='20' rx='4'/>
+                                <rect x='80' y='160' width='160' height='14' rx='4'/>
+                                <rect x='80' y='200' width='160' height='14' rx='4'/>
+                                <rect x='80' y='240' width='160' height='14' rx='4'/>
+                            </g>
+                        </svg>
+                """;
+                return svg.getBytes(java.nio.charset.StandardCharsets.UTF_8);
         }
 
-        // If HTML (e.g., Amazon product page), try to resolve og:image
-        if (contentType.contains("text/html")) {
-            String html = new String(resp.body());
-            Matcher m = OG_IMAGE_PATTERN.matcher(html);
-            if (m.find()) {
-                String ogImage = m.group(1);
-                // Some og:image values are protocol-relative
-                if (ogImage.startsWith("//")) {
-                    ogImage = "https:" + ogImage;
-                }
-                // Fetch actual image
-                HttpResponse<byte[]> imgResp = fetch(client, ogImage);
-                String imgType = imgResp.headers().firstValue("content-type").orElse("image/jpeg");
-                if (imgType.toLowerCase().startsWith("image/")) {
-                    return Response.ok(imgResp.body(), imgType).build();
-                }
-            }
-        }
-
-        return Response.status(Response.Status.NOT_FOUND).entity("Cover image not resolvable").build();
-    }
-
-    private HttpResponse<byte[]> fetch(HttpClient client, String url) throws Exception {
-        HttpRequest req = HttpRequest.newBuilder(URI.create(url))
-            .timeout(Duration.ofSeconds(10))
-            .header("User-Agent", "Librarie/1.0 (+https://localhost)")
-            .header("Accept", "image/avif,image/webp,image/apng,image/*,*/*;q=0.8")
-            .GET()
-            .build();
-        return client.send(req, HttpResponse.BodyHandlers.ofByteArray());
-    }
 }

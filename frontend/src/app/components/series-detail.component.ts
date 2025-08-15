@@ -191,7 +191,7 @@ import { forkJoin, of } from 'rxjs';
                     <div class="author-card" matRipple [routerLink]="['/authors', a.id]">
                       <div class="card-container">
                         <div class="author-photo">
-                          @if (a.metadata?.['imageUrl'] && !hasAuthorImageError(a.id)) {
+                          @if (a.id && !hasAuthorImageError(a.id)) {
                             <img [src]="getAuthorImageUrl(a)" [alt]="a.name + ' photo'" class="photo-image" (error)="onAuthorImageError($event, a.id)">
                           } @else {
                             <div class="photo-placeholder">
@@ -326,13 +326,10 @@ export class SeriesDetailComponent implements OnInit {
   }
 
   getEffectiveImagePath(series: Series): string | null {
-    if (series.imagePath) {
-      return series.imagePath;
-    }
-    if (series.fallbackImagePath) {
-      return series.fallbackImagePath;
-    }
-    return null;
+    const base = series.imagePath || series.fallbackImagePath || null;
+    if (!base) return null;
+    // Prefer backend endpoint to leverage caching when an image exists
+    return `${environment.apiUrl}/v1/books/series/${series.id}/picture`;
   }
 
   onImageError(event: any) {
@@ -440,12 +437,7 @@ export class SeriesDetailComponent implements OnInit {
   }
 
   getAuthorImageUrl(author: Author): string {
-    const raw = author.metadata?.['imageUrl'];
-    if (!raw) return '';
-    // If it's an absolute URL (http/https/data), return as-is
-    if (/^(https?:)?\/\//i.test(raw) || raw.startsWith('data:')) return raw;
-    // Otherwise treat as relative to API base
-    return `${this.apiUrl}${raw.startsWith('/') ? '' : '/'}${raw}`;
+    return `${this.apiUrl}/v1/authors/${author.id}/picture`;
   }
 
   formatAuthorDates(birthDate?: string, deathDate?: string): string {

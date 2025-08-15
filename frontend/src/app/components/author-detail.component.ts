@@ -51,8 +51,8 @@ import { forkJoin } from 'rxjs';
           <div class="author-layout">
             <!-- Author Photo -->
             <div class="author-photo-container">
-              @if (author()!.metadata?.['imageUrl']) {
-                <img [src]="author()!.metadata!['imageUrl']" 
+              @if (author()!.id) {
+                <img [src]="apiUrl + '/v1/authors/' + author()!.id + '/picture'" 
                      [alt]="author()!.name + ' photo'" 
                      class="author-photo"
                      (error)="onImageError($event)" />
@@ -178,7 +178,7 @@ import { forkJoin } from 'rxjs';
                         <a class="series-card" [routerLink]="['/series', s.id]">
                           <div class="cover-wrap">
                             @if (s.imagePath || s.fallbackImagePath) {
-                              <img class="book-cover" [src]="s.imagePath || s.fallbackImagePath" [alt]="s.name + ' cover'" />
+                              <img class="book-cover" [src]="getSeriesImageUrl(s)" [alt]="s.name + ' cover'" />
                             } @else if (s.coverFromBookId) {
                               <img class="book-cover" [src]="apiUrl + '/v1/books/' + s.coverFromBookId + '/cover'" [alt]="s.name + ' cover'" />
                             } @else {
@@ -412,5 +412,12 @@ export class AuthorDetailComponent implements OnInit {
 
   isArray(value: any): boolean {
     return Array.isArray(value);
+  }
+
+  getSeriesImageUrl(s: any): string | null {
+    const base: string | undefined = s?.imagePath || s?.fallbackImagePath || undefined;
+    if (!base) return null;
+    if (/^https?:\/\//i.test(base)) return base;
+    return `${this.apiUrl}${base}`;
   }
 }

@@ -20,11 +20,15 @@ import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.Request;
+import jakarta.ws.rs.core.Context;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
+
+import org.roubinet.librarie.infrastructure.media.ImageCachingService;
 
 /**
  * REST controller for author operations.
@@ -37,14 +41,19 @@ public class AuthorController {
     private final AuthorUseCase authorUseCase;
     private final InputSanitizationService sanitizationService;
     private final LibrarieConfigProperties config;
+    private final ImageCachingService imageCachingService;
+    @Context
+    Request httpRequest;
     
     @Inject
     public AuthorController(AuthorUseCase authorUseCase,
                            InputSanitizationService sanitizationService,
-                           LibrarieConfigProperties config) {
+                           LibrarieConfigProperties config,
+                           ImageCachingService imageCachingService) {
         this.authorUseCase = authorUseCase;
         this.sanitizationService = sanitizationService;
         this.config = config;
+        this.imageCachingService = imageCachingService;
     }
     
     @GET
@@ -97,6 +106,66 @@ public class AuthorController {
                 .entity("Internal server error: " + e.getMessage())
                 .build();
         }
+    }
+
+    @GET
+    @Path("/{id}/picture")
+    @Operation(summary = "Get author picture", description = "Serves the author's picture using local-first strong ETag caching; populates from metadata.imageUrl if missing")
+    @APIResponses(value = {
+        @APIResponse(responseCode = "200", description = "Image bytes returned"),
+        @APIResponse(responseCode = "304", description = "Not Modified"),
+        @APIResponse(responseCode = "404", description = "Author or image not found")
+    })
+    public Response getAuthorPicture(@PathParam("id") String id) {
+        try {
+            UUID authorId = UUID.fromString(id);
+            Optional<Author> authorOpt = authorUseCase.getAuthorById(authorId);
+            if (authorOpt.isEmpty()) {
+                return Response.status(Response.Status.NOT_FOUND).entity("Author not found").build();
+            }
+            String storedUrl = null;
+            Author author = authorOpt.get();
+            if (author.getMetadata() != null) {
+                Object urlObj = author.getMetadata().get("imageUrl");
+                if (urlObj instanceof String s && (s.startsWith("http://") || s.startsWith("https://"))) {
+                    storedUrl = s.trim();
+                }
+            }
+
+            java.nio.file.Path baseDir = java.nio.file.Paths.get(config.storage().baseDir());
+            return imageCachingService.serveLocalFirstStrongETag(
+                httpRequest,
+                baseDir,
+                "autors",
+                "covers",
+                id,
+                storedUrl,
+                getFailoverSvg()
+            );
+        } catch (IllegalArgumentException e) {
+            return Response.status(Response.Status.BAD_REQUEST).entity("Invalid author ID format").build();
+        } catch (Exception e) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Internal server error: " + e.getMessage()).build();
+        }
+    }
+
+    private static byte[] getFailoverSvg() {
+        String svg = """
+                <svg xmlns='http://www.w3.org/2000/svg' width='320' height='320' viewBox='0 0 320 320'>
+                    <defs>
+                        <linearGradient id='g' x1='0' y1='0' x2='1' y2='1'>
+                            <stop offset='0%' stop-color='#f0f0f0'/>
+                            <stop offset='100%' stop-color='#d8d8d8'/>
+                        </linearGradient>
+                    </defs>
+                    <rect width='100%' height='100%' fill='url(#g)'/>
+                    <g fill='#9a9a9a'>
+                        <circle cx='160' cy='120' r='60'/>
+                        <rect x='80' y='210' width='160' height='20' rx='10'/>
+                    </g>
+                </svg>
+        """;
+        return svg.getBytes(java.nio.charset.StandardCharsets.UTF_8);
     }
     
     @GET

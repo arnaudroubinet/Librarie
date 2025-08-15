@@ -13,6 +13,7 @@ import { AuthorService } from '../services/author.service';
 import { Author } from '../models/author.model';
 import { InfiniteScrollService, AlphabeticalSeparator } from '../services/infinite-scroll.service';
 import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive';
+import { environment } from '../../environments/environment';
 
 @Component({
   selector: 'app-author-list',
@@ -81,8 +82,8 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
                 <div class="author-card" matRipple [routerLink]="['/authors', item.id]">
                   <div class="card-container">
                     <div class="author-photo">
-                      @if (item.metadata?.['imageUrl']) {
-                        <img [src]="item.metadata!['imageUrl']" 
+                      @if (item.id) {
+                        <img [src]="apiUrl + '/v1/authors/' + item.id + '/picture'" 
                              [alt]="item.name + ' photo'"
                              class="photo-image"
                              (error)="onImageError($event)">
@@ -148,6 +149,7 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
 })
 export class AuthorListComponent implements OnInit {
   scrollState;
+  readonly apiUrl = environment.apiUrl;
 
   constructor(
     private authorService: AuthorService,

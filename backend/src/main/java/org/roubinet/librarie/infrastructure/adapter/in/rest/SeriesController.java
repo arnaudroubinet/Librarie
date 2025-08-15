@@ -19,11 +19,15 @@ import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.Request;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
+
+import org.roubinet.librarie.infrastructure.media.ImageCachingService;
 
 /**
  * REST controller for series operations.
@@ -35,12 +39,17 @@ public class SeriesController {
     
     private final SeriesUseCase seriesUseCase;
     private final LibrarieConfigProperties config;
+    private final ImageCachingService imageCachingService;
+    @Context
+    Request httpRequest;
     
     @Inject
     public SeriesController(SeriesUseCase seriesUseCase,
-                           LibrarieConfigProperties config) {
+                           LibrarieConfigProperties config,
+                           ImageCachingService imageCachingService) {
         this.seriesUseCase = seriesUseCase;
         this.config = config;
+        this.imageCachingService = imageCachingService;
     }
     
     @GET
@@ -90,7 +99,67 @@ public class SeriesController {
                 .build();
         }
     }
-    
+
+    @GET
+    @Path("/{id}/picture")
+    @Operation(summary = "Get series picture", description = "Serves the series picture using local-first strong ETag caching; populates from metadata.seriesImageUrl if missing")
+    @APIResponses(value = {
+        @APIResponse(responseCode = "200", description = "Image bytes returned"),
+        @APIResponse(responseCode = "304", description = "Not Modified"),
+        @APIResponse(responseCode = "404", description = "Series or image not found")
+    })
+    public Response getSeriesPicture(@PathParam("id") String id) {
+        try {
+            UUID seriesId = UUID.fromString(id);
+            Optional<SeriesData> seriesOpt = seriesUseCase.getSeriesById(seriesId);
+            if (seriesOpt.isEmpty()) {
+                return Response.status(Response.Status.NOT_FOUND).entity("Series not found").build();
+            }
+            SeriesData series = seriesOpt.get();
+            String storedUrl = null;
+            if (series.getMetadata() != null) {
+                Object urlObj = series.getMetadata().get("seriesImageUrl");
+                if (urlObj instanceof String s && (s.startsWith("http://") || s.startsWith("https://"))) {
+                    storedUrl = s.trim();
+                }
+            }
+
+            java.nio.file.Path baseDir = java.nio.file.Paths.get(config.storage().baseDir());
+            return imageCachingService.serveLocalFirstStrongETag(
+                httpRequest,
+                baseDir,
+                "series",
+                "covers",
+                id,
+                storedUrl,
+                getFailoverSvg()
+            );
+        } catch (IllegalArgumentException e) {
+            return Response.status(Response.Status.BAD_REQUEST).entity("Invalid series ID format").build();
+        } catch (Exception e) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Internal server error: " + e.getMessage()).build();
+        }
+    }
+    private static byte[] getFailoverSvg() {
+        String svg = """
+                <svg xmlns='http://www.w3.org/2000/svg' width='320' height='320' viewBox='0 0 320 320'>
+                    <defs>
+                        <linearGradient id='g' x1='0' y1='0' x2='1' y2='1'>
+                            <stop offset='0%' stop-color='#f0f0f0'/>
+                            <stop offset='100%' stop-color='#d8d8d8'/>
+                        </linearGradient>
+                    </defs>
+                    <rect width='100%' height='100%' fill='url(#g)'/>
+                    <g fill='#9a9a9a'>
+                        <rect x='60' y='120' width='200' height='20' rx='4'/>
+                        <rect x='80' y='160' width='160' height='14' rx='4'/>
+                        <rect x='80' y='200' width='160' height='14' rx='4'/>
+                    </g>
+                </svg>
+        """;
+        return svg.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+    }
+
     @GET
     @Path("/{id}")
     @Produces(MediaType.APPLICATION_JSON)

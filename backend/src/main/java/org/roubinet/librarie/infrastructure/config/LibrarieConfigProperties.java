@@ -29,6 +29,11 @@ public interface LibrarieConfigProperties {
      * Demo configuration properties.
      */
     DemoConfig demo();
+
+    /**
+     * Storage configuration properties.
+     */
+    StorageConfig storage();
     
     interface PaginationConfig {
         /**
@@ -78,7 +83,7 @@ public interface LibrarieConfigProperties {
         /**
          * Default cover image path when no cover is available.
          */
-        @WithDefault("/api/v1/assets/default-cover.jpg")
+    @WithDefault("empty.jpg")
         String defaultCoverPath();
     }
     
@@ -114,5 +119,14 @@ public interface LibrarieConfigProperties {
          */
         @WithDefault("false")
         boolean enabled();
+    }
+
+    interface StorageConfig {
+        /**
+         * Base directory path for local storage of assets.
+         * For dev, set in application-dev.properties to "${project.build.directory}/assets".
+         */
+        @WithDefault("./assets")
+        String baseDir();
     }
 }

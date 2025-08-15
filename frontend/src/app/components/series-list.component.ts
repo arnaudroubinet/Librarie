@@ -10,6 +10,7 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatRippleModule } from '@angular/material/core';
 import { MatBadgeModule } from '@angular/material/badge';
 import { SeriesService } from '../services/series.service';
+import { environment } from '../../environments/environment';
 import { Series } from '../models/series.model';
 import { InfiniteScrollService } from '../services/infinite-scroll.service';
 import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive';
@@ -215,9 +216,10 @@ export class SeriesListComponent implements OnInit {
   getShortDescription(description: string): string { return description.length > 100 ? description.substring(0, 100) + '...' : description; }
 
   getEffectiveImagePath(series: Series): string | null {
-    if (series.imagePath) return series.imagePath;
-    if (series.fallbackImagePath) return series.fallbackImagePath;
-    return null;
+    const base = series.imagePath || series.fallbackImagePath || null;
+    if (!base) return null;
+    // Prefer backend endpoint to leverage caching when an image exists
+    return `${environment.apiUrl}/v1/books/series/${series.id}/picture`;
   }
 
   onImageError(event: any) { event.target.style.display = 'none'; }

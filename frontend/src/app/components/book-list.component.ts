@@ -243,8 +243,7 @@ export class BookListComponent implements OnInit {
 
   getEffectiveImagePath(book: Book): string | null {
     if (book.hasCover && book.id) {
-      // Use book cover endpoint if cover exists
-  return `${environment.apiUrl}/v1/books/${book.id}/cover`;
+      return `${environment.apiUrl}/v1/books/${book.id}/cover`;
     }
     return null;
   }
