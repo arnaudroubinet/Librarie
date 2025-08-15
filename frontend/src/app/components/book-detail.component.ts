@@ -72,9 +72,9 @@ import { environment } from '../../environments/environment';
               <!-- Title Section -->
               <div class="title-section">
                 <h1 class="book-title">{{ book()!.title }}</h1>
-                @if (book()!.series) {
+        @if (book()!.series) {
                   <div class="book-series">
-                    <iconify-icon icon="icon-park-outline:bookshelf"></iconify-icon>
+          <iconify-icon icon="material-symbols:books-movies-and-music"></iconify-icon>
                     @if (book()!.seriesId) {
                       <a class="series-link" [routerLink]="['/series', book()!.seriesId]">{{ book()!.series }}</a>
                     } @else {
@@ -87,7 +87,7 @@ import { environment } from '../../environments/environment';
                 }
                 @if (getAuthorsDetailed().length > 0) {
                   <div class="book-authors">
-                    <iconify-icon icon="ph:users-three-thin"></iconify-icon>
+          <iconify-icon icon="material-symbols:supervised-user-circle"></iconify-icon>
                     <span class="authors-list">
                       @for (a of getAuthorsDetailed(); track a.id; let last = $last) {
                         <a class="author-link" [routerLink]="['/authors', a.id]">{{ a.name }}</a>

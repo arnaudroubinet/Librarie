@@ -63,7 +63,7 @@ import { forkJoin, of } from 'rxjs';
               } @else {
                 <div class="series-cover-placeholder">
                   <div class="placeholder-content">
-                    <iconify-icon class="placeholder-icon" icon="icon-park-outline:bookshelf"></iconify-icon>
+                    <iconify-icon class="placeholder-icon" icon="material-symbols:books-movies-and-music"></iconify-icon>
                     <div class="placeholder-text">{{ getShortTitle(series()!.name) }}</div>
                   </div>
                 </div>
@@ -125,7 +125,7 @@ import { forkJoin, of } from 'rxjs';
           } @else {
             <div class="books-section">
               <h2 class="section-title">
-                <iconify-icon icon="icon-park-outline:bookshelf"></iconify-icon>
+                <iconify-icon icon="material-symbols:books-movies-and-music"></iconify-icon>
                 Books in this Series
                 @if (books().length > 0) {
                   <span class="item-count">({{ books().length }})</span>
@@ -180,7 +180,7 @@ import { forkJoin, of } from 'rxjs';
           @if (contributors().length > 0) {
             <div class="contributors-section">
               <h2 class="section-title">
-                <iconify-icon icon="ph:users-three-thin"></iconify-icon>
+                <iconify-icon icon="material-symbols:supervised-user-circle"></iconify-icon>
                 People who worked on this series
                 <span class="item-count">({{ contributors().length }})</span>
               </h2>

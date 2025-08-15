@@ -37,7 +37,7 @@ import { environment } from '../../environments/environment';
       <div class="library-header">
         <div class="header-content">
           <h1 class="library-title">
-            <iconify-icon class="title-icon" icon="ph:users-three-thin"></iconify-icon>
+            <iconify-icon class="title-icon" icon="material-symbols:supervised-user-circle"></iconify-icon>
             Authors Library
             <button mat-icon-button class="refresh-btn" aria-label="Refresh authors" (click)="refresh()">
               <iconify-icon icon="material-symbols-light:refresh-rounded"></iconify-icon>
@@ -64,7 +64,7 @@ import { environment } from '../../environments/environment';
               <h2>No authors found</h2>
               <p>No authors found in your collection. Start building your digital library by scanning your book directory.</p>
               <button mat-raised-button color="accent" routerLink="/library" class="cta-button">
-                <iconify-icon icon="cil:magnifying-glass"></iconify-icon>
+                <iconify-icon icon="material-symbols:search-rounded"></iconify-icon>
                 Scan Library
               </button>
             </div>

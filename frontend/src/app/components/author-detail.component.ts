@@ -57,9 +57,9 @@ import { forkJoin } from 'rxjs';
                      class="author-photo"
                      (error)="onImageError($event)" />
               } @else {
-                <div class="author-photo-placeholder">
+        <div class="author-photo-placeholder">
                   <div class="placeholder-content">
-                    <iconify-icon class="placeholder-iconify" icon="ph:users-three-thin"></iconify-icon>
+          <iconify-icon class="placeholder-iconify" icon="material-symbols:supervised-user-circle"></iconify-icon>
                     <div class="placeholder-text">{{ getInitials(author()!.name) }}</div>
                   </div>
                 </div>
@@ -169,7 +169,7 @@ import { forkJoin } from 'rxjs';
               @if (authorSeries().length > 0) {
                 <div class="works-section">
                   <h2 class="section-title">
-                    <iconify-icon icon="icon-park-outline:bookshelf"></iconify-icon>
+                    <iconify-icon icon="material-symbols:books-movies-and-music"></iconify-icon>
                     Series
                   </h2>
                   <div class="series-grid">
@@ -183,7 +183,7 @@ import { forkJoin } from 'rxjs';
                               <img class="book-cover" [src]="apiUrl + '/v1/books/' + s.coverFromBookId + '/cover'" [alt]="s.name + ' cover'" />
                             } @else {
                               <div class="series-cover-placeholder">
-                                <iconify-icon class="placeholder-iconify" icon="icon-park-outline:bookshelf"></iconify-icon>
+                                <iconify-icon class="placeholder-iconify" icon="material-symbols:books-movies-and-music"></iconify-icon>
                                 <div class="placeholder-text">{{ getShortTitle(s.name) }}</div>
                               </div>
                             }
@@ -198,7 +198,7 @@ import { forkJoin } from 'rxjs';
                               <img class="book-cover" [src]="apiUrl + '/v1/books/' + s.coverFromBookId + '/cover'" [alt]="s.name + ' cover'" />
                             } @else {
                               <div class="series-cover-placeholder">
-                                <iconify-icon class="placeholder-iconify" icon="icon-park-outline:bookshelf"></iconify-icon>
+                                <iconify-icon class="placeholder-iconify" icon="material-symbols:books-movies-and-music"></iconify-icon>
                                 <div class="placeholder-text">{{ getShortTitle(s.name) }}</div>
                               </div>
                             }
@@ -216,7 +216,7 @@ import { forkJoin } from 'rxjs';
               @if (authorBooks().length > 0) {
                 <div class="works-section">
                   <h2 class="section-title">
-                    <iconify-icon icon="ph:books-thin"></iconify-icon>
+                    <iconify-icon icon="material-symbols:book-2-rounded"></iconify-icon>
                     Books
                   </h2>
                   <div class="books-grid">
@@ -227,7 +227,7 @@ import { forkJoin } from 'rxjs';
                             <img class="book-cover" [src]="apiUrl + '/v1/books/' + b.id + '/cover'" [alt]="b.title + ' cover'" />
                           } @else {
                             <div class="book-cover-placeholder">
-                              <iconify-icon class="placeholder-iconify" icon="ph:books-thin"></iconify-icon>
+                              <iconify-icon class="placeholder-iconify" icon="material-symbols:book-2-rounded"></iconify-icon>
                               <div class="placeholder-text">{{ getShortTitle(b.title) }}</div>
                             </div>
                           }

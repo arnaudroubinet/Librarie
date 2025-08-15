@@ -37,7 +37,7 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
       <div class="library-header">
         <div class="header-content">
           <h1 class="library-title">
-            <iconify-icon class="title-icon" icon="ph:books-thin"></iconify-icon>
+            <iconify-icon class="title-icon" icon="material-symbols:book-2-rounded"></iconify-icon>
             Books Library
             <button mat-icon-button class="refresh-btn" aria-label="Refresh books" (click)="refresh()">
               <iconify-icon icon="material-symbols-light:refresh-rounded"></iconify-icon>
@@ -63,7 +63,7 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
               <h2>No books found</h2>
               <p>Your book library is empty. Start building your digital library by scanning your book directory.</p>
               <button mat-raised-button color="accent" routerLink="/library" class="cta-button">
-                <iconify-icon icon="cil:magnifying-glass"></iconify-icon>
+                <iconify-icon icon="material-symbols:search-rounded"></iconify-icon>
                 Scan Library
               </button>
             </div>
@@ -294,7 +294,7 @@ export class BookListComponent implements OnInit {
   }
 
   getBookmarkIcon(book: Book): string {
-    return this.isBookmarked(book) ? 'material-symbols:bookmark' : 'material-symbols:bookmark-outline';
+  return this.isBookmarked(book) ? 'material-symbols:book' : 'material-symbols:book-outline';
   }
 
   isBookmarked(book: Book): boolean {

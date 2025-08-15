@@ -28,7 +28,7 @@ import pkg from '../../../package.json';
       <div class="library-header">
         <div class="header-content">
           <h1 class="library-title">
-            <iconify-icon class="title-icon" icon="mdi:cog"></iconify-icon>
+            <iconify-icon class="title-icon" icon="material-symbols:settings-outline"></iconify-icon>
             Settings
           </h1>
           <p class="library-subtitle">Configure and explore your library system</p>
@@ -294,9 +294,9 @@ export class SettingsComponent implements OnInit {
     if (!counts) return [];
 
     const iconMap: { [key: string]: string } = {
-      books: 'ph:books-thin',
-      series: 'icon-park-outline:bookshelf',
-      authors: 'ph:users-three-thin',
+      books: 'material-symbols:book-2-rounded',
+      series: 'material-symbols:books-movies-and-music',
+      authors: 'material-symbols:supervised-user-circle',
       publishers: 'mdi:domain',
       languages: 'mdi:translate',
       formats: 'mdi:file-document-outline'

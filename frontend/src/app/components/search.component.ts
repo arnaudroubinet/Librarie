@@ -50,7 +50,7 @@ import { environment } from '../../environments/environment';
       <div class="library-header">
         <div class="header-content">
           <h1 class="library-title">
-            <iconify-icon class="title-icon" icon="mdi-light:magnify"></iconify-icon>
+            <iconify-icon class="title-icon" icon="material-symbols:search-rounded"></iconify-icon>
             Search Library
           </h1>
           <p class="library-subtitle">Find exactly what you're looking for in your collection</p>
@@ -194,7 +194,7 @@ import { environment } from '../../environments/environment';
             @if (books().length > 0) {
               <div class="results-section">
                 <h3 class="section-title">
-                  <mat-icon>menu_book</mat-icon>
+                  <iconify-icon icon="material-symbols:book-2-rounded"></iconify-icon>
                   Books ({{ books().length }})
                 </h3>
                 <div class="books-grid">
@@ -231,7 +231,7 @@ import { environment } from '../../environments/environment';
             @if (series().length > 0) {
               <div class="results-section">
                 <h3 class="section-title">
-                  <mat-icon>collections_bookmark</mat-icon>
+                  <iconify-icon icon="material-symbols:books-movies-and-music"></iconify-icon>
                   Series ({{ series().length }})
                 </h3>
                 <div class="series-grid">
@@ -253,7 +253,7 @@ import { environment } from '../../environments/environment';
             @if (authors().length > 0) {
               <div class="results-section">
                 <h3 class="section-title">
-                  <mat-icon>person</mat-icon>
+                  <iconify-icon icon="material-symbols:supervised-user-circle"></iconify-icon>
                   Authors ({{ authors().length }})
                 </h3>
                 <div class="authors-grid">

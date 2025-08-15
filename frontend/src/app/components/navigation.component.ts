@@ -25,19 +25,19 @@ import pkg from '../../../package.json';
         <div class="nav-section">
           <div class="section-title">LIBRARY</div>
           <a mat-button class="nav-item" routerLink="/books" routerLinkActive="active">
-            <iconify-icon icon="ph:books-thin"></iconify-icon>
+            <iconify-icon icon="material-symbols:book-2-rounded"></iconify-icon>
             <span>All Books</span>
           </a>
           <a mat-button class="nav-item" routerLink="/series" routerLinkActive="active">
-            <iconify-icon icon="icon-park-outline:bookshelf"></iconify-icon>
+            <iconify-icon icon="material-symbols:books-movies-and-music"></iconify-icon>
             <span>Series</span>
           </a>
           <a mat-button class="nav-item" routerLink="/authors" routerLinkActive="active">
-            <iconify-icon icon="ph:users-three-thin"></iconify-icon>
+            <iconify-icon icon="material-symbols:supervised-user-circle"></iconify-icon>
             <span>Authors</span>
           </a>
           <a mat-button class="nav-item" routerLink="/search" routerLinkActive="active">
-            <iconify-icon icon="mdi-light:magnify"></iconify-icon>
+            <iconify-icon icon="material-symbols:search-rounded"></iconify-icon>
             <span>Search</span>
           </a>
         </div>
@@ -45,7 +45,7 @@ import pkg from '../../../package.json';
         <div class="nav-section">
           <div class="section-title">MANAGEMENT</div>
           <a mat-button class="nav-item" routerLink="/settings" routerLinkActive="active">
-            <iconify-icon icon="mdi:cog"></iconify-icon>
+            <iconify-icon icon="material-symbols:settings-outline"></iconify-icon>
             <span>Settings</span>
           </a>
         </div>

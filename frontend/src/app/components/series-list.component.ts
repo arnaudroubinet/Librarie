@@ -37,7 +37,7 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
       <div class="library-header">
         <div class="header-content">
           <h1 class="library-title">
-            <iconify-icon class="title-icon" icon="icon-park-outline:bookshelf"></iconify-icon>
+            <iconify-icon class="title-icon" icon="material-symbols:books-movies-and-music"></iconify-icon>
             Series Library
             <button mat-icon-button class="refresh-btn" aria-label="Refresh series" (click)="refresh()">
               <iconify-icon icon="material-symbols-light:refresh-rounded"></iconify-icon>
@@ -63,7 +63,7 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
               <h2>No series found</h2>
               <p>No series found in your collection. Series will appear here when you add books that are part of a series.</p>
               <button mat-raised-button color="accent" routerLink="/library" class="cta-button">
-                <iconify-icon icon="cil:magnifying-glass"></iconify-icon>
+                <iconify-icon icon="material-symbols:search-rounded"></iconify-icon>
                 Scan Library
               </button>
             </div>
@@ -251,7 +251,7 @@ export class SeriesListComponent implements OnInit {
     return Math.max(10, pageSize);
   }
 
-  getBookmarkIcon(series: Series): string { return this.isBookmarked(series) ? 'material-symbols:bookmark' : 'material-symbols:bookmark-outline'; }
+  getBookmarkIcon(series: Series): string { return this.isBookmarked(series) ? 'material-symbols:book' : 'material-symbols:book-outline'; }
 
   isBookmarked(series: Series): boolean { return !!series?.id && this.favorites.has(series.id); }
 
