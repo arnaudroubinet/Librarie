@@ -38,6 +38,9 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
           <h1 class="library-title">
             <iconify-icon class="title-icon" icon="ph:users-three-thin"></iconify-icon>
             Authors Library
+            <button mat-icon-button class="refresh-btn" aria-label="Refresh authors" (click)="refresh()">
+              <iconify-icon icon="material-symbols-light:refresh-rounded"></iconify-icon>
+            </button>
           </h1>
           <p class="library-subtitle">Discover and explore your favorite authors</p>
         </div>
@@ -238,5 +241,11 @@ export class AuthorListComponent implements OnInit {
   openWebsite(event: Event, url: string) {
     event.stopPropagation();
     window.open(url, '_blank');
+  }
+
+  refresh() {
+    this.authorService.clearCache();
+    this.scrollState.reset();
+    this.snackBar.open('Authors refreshed', 'Close', { duration: 1500 });
   }
 }

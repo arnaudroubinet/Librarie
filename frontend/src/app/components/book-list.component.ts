@@ -39,6 +39,9 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
           <h1 class="library-title">
             <iconify-icon class="title-icon" icon="ph:books-thin"></iconify-icon>
             Books Library
+            <button mat-icon-button class="refresh-btn" aria-label="Refresh books" (click)="refresh()">
+              <iconify-icon icon="material-symbols-light:refresh-rounded"></iconify-icon>
+            </button>
           </h1>
           <p class="library-subtitle">Discover and explore your digital book collection</p>
         </div>
@@ -298,5 +301,11 @@ export class BookListComponent implements OnInit {
   isBookmarked(book: Book): boolean {
     // TODO: wire to real bookmark state when implemented
     return false;
+  }
+
+  refresh() {
+    this.bookService.clearCache();
+    this.scrollState.reset();
+    this.snackBar.open('Books refreshed', 'Close', { duration: 1500 });
   }
 }

@@ -38,6 +38,9 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
           <h1 class="library-title">
             <iconify-icon class="title-icon" icon="icon-park-outline:bookshelf"></iconify-icon>
             Series Library
+            <button mat-icon-button class="refresh-btn" aria-label="Refresh series" (click)="refresh()">
+              <iconify-icon icon="material-symbols-light:refresh-rounded"></iconify-icon>
+            </button>
           </h1>
           <p class="library-subtitle">Explore your book series collections</p>
         </div>
@@ -267,5 +270,11 @@ export class SeriesListComponent implements OnInit {
     } catch {
       return false;
     }
+  }
+
+  refresh() {
+    this.seriesService.clearCache();
+    this.scrollState.reset();
+    this.snackBar.open('Series refreshed', 'Close', { duration: 1500 });
   }
 }

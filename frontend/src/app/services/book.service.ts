@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, of } from 'rxjs';
+import { tap } from 'rxjs/operators';
 import { Book, CursorPageResponse, BookRequest, CompletionRequest, CompletionResponse, BookSearchCriteria } from '../models/book.model';
 import { environment } from '../../environments/environment';
 
@@ -9,6 +10,8 @@ import { environment } from '../../environments/environment';
 })
 export class BookService {
   private readonly baseUrl = `${environment.apiUrl}/v1/books`;
+  private readonly ttlMs = 5 * 60 * 1000; // 5 minutes
+  private cache = new Map<string, { timestamp: number; data: any }>();
 
   constructor(private http: HttpClient) {}
 
@@ -18,8 +21,14 @@ export class BookService {
     if (cursor) {
       params = params.set('cursor', cursor);
     }
-    
-    return this.http.get<CursorPageResponse<Book>>(this.baseUrl, { params });
+    const key = `getAllBooks|cursor=${cursor || ''}|limit=${limit}`;
+    const cached = this.cache.get(key);
+    if (cached && Date.now() - cached.timestamp < this.ttlMs) {
+      return of(cached.data as CursorPageResponse<Book>);
+    }
+    return this.http.get<CursorPageResponse<Book>>(this.baseUrl, { params }).pipe(
+      tap(res => this.cache.set(key, { timestamp: Date.now(), data: res }))
+    );
   }
 
   getBookById(id: string): Observable<Book> {
@@ -46,8 +55,14 @@ export class BookService {
     if (cursor) {
       params = params.set('cursor', cursor);
     }
-    
-    return this.http.get<CursorPageResponse<Book>>(`${this.baseUrl}/search`, { params });
+    const key = `searchBooks|q=${query}|cursor=${cursor || ''}|limit=${limit}`;
+    const cached = this.cache.get(key);
+    if (cached && Date.now() - cached.timestamp < this.ttlMs) {
+      return of(cached.data as CursorPageResponse<Book>);
+    }
+    return this.http.get<CursorPageResponse<Book>>(`${this.baseUrl}/search`, { params }).pipe(
+      tap(res => this.cache.set(key, { timestamp: Date.now(), data: res }))
+    );
   }
 
   searchBooksByCriteria(criteria: BookSearchCriteria, cursor?: string, limit: number = 20): Observable<CursorPageResponse<Book>> {
@@ -56,8 +71,14 @@ export class BookService {
     if (cursor) {
       params = params.set('cursor', cursor);
     }
-    
-    return this.http.post<CursorPageResponse<Book>>(`${this.baseUrl}/criteria`, criteria, { params });
+    const key = `searchBooksByCriteria|${JSON.stringify(criteria)}|cursor=${cursor || ''}|limit=${limit}`;
+    const cached = this.cache.get(key);
+    if (cached && Date.now() - cached.timestamp < this.ttlMs) {
+      return of(cached.data as CursorPageResponse<Book>);
+    }
+    return this.http.post<CursorPageResponse<Book>>(`${this.baseUrl}/criteria`, criteria, { params }).pipe(
+      tap(res => this.cache.set(key, { timestamp: Date.now(), data: res }))
+    );
   }
 
   buildSearchCriteria(filters: any): BookSearchCriteria {
@@ -81,4 +102,6 @@ export class BookService {
     const completionData: CompletionRequest = { progress };
     return this.http.post<CompletionResponse>(`${this.baseUrl}/${bookId}/completion`, completionData);
   }
+
+  clearCache() { this.cache.clear(); }
 }
