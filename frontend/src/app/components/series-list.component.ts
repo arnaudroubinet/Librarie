@@ -59,8 +59,8 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
               <h2>No series found</h2>
               <p>No series found in your collection. Series will appear here when you add books that are part of a series.</p>
               <button mat-raised-button color="accent" routerLink="/library" class="cta-button">
-                <mat-icon>add</mat-icon>
-                Manage Library
+                <iconify-icon icon="cil:magnifying-glass"></iconify-icon>
+                Scan Library
               </button>
             </div>
           </div>
@@ -131,156 +131,7 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
       }
     </div>
   `,
-  styles: [`
-    .plex-library {
-      min-height: 100vh;
-      background: transparent;
-      color: #ffffff;
-      padding: 0;
-    }
-
-    .library-header {
-      /* Transparent to keep a single page gradient */
-      background: transparent;
-      padding: 24px 20px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      /* Remove bottom border and gap to avoid separation */
-      /* border-bottom: 1px solid #333; */
-      margin-bottom: 0;
-    }
-
-    .header-content { flex: 1; }
-
-    .library-title {
-      font-size: 20px;
-      font-weight: 600;
-      margin: 0;
-      color: #ffffff;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      letter-spacing: -0.5px;
-    }
-
-    .title-icon { font-size: 32px; width: 32px; height: 32px; color: #e5a00d; margin-right: 12px; }
-
-    .library-subtitle { font-size: 0.95rem; margin: 4px 0 0 0; opacity: 0.85; color: #cfcfcf; }
-
-    .header-actions { display: flex; gap: 16px; align-items: center; }
-
-    .fab-search { background: linear-gradient(135deg, #4fc3f7 0%, #29b6f6 100%) !important; color: white !important; box-shadow: 0 8px 32px rgba(79, 195, 247, 0.3) !important; }
-
-    .fab-search:hover { transform: translateY(-2px) !important; }
-
-    .loading-section { display: flex; justify-content: center; align-items: center; min-height: 60vh; text-align: center; }
-
-    .loading-content h3 { margin: 24px 0 8px 0; font-size: 1.5rem; font-weight: 400; }
-
-    .loading-content p { margin: 0; opacity: 0.7; font-size: 1rem; }
-
-    .empty-library { display: flex; justify-content: center; align-items: center; min-height: 60vh; text-align: center; }
-
-    .empty-content { max-width: 500px; padding: 48px 24px; }
-
-    .empty-icon { font-size: 6rem; color: #555; margin-bottom: 24px; }
-
-    .empty-content h2 { font-size: 2rem; font-weight: 300; margin: 0 0 16px 0; color: #ffffff; }
-
-    .empty-content p { font-size: 1.1rem; line-height: 1.6; opacity: 0.8; margin: 0 0 32px 0; }
-
-    .cta-button { background: linear-gradient(135deg, #4fc3f7 0%, #29b6f6 100%) !important; color: white !important; padding: 12px 32px !important; font-size: 1.1rem !important; }
-
-    .library-content { padding: 0; }
-
-    .series-grid {
-      display: grid;
-      /* Fixed tile width to keep same size on mobile and desktop */
-      grid-template-columns: repeat(auto-fill, 240px);
-      justify-content: center;
-      gap: 24px;
-      padding: 32px;
-      margin: 0 auto;
-    }
-
-    .series-card {
-      background: rgba(255, 255, 255, 0.05);
-      border-radius: 12px;
-      overflow: hidden;
-      transition: all 0.3s ease;
-      cursor: pointer;
-      position: relative;
-      backdrop-filter: blur(10px);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      /* Keep card height equal to the picture height */
-      width: 240px;
-      height: 360px;
-    }
-
-    .series-card:hover { transform: translateY(-8px); box-shadow: 0 25px 50px rgba(0, 0, 0, 0.4); border-color: rgba(79, 195, 247, 0.5); }
-
-    .series-cover { position: relative; width: 100%; height: 100%; overflow: hidden; }
-
-    .cover-image { width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 0.3s ease, transform 0.3s ease; }
-
-    .cover-image.loaded { opacity: 1; }
-
-    .series-card:hover .cover-image { transform: scale(1.05); }
-
-    .cover-placeholder { width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; background: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%); color: #666; text-align: center; padding: 16px; }
-
-    .cover-placeholder mat-icon { font-size: 3rem; margin-bottom: 8px; }
-
-    .series-title-text { font-size: 1rem; line-height: 1.2; word-break: break-word; }
-
-    .series-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.3s ease; z-index: 2; }
-
-    .series-card:hover .series-overlay { opacity: 1; }
-
-    .series-actions { display: flex; gap: 16px; }
-
-    .action-btn { background: rgba(255, 255, 255, 0.2) !important; color: white !important; width: 80px !important; height: 80px !important; transition: all 0.3s ease !important; }
-
-    .action-btn:hover { background: rgba(79, 195, 247, 0.8) !important; transform: scale(1.1) !important; }
-
-    .action-btn iconify-icon { font-size: 28px; width: 28px; height: 28px; }
-
-    .series-info { position: absolute; left: 0; right: 0; bottom: 0; padding: 8px 10px; text-align: left; background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.65) 40%, rgba(0,0,0,0.85) 100%); z-index: 1; }
-
-    .series-title { font-size: 1.1rem; font-weight: 600; margin: 0 0 4px 0; color: #ffffff; line-height: 1.2; height: 2.4em; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
-
-    .book-count { font-size: 0.8rem; margin: 0; opacity: 0.7; color: #4fc3f7; font-weight: 500; }
-
-    .load-more-container { display: flex; flex-direction: column; align-items: center; padding: 40px 20px; gap: 16px; }
-
-    .load-more-container p { margin: 0; opacity: 0.7; }
-
-    .load-more-error { display: flex; flex-direction: column; align-items: center; padding: 40px 20px; gap: 16px; }
-
-    .load-more-error p { margin: 0; color: #f44336; }
-
-    .end-of-list { display: flex; justify-content: center; padding: 40px 20px; opacity: 0.6; }
-
-    .end-of-list p { margin: 0; font-style: italic; }
-
-    /* Responsive design (keep tile size identical across breakpoints) */
-    @media (max-width: 768px) {
-      .library-header { padding: 24px 16px; flex-direction: column; align-items: flex-start; gap: 16px; }
-      .library-title { font-size: 2rem !important; }
-      /* Keep same card width and cover height on mobile */
-      .series-grid { grid-template-columns: repeat(auto-fill, 240px); justify-content: center; gap: 24px; padding: 24px; }
-      .series-actions { opacity: 1; position: static; margin-top: 8px; justify-content: center; }
-      .action-btn { width: 64px !important; height: 64px !important; min-width: 64px !important; }
-    }
-
-    @media (max-width: 480px) {
-      /* Keep same card width and cover height on small phones */
-      .series-grid { grid-template-columns: repeat(auto-fill, 240px); justify-content: center; gap: 16px; padding: 16px; }
-      .library-title { font-size: 1.75rem; }
-      .fab-search { width: 64px; height: 64px; min-width: 64px; }
-    }
-  `]
+  styleUrls: ['./series-list.component.css']
 })
 export class SeriesListComponent implements OnInit {
   scrollState;

@@ -26,6 +26,15 @@ a:hover, a:focus { color: #ffffff; text-decoration: underline; }
   --text-secondary: rgba(0, 0, 0, 0.54);
   --font-family-primary: 'Poppins', 'Inter', 'Roboto', sans-serif;
   --font-family-display: 'Inter', 'Poppins', 'Roboto', sans-serif;
+  /* Unified theme tokens */
+  --app-bg: #1f1f1f;
+  --content-fg: #ffffff;
+  --muted-fg: #888;
+  --border-color: rgba(255, 255, 255, 0.1);
+  --panel-bg: rgba(255, 255, 255, 0.05);
+  --panel-bg-soft: rgba(255, 255, 255, 0.03);
+  --accent-grad-start: #4fc3f7;
+  --accent-grad-end: #29b6f6;
 }
 
 /* Utility classes */
@@ -91,3 +100,31 @@ a:hover, a:focus { color: #ffffff; text-decoration: underline; }
     margin: 4px;
   }
 }
+
+/* Unified app background and content defaults */
+body, .plex-container { background: var(--app-bg); color: var(--content-fg); }
+.plex-library { min-height: 100vh; background: transparent; color: var(--content-fg); padding: 0; }
+
+/* Top section (header) shared styles */
+.plex-library .library-header { background: transparent; padding: 24px 20px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 0; }
+.plex-library .header-content { flex: 1; }
+.plex-library .library-title { font-size: 20px; font-weight: 600; margin: 0; color: var(--content-fg); display: flex; align-items: center; gap: 12px; letter-spacing: -0.5px; }
+.plex-library .title-icon { font-size: 32px; width: 32px; height: 32px; color: #e5a00d; margin-right: 12px; }
+.plex-library .library-subtitle { font-size: 0.95rem; margin: 4px 0 0 0; opacity: 0.9; color: var(--muted-fg); }
+
+/* Section titles in content area */
+.plex-library .section-title { display: flex; align-items: center; gap: 8px; font-size: 1.25rem; font-weight: 600; margin: 0 0 16px 0; color: var(--accent-grad-start); }
+.plex-library .section-title iconify-icon { margin-right: 8px; font-size: 20px; width: 20px; height: 20px; }
+
+/* Back button (sticky) used on detail pages */
+.plex-library .back-button { padding: 24px 20px; position: sticky; top: 0; background: transparent; backdrop-filter: none; z-index: 10; border-bottom: none; }
+.plex-library .back-button button { color: var(--content-fg) !important; font-weight: 500 !important; }
+.plex-library .back-button iconify-icon { margin-right: 8px; font-size: 20px; width: 20px; height: 20px; }
+
+/* Primary CTA/FAB unified gradient */
+.cta-button,
+.fab-search,
+.btn-primary { background: linear-gradient(135deg, var(--accent-grad-start) 0%, var(--accent-grad-end) 100%) !important; color: #ffffff !important; box-shadow: 0 8px 32px rgba(79, 195, 247, 0.3) !important; transition: all 0.3s ease !important; }
+.cta-button:hover,
+.fab-search:hover,
+.btn-primary:hover { transform: translateY(-2px) !important; box-shadow: 0 12px 40px rgba(79, 195, 247, 0.4) !important; }
