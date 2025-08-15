@@ -32,7 +32,7 @@ import { forkJoin } from 'rxjs';
     MatDividerModule
   ],
   template: `
-  <div class="author-detail-container plex-library">
+  <div class="author-detail-container motspassants-library">
       @if (loading()) {
         <div class="loading-container">
           <mat-spinner diameter="50"></mat-spinner>

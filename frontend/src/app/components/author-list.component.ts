@@ -33,7 +33,7 @@ import { environment } from '../../environments/environment';
     InfiniteScrollDirective
   ],
   template: `
-    <div class="plex-library" appInfiniteScroll (scrolled)="onScroll()" [disabled]="scrollState.loading()">
+  <div class="motspassants-library" appInfiniteScroll (scrolled)="onScroll()" [disabled]="scrollState.loading()">
       <div class="library-header">
         <div class="header-content">
           <h1 class="library-title">

@@ -1,4 +1,4 @@
-/* Shared top/background styles are now global under .plex-library */
+/* Shared top/background styles are now global under .motspassants-library */
 
 .loading-section { display: flex; justify-content: center; align-items: center; min-height: 60vh; text-align: center; }
 .loading-content h3 { margin: 24px 0 8px 0; font-size: 1.5rem; font-weight: 400; }

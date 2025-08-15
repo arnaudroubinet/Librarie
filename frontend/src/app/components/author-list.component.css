@@ -1,6 +1,6 @@
 :host { --card-w: 240px; --grid-gap: 24px; --grid-pad: 32px; }
 
-/* Top bar + title moved to global styles.css under .plex-library */
+/* Top bar + title moved to global styles.css under .motspassants-library */
 
 .header-actions { display: flex; gap: 16px; align-items: center; }
 .fab-search { background: linear-gradient(135deg, #4fc3f7 0%, #29b6f6 100%) !important; color: white !important; box-shadow: 0 8px 32px rgba(79, 195, 247, 0.3) !important; transition: all 0.3s ease !important; }

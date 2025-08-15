@@ -36,7 +36,7 @@ import { forkJoin, of } from 'rxjs';
   MatRippleModule
   ],
   template: `
-    <div class="series-detail-container plex-library">
+  <div class="series-detail-container motspassants-library">
       @if (loading()) {
         <div class="loading-container">
           <mat-spinner diameter="50"></mat-spinner>

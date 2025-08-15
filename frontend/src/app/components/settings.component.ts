@@ -24,7 +24,7 @@ import pkg from '../../../package.json';
     MatSnackBarModule
   ],
   template: `
-    <div class="plex-library">
+  <div class="motspassants-library">
       <div class="library-header">
         <div class="header-content">
           <h1 class="library-title">

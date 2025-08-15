@@ -15,11 +15,11 @@ import pkg from '../../../package.json';
     
   ],
   template: `
-    <div class="plex-container">
-      <nav class="plex-sidebar">
-        <div class="plex-logo">
+    <div class="motspassants-container">
+      <nav class="motspassants-sidebar">
+        <div class="motspassants-logo">
           <iconify-icon class="logo-icon" icon="mdi:bookshelf"></iconify-icon>
-          <span class="logo-text">Librarie</span>
+          <span class="logo-text">MotsPassants</span>
         </div>
         
         <div class="nav-section">
@@ -58,7 +58,7 @@ import pkg from '../../../package.json';
         </div>
       </nav>
 
-      <main class="plex-content">
+  <main class="motspassants-content">
         <ng-content></ng-content>
       </main>
     </div>

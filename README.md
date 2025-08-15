@@ -1,4 +1,4 @@
-# Librarie
+# MotsPassants
 A Quarkus and Angular library management system
 
 ## Project Structure

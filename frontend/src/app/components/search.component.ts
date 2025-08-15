@@ -46,7 +46,7 @@ import { environment } from '../../environments/environment';
     MatRippleModule
   ],
   template: `
-    <div class="plex-library plex-search">
+  <div class="motspassants-library motspassants-search">
       <div class="library-header">
         <div class="header-content">
           <h1 class="library-title">

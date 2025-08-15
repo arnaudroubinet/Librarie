@@ -1,5 +1,5 @@
 /* Book Detail Styles extracted from inline styles */
-/* Uses global .plex-library defaults */
+/* Uses global .motspassants-library defaults */
 
 .loading-container, .error-state {
   display: flex;
@@ -19,7 +19,7 @@
   margin-bottom: 16px;
 }
 
-/* Back button styles are global under .plex-library */
+/* Back button styles are global under .motspassants-library */
 
 .book-layout {
   display: flex;

@@ -102,24 +102,24 @@ a:hover, a:focus { color: #ffffff; text-decoration: underline; }
 }
 
 /* Unified app background and content defaults */
-body, .plex-container { background: var(--app-bg); color: var(--content-fg); }
-.plex-library { min-height: 100vh; background: transparent; color: var(--content-fg); padding: 0; }
+body, .motspassants-container { background: var(--app-bg); color: var(--content-fg); }
+.motspassants-library { min-height: 100vh; background: transparent; color: var(--content-fg); padding: 0; }
 
 /* Top section (header) shared styles */
-.plex-library .library-header { background: transparent; padding: 24px 20px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 0; }
-.plex-library .header-content { flex: 1; }
-.plex-library .library-title { font-size: 20px; font-weight: 600; margin: 0; color: var(--content-fg); display: flex; align-items: center; gap: 12px; letter-spacing: -0.5px; }
-.plex-library .title-icon { font-size: 32px; width: 32px; height: 32px; color: #e5a00d; margin-right: 12px; }
-.plex-library .library-subtitle { font-size: 0.95rem; margin: 4px 0 0 0; opacity: 0.9; color: var(--muted-fg); }
+.motspassants-library .library-header { background: transparent; padding: 24px 20px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 0; }
+.motspassants-library .header-content { flex: 1; }
+.motspassants-library .library-title { font-size: 20px; font-weight: 600; margin: 0; color: var(--content-fg); display: flex; align-items: center; gap: 12px; letter-spacing: -0.5px; }
+.motspassants-library .title-icon { font-size: 32px; width: 32px; height: 32px; color: #e5a00d; margin-right: 12px; }
+.motspassants-library .library-subtitle { font-size: 0.95rem; margin: 4px 0 0 0; opacity: 0.9; color: var(--muted-fg); }
 
 /* Section titles in content area */
-.plex-library .section-title { display: flex; align-items: center; gap: 8px; font-size: 1.25rem; font-weight: 600; margin: 0 0 16px 0; color: var(--accent-grad-start); }
-.plex-library .section-title iconify-icon { margin-right: 8px; font-size: 20px; width: 20px; height: 20px; }
+.motspassants-library .section-title { display: flex; align-items: center; gap: 8px; font-size: 1.25rem; font-weight: 600; margin: 0 0 16px 0; color: var(--accent-grad-start); }
+.motspassants-library .section-title iconify-icon { margin-right: 8px; font-size: 20px; width: 20px; height: 20px; }
 
 /* Back button (sticky) used on detail pages */
-.plex-library .back-button { padding: 24px 20px; position: sticky; top: 0; background: transparent; backdrop-filter: none; z-index: 10; border-bottom: none; }
-.plex-library .back-button button { color: var(--content-fg) !important; font-weight: 500 !important; }
-.plex-library .back-button iconify-icon { margin-right: 8px; font-size: 20px; width: 20px; height: 20px; }
+.motspassants-library .back-button { padding: 24px 20px; position: sticky; top: 0; background: transparent; backdrop-filter: none; z-index: 10; border-bottom: none; }
+.motspassants-library .back-button button { color: var(--content-fg) !important; font-weight: 500 !important; }
+.motspassants-library .back-button iconify-icon { margin-right: 8px; font-size: 20px; width: 20px; height: 20px; }
 
 /* Primary CTA/FAB unified gradient */
 .cta-button,

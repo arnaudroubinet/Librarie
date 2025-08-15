@@ -30,7 +30,7 @@ import { environment } from '../../environments/environment';
     MatDividerModule
   ],
   template: `
-  <div class="book-detail-container plex-library">
+  <div class="book-detail-container motspassants-library">
       @if (loading()) {
         <div class="loading-container">
           <mat-spinner diameter="50"></mat-spinner>

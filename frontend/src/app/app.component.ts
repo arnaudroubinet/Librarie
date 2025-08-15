@@ -13,5 +13,5 @@ import { NavigationComponent } from './components/navigation.component';
   styleUrl: './app.component.css'
 })
 export class AppComponent {
-  title = 'Librarie';
+  title = 'MotsPassants';
 }

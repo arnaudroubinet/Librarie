@@ -1,7 +1,7 @@
 
-.plex-container { display: flex; height: 100vh; }
+.motspassants-container { display: flex; height: 100vh; }
 
-.plex-sidebar {
+.motspassants-sidebar {
   width: 240px;
   /* Transparent to let the root gradient flow across the whole page */
   background: transparent;
@@ -14,7 +14,7 @@
   /* box-shadow: 2px 0 10px rgba(0, 0, 0, 0.3); */
 }
 
-.plex-logo {
+.motspassants-logo {
   display: flex;
   align-items: center;
   padding: 24px 20px;
@@ -108,12 +108,12 @@
 
 .version-info :is(mat-icon, iconify-icon) { margin-right: 8px; font-size: 16px; width: 16px; height: 16px; }
 
-.plex-content { flex: 1; background: transparent; overflow-y: auto; position: relative; }
+.motspassants-content { flex: 1; background: transparent; overflow-y: auto; position: relative; }
 /* Remove top overlay that visually separates header and content */
-/* .plex-content::before { ... } */
+/* .motspassants-content::before { ... } */
 
 @media (max-width: 768px) {
-  .plex-sidebar { width: 60px; }
+  .motspassants-sidebar { width: 60px; }
   .logo-text,
   .section-title,
   .nav-item span,
