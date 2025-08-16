@@ -68,16 +68,14 @@ public class SeriesController {
                 .collect(Collectors.toList());
             
             // Convert domain pagination metadata to infrastructure DTO
-            // API uses 1-based page numbers for compatibility
-            PageResponseDto.PaginationMetadata responseMetadata = new PageResponseDto.PaginationMetadata(
-                pageResult.getMetadata().getPage() + 1, // Convert to 1-based
-                pageResult.getMetadata().getSize(),
-                pageResult.getMetadata().getTotalElements()
-            );
-            
-            PageResponseDto<SeriesResponseDto> response = new PageResponseDto<>(
+            PageResponseDto<SeriesResponseDto> response = new PageResponseDto<SeriesResponseDto>(
                 seriesDtos,
-                responseMetadata
+                null, // nextCursor - not implemented for now
+                null, // previousCursor - not implemented for now
+                pageSize, // limit
+                pageResult.getMetadata().getPage() < pageResult.getMetadata().getTotalPages() - 1, // hasNext (0-based page)
+                pageResult.getMetadata().getPage() > 0, // hasPrevious (0-based page)
+                pageResult.getMetadata().getTotalElements()
             );
             
             return Response.ok(response).build();
@@ -284,15 +282,14 @@ public class SeriesController {
             }
             
             // Create paginated response to match test expectations
-            PageResponseDto.PaginationMetadata metadata = new PageResponseDto.PaginationMetadata(
-                1, // page 1
-                pageSize,
-                series.size()
-            );
-            
-            PageResponseDto<SeriesResponseDto> response = new PageResponseDto<>(
+            PageResponseDto<SeriesResponseDto> response = new PageResponseDto<SeriesResponseDto>(
                 seriesDtos,
-                metadata
+                null, // nextCursor
+                null, // previousCursor
+                pageSize, // limit
+                false, // hasNext (single page search result)
+                false, // hasPrevious (single page search result)
+                (long) series.size() // totalElements
             );
             
             return Response.ok(response).build();

@@ -60,13 +60,15 @@ public class AuthorController {
                 .map(this::toResponseDto)
                 .collect(Collectors.toList());
                 
-            PageResponseDto.PaginationMetadata metadata = new PageResponseDto.PaginationMetadata();
-            metadata.setTotalElements(pageResult.getTotalCount());
-            metadata.setPageSize(limit);
-            metadata.setNextCursor(pageResult.getNextCursor());
-            metadata.setPreviousCursor(pageResult.getPreviousCursor());
-            
-            PageResponseDto<AuthorResponseDto> response = new PageResponseDto<>(authorDtos, metadata);
+            PageResponseDto<AuthorResponseDto> response = new PageResponseDto<AuthorResponseDto>(
+                authorDtos,
+                pageResult.getNextCursor(),
+                pageResult.getPreviousCursor(),
+                limit,
+                pageResult.getNextCursor() != null,
+                pageResult.getPreviousCursor() != null,
+                (long) pageResult.getTotalCount()
+            );
             
             return Response.ok(response).build();
             
@@ -280,13 +282,15 @@ public class AuthorController {
                 .map(this::toResponseDto)
                 .collect(Collectors.toList());
                 
-            PageResponseDto.PaginationMetadata metadata = new PageResponseDto.PaginationMetadata();
-            metadata.setTotalElements(pageResult.getTotalCount());
-            metadata.setPageSize(limit);
-            metadata.setNextCursor(pageResult.getNextCursor());
-            metadata.setPreviousCursor(pageResult.getPreviousCursor());
-            
-            PageResponseDto<AuthorResponseDto> response = new PageResponseDto<>(authorDtos, metadata);
+            PageResponseDto<AuthorResponseDto> response = new PageResponseDto<AuthorResponseDto>(
+                authorDtos,
+                pageResult.getNextCursor(),
+                pageResult.getPreviousCursor(),
+                limit,
+                pageResult.getNextCursor() != null,
+                pageResult.getPreviousCursor() != null,
+                (long) pageResult.getTotalCount()
+            );
             
             return Response.ok(response).build();
             

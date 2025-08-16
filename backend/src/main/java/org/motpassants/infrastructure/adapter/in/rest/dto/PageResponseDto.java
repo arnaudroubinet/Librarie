@@ -7,6 +7,7 @@ import java.util.List;
 /**
  * Generic DTO for paginated API responses.
  * Provides a consistent structure for all paginated endpoints.
+ * Uses the same format as backend-copy for frontend compatibility.
  * 
  * @param <T> the type of content in the page
  */
@@ -14,113 +15,107 @@ import java.util.List;
 public class PageResponseDto<T> {
     
     @Schema(description = "List of items in this page")
-    private List<T> data;
+    private List<T> content;
     
-    @Schema(description = "Metadata about the pagination")
-    private PaginationMetadata metadata;
+    @Schema(description = "Cursor for next page if available")
+    private String nextCursor;
+    
+    @Schema(description = "Cursor for previous page if available")  
+    private String previousCursor;
+    
+    @Schema(description = "Limit used in this request", example = "20")
+    private int limit;
+    
+    @Schema(description = "Number of items in current page", example = "20")
+    private int size;
+    
+    @Schema(description = "Whether there is a next page available", example = "true")
+    private boolean hasNext;
+    
+    @Schema(description = "Whether there is a previous page available", example = "false")
+    private boolean hasPrevious;
+    
+    @Schema(description = "Total number of items (null if not calculated)")
+    private Long totalElements;
     
     // Default constructor
     public PageResponseDto() {}
     
     // Constructor
-    public PageResponseDto(List<T> data, PaginationMetadata metadata) {
-        this.data = data;
-        this.metadata = metadata;
+    public PageResponseDto(List<T> content, String nextCursor, String previousCursor, int limit, boolean hasNext, boolean hasPrevious, Long totalElements) {
+        this.content = content;
+        this.nextCursor = nextCursor;
+        this.previousCursor = previousCursor;
+        this.limit = limit;
+        this.size = content != null ? content.size() : 0;
+        this.hasNext = hasNext;
+        this.hasPrevious = hasPrevious;
+        this.totalElements = totalElements;
     }
     
     // Getters and setters
-    public List<T> getData() {
-        return data;
+    public List<T> getContent() {
+        return content;
     }
     
-    public void setData(List<T> data) {
-        this.data = data;
+    public void setContent(List<T> content) {
+        this.content = content;
+        this.size = content != null ? content.size() : 0;
     }
     
-    public PaginationMetadata getMetadata() {
-        return metadata;
+    public String getNextCursor() { 
+        return nextCursor; 
     }
     
-    public void setMetadata(PaginationMetadata metadata) {
-        this.metadata = metadata;
+    public void setNextCursor(String nextCursor) { 
+        this.nextCursor = nextCursor; 
     }
     
-    /**
-     * Metadata for pagination information.
-     */
-    @Schema(description = "Pagination metadata")
-    public static class PaginationMetadata {
-        @Schema(description = "Current page number", example = "1")
-        private int page;
-        
-        @Schema(description = "Number of items per page", example = "20")
-        private int pageSize;
-        
-        @Schema(description = "Limit used in this request", example = "20")
-        private int limit;
-        
-        @Schema(description = "Total number of items", example = "156")
-        private long totalElements;
-        
-        @Schema(description = "Total number of pages", example = "8")
-        private int totalPages;
-        
-        @Schema(description = "Whether this is the first page", example = "false")
-        private boolean first;
-        
-        @Schema(description = "Whether this is the last page", example = "true")
-        private boolean last;
-        
-        @Schema(description = "Cursor for next page if available")
-        private String nextCursor;
-        
-        @Schema(description = "Cursor for previous page if available")
-        private String previousCursor;
-        
-        public PaginationMetadata() {}
-        
-        public PaginationMetadata(int page, int pageSize, long totalElements) {
-            this.page = page;
-            this.pageSize = pageSize;
-            this.limit = pageSize; // limit is same as pageSize
-            this.totalElements = totalElements;
-            this.totalPages = (int) Math.ceil((double) totalElements / pageSize);
-            this.first = page == 1;
-            this.last = page >= totalPages;
-        }
-        
-        // Getters and setters
-        public int getPage() { return page; }
-        public void setPage(int page) { this.page = page; }
-        
-        public int getPageSize() { return pageSize; }
-        public void setPageSize(int pageSize) { 
-            this.pageSize = pageSize; 
-            this.limit = pageSize;
-        }
-        
-        public int getLimit() { return limit; }
-        public void setLimit(int limit) { 
-            this.limit = limit; 
-            this.pageSize = limit;
-        }
-        
-        public long getTotalElements() { return totalElements; }
-        public void setTotalElements(long totalElements) { this.totalElements = totalElements; }
-        
-        public int getTotalPages() { return totalPages; }
-        public void setTotalPages(int totalPages) { this.totalPages = totalPages; }
-        
-        public boolean isFirst() { return first; }
-        public void setFirst(boolean first) { this.first = first; }
-        
-        public boolean isLast() { return last; }
-        public void setLast(boolean last) { this.last = last; }
-        
-        public String getNextCursor() { return nextCursor; }
-        public void setNextCursor(String nextCursor) { this.nextCursor = nextCursor; }
-        
-        public String getPreviousCursor() { return previousCursor; }
-        public void setPreviousCursor(String previousCursor) { this.previousCursor = previousCursor; }
+    public String getPreviousCursor() { 
+        return previousCursor; 
+    }
+    
+    public void setPreviousCursor(String previousCursor) { 
+        this.previousCursor = previousCursor; 
+    }
+    
+    public int getLimit() { 
+        return limit; 
+    }
+    
+    public void setLimit(int limit) { 
+        this.limit = limit; 
+    }
+    
+    public int getSize() { 
+        return size; 
+    }
+    
+    public void setSize(int size) { 
+        this.size = size; 
+    }
+    
+    public boolean isHasNext() { 
+        return hasNext; 
+    }
+    
+    public void setHasNext(boolean hasNext) { 
+        this.hasNext = hasNext; 
+    }
+    
+    public boolean isHasPrevious() { 
+        return hasPrevious; 
+    }
+    
+    public void setHasPrevious(boolean hasPrevious) { 
+        this.hasPrevious = hasPrevious; 
+    }
+    
+    public Long getTotalElements() { 
+        return totalElements; 
+    }
+    
+    public void setTotalElements(Long totalElements) { 
+        this.totalElements = totalElements; 
     }
 }

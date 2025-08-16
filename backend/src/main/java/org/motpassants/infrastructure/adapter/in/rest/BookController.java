@@ -60,13 +60,15 @@ public class BookController {
                 .map(this::toResponseDto)
                 .collect(Collectors.toList());
             
-            PageResponseDto.PaginationMetadata metadata = new PageResponseDto.PaginationMetadata();
-            metadata.setTotalElements(result.getTotalCount());
-            metadata.setPageSize(limit);
-            metadata.setNextCursor(result.getNextCursor());
-            metadata.setPreviousCursor(result.getPreviousCursor());
-            
-            PageResponseDto<BookResponseDto> response = new PageResponseDto<>(bookDtos, metadata);
+            PageResponseDto<BookResponseDto> response = new PageResponseDto<BookResponseDto>(
+                bookDtos,
+                result.getNextCursor(),
+                result.getPreviousCursor(),
+                limit,
+                result.getNextCursor() != null,
+                result.getPreviousCursor() != null,
+                (long) result.getTotalCount()
+            );
             return Response.ok(response).build();
         } catch (IllegalArgumentException e) {
             return Response.status(Response.Status.BAD_REQUEST)
@@ -205,10 +207,15 @@ public class BookController {
             .map(this::toResponseDto)
             .collect(Collectors.toList());
             
-        PageResponseDto.PaginationMetadata metadata = new PageResponseDto.PaginationMetadata();
-        metadata.setTotalElements(books.size());
-        
-        PageResponseDto<BookResponseDto> response = new PageResponseDto<>(bookDtos, metadata);
+        PageResponseDto<BookResponseDto> response = new PageResponseDto<BookResponseDto>(
+            bookDtos,
+            null, // nextCursor
+            null, // previousCursor  
+            bookDtos.size(), // limit
+            false, // hasNext
+            false, // hasPrevious
+            (long) books.size() // totalElements
+        );
         return Response.ok(response).build();
     }
 
@@ -226,10 +233,15 @@ public class BookController {
                 .map(this::toResponseDto)
                 .collect(Collectors.toList());
                 
-            PageResponseDto.PaginationMetadata metadata = new PageResponseDto.PaginationMetadata();
-            metadata.setTotalElements(books.size());
-            
-            PageResponseDto<BookResponseDto> response = new PageResponseDto<>(bookDtos, metadata);
+            PageResponseDto<BookResponseDto> response = new PageResponseDto<BookResponseDto>(
+                bookDtos,
+                null, // nextCursor
+                null, // previousCursor
+                bookDtos.size(), // limit
+                false, // hasNext
+                false, // hasPrevious
+                (long) books.size() // totalElements
+            );
             return Response.ok(response).build();
         } catch (IllegalArgumentException e) {
             return Response.status(Response.Status.BAD_REQUEST)
