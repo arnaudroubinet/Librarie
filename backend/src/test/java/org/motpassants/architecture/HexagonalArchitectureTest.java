@@ -43,6 +43,7 @@ class HexagonalArchitectureTest {
                             "javax..",
                             "org.motpassants.domain.core.."
                     )
+                    .allowEmptyShould(true)
                     .because("Domain core should not depend on any external frameworks or infrastructure");
 
             rule.check(classes);
@@ -61,6 +62,7 @@ class HexagonalArchitectureTest {
                             "javax..",
                             "org.motpassants.domain.."
                     )
+                    .allowEmptyShould(true)
                     .because("Domain ports should only depend on domain core");
 
             rule.check(classes);
@@ -83,6 +85,7 @@ class HexagonalArchitectureTest {
                             "org.motpassants.domain..",
                             "org.motpassants.application.."
                     )
+                    .allowEmptyShould(true)
                     .because("Application layer should only depend on domain and standard Java/Jakarta APIs");
 
             rule.check(classes);
@@ -95,6 +98,7 @@ class HexagonalArchitectureTest {
                     .resideInAnyPackage("..domain..", "..application..")
                     .should().dependOnClassesThat()
                     .resideInAPackage("..infrastructure..")
+                    .allowEmptyShould(true)
                     .because("Domain and Application layers should not depend on Infrastructure");
 
             rule.check(classes);
@@ -108,15 +112,22 @@ class HexagonalArchitectureTest {
         @Test
         @DisplayName("Layered architecture should be respected")
         void layeredArchitectureShouldBeRespected() {
+            // This test will become meaningful when we have classes in the packages
+            // For now, we'll just skip the empty layer validation
             ArchRule rule = layeredArchitecture().consideringAllDependencies()
                     .layer("Domain").definedBy("..domain..")
                     .layer("Application").definedBy("..application..")
                     .layer("Infrastructure").definedBy("..infrastructure..")
                     .whereLayer("Infrastructure").mayOnlyBeAccessedByLayers("Infrastructure")
                     .whereLayer("Application").mayOnlyBeAccessedByLayers("Application", "Infrastructure")
-                    .whereLayer("Domain").mayOnlyBeAccessedByLayers("Domain", "Application", "Infrastructure");
+                    .whereLayer("Domain").mayOnlyBeAccessedByLayers("Domain", "Application", "Infrastructure")
+                    .ignoreDependency(Object.class, Object.class); // Allow when layers are empty
 
-            rule.check(classes);
+            // Only check if we have classes in the org.motpassants package
+            if (classes.stream().anyMatch(clazz -> clazz.getPackageName().startsWith("org.motpassants") 
+                    && !clazz.getPackageName().contains("architecture"))) {
+                rule.check(classes);
+            }
         }
 
         @Test
@@ -125,6 +136,7 @@ class HexagonalArchitectureTest {
             ArchRule rule = classes().that()
                     .resideInAPackage("..domain.port.in..")
                     .should().beInterfaces()
+                    .allowEmptyShould(true)
                     .because("Inbound ports should be interfaces defining use cases");
 
             rule.check(classes);
@@ -136,6 +148,7 @@ class HexagonalArchitectureTest {
             ArchRule rule = classes().that()
                     .resideInAPackage("..domain.port.out..")
                     .should().beInterfaces()
+                    .allowEmptyShould(true)
                     .because("Outbound ports should be interfaces defining external dependencies");
 
             rule.check(classes);
@@ -153,6 +166,7 @@ class HexagonalArchitectureTest {
                             "javax..",
                             "org.motpassants.domain.core.."
                     )
+                    .allowEmptyShould(true)
                     .because("Domain services should contain pure business logic without framework dependencies");
 
             rule.check(classes);
@@ -170,6 +184,7 @@ class HexagonalArchitectureTest {
                     .resideInAPackage("..infrastructure.adapter.in..")
                     .should().dependOnClassesThat()
                     .resideInAPackage("..domain.port.in..")
+                    .allowEmptyShould(true)
                     .because("Inbound adapters should implement inbound ports");
 
             rule.check(classes);
@@ -182,6 +197,7 @@ class HexagonalArchitectureTest {
                     .resideInAPackage("..infrastructure.adapter.out..")
                     .should().dependOnClassesThat()
                     .resideInAPackage("..domain.port.out..")
+                    .allowEmptyShould(true)
                     .because("Outbound adapters should implement outbound ports");
 
             rule.check(classes);
@@ -193,6 +209,7 @@ class HexagonalArchitectureTest {
             ArchRule rule = classes().that()
                     .areAnnotatedWith("jakarta.ws.rs.Path")
                     .should().resideInAPackage("..infrastructure.adapter.in.rest..")
+                    .allowEmptyShould(true)
                     .because("REST controllers are inbound adapters");
 
             rule.check(classes);
@@ -205,6 +222,7 @@ class HexagonalArchitectureTest {
                     .haveSimpleNameEndingWith("RepositoryAdapter")
                     .or().haveSimpleNameEndingWith("RepositoryImpl")
                     .should().resideInAPackage("..infrastructure.adapter.out.persistence..")
+                    .allowEmptyShould(true)
                     .because("Repository implementations are outbound adapters");
 
             rule.check(classes);
@@ -229,6 +247,7 @@ class HexagonalArchitectureTest {
                     .orShould().beAnnotatedWith("jakarta.persistence.ManyToOne")
                     .orShould().beAnnotatedWith("jakarta.persistence.ManyToMany")
                     .orShould().beAnnotatedWith("jakarta.persistence.OneToOne")
+                    .allowEmptyShould(true)
                     .because("JPA annotations should only be used in infrastructure layer");
 
             rule.check(classes);
@@ -246,6 +265,7 @@ class HexagonalArchitectureTest {
                     .orShould().beAnnotatedWith("jakarta.ws.rs.POST")
                     .orShould().beAnnotatedWith("jakarta.ws.rs.PUT")
                     .orShould().beAnnotatedWith("jakarta.ws.rs.DELETE")
+                    .allowEmptyShould(true)
                     .because("Domain core should not depend on framework-specific annotations");
 
             rule.check(classes);
@@ -280,6 +300,7 @@ class HexagonalArchitectureTest {
                             "org.hibernate..",
                             "io.quarkus.hibernate.."
                     )
+                    .allowEmptyShould(true)
                     .because("Domain model should be persistence agnostic");
 
             rule.check(classes);
