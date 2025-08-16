@@ -27,9 +27,9 @@ public class BookIntegrationTest {
             .when().get("/v1/books")
             .then()
             .statusCode(200)
-            .body("data", notNullValue())
-            .body("metadata", notNullValue())
-            .body("metadata.totalElements", greaterThanOrEqualTo(0));
+            .body("content", notNullValue())
+            .body("size", greaterThanOrEqualTo(0))
+            .body("limit", greaterThanOrEqualTo(0));
     }
 
     @Test
@@ -95,8 +95,8 @@ public class BookIntegrationTest {
             .when().get("/v1/books/search")
             .then()
             .statusCode(200)
-            .body("data", notNullValue())
-            .body("data", hasSize(greaterThanOrEqualTo(0)));
+            .body("content", notNullValue())
+            .body("content", hasSize(greaterThanOrEqualTo(0)));
     }
 
     @Test
@@ -115,8 +115,8 @@ public class BookIntegrationTest {
             .when().post("/v1/books/criteria")
             .then()
             .statusCode(200)
-            .body("data", notNullValue())
-            .body("data", hasSize(greaterThanOrEqualTo(0)));
+            .body("content", notNullValue())
+            .body("content", hasSize(greaterThanOrEqualTo(0)));
     }
 
     @Test

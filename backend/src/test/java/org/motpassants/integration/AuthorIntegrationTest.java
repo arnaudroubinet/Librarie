@@ -28,9 +28,9 @@ public class AuthorIntegrationTest {
             .when().get("/v1/authors")
             .then()
             .statusCode(200)
-            .body("data", notNullValue())
-            .body("metadata", notNullValue())
-            .body("metadata.totalElements", greaterThanOrEqualTo(0));
+            .body("content", notNullValue())
+            .body("size", greaterThanOrEqualTo(0))
+            .body("limit", greaterThanOrEqualTo(0));
     }
 
     @Test
@@ -41,8 +41,8 @@ public class AuthorIntegrationTest {
             .when().get("/v1/authors")
             .then()
             .statusCode(200)
-            .body("data", notNullValue())
-            .body("metadata.limit", equalTo(5));
+            .body("content", notNullValue())
+            .body("limit", equalTo(5));
     }
 
     @Test
@@ -113,8 +113,8 @@ public class AuthorIntegrationTest {
             .when().get("/v1/authors/search")
             .then()
             .statusCode(200)
-            .body("data", notNullValue())
-            .body("data", hasSize(greaterThanOrEqualTo(0)));
+            .body("content", notNullValue())
+            .body("content", hasSize(greaterThanOrEqualTo(0)));
     }
 
     @Test
@@ -126,8 +126,8 @@ public class AuthorIntegrationTest {
             .when().get("/v1/authors/search")
             .then()
             .statusCode(200)
-            .body("data", notNullValue())
-            .body("metadata.limit", equalTo(5));
+            .body("content", notNullValue())
+            .body("limit", equalTo(5));
     }
 
     @Test

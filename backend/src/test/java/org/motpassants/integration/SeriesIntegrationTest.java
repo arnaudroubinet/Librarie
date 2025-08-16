@@ -28,9 +28,9 @@ public class SeriesIntegrationTest {
             .when().get("/v1/books/series")
             .then()
             .statusCode(200)
-            .body("data", notNullValue())
-            .body("metadata", notNullValue())
-            .body("metadata.totalElements", greaterThanOrEqualTo(0));
+            .body("content", notNullValue())
+            .body("size", greaterThanOrEqualTo(0))
+            .body("limit", greaterThanOrEqualTo(0));
     }
 
     @Test
@@ -41,8 +41,8 @@ public class SeriesIntegrationTest {
             .when().get("/v1/books/series")
             .then()
             .statusCode(200)
-            .body("data", notNullValue())
-            .body("metadata.limit", equalTo(5));
+            .body("content", notNullValue())
+            .body("limit", equalTo(5));
     }
 
     @Test
@@ -113,8 +113,8 @@ public class SeriesIntegrationTest {
             .when().get("/v1/books/series/search")
             .then()
             .statusCode(200)
-            .body("data", notNullValue())
-            .body("data", hasSize(greaterThanOrEqualTo(0)));
+            .body("content", notNullValue())
+            .body("content", hasSize(greaterThanOrEqualTo(0)));
     }
 
     @Test
@@ -126,8 +126,8 @@ public class SeriesIntegrationTest {
             .when().get("/v1/books/series/search")
             .then()
             .statusCode(200)
-            .body("data", notNullValue())
-            .body("metadata.limit", equalTo(5));
+            .body("content", notNullValue())
+            .body("limit", equalTo(5));
     }
 
     @Test
@@ -148,8 +148,8 @@ public class SeriesIntegrationTest {
             .when().get("/v1/books/series/{id}/books", createdSeriesId)
             .then()
             .statusCode(200)
-            .body("data", notNullValue())
-            .body("metadata", notNullValue());
+            .body("content", notNullValue())
+            .body("size", notNullValue());
     }
 
     @Test
