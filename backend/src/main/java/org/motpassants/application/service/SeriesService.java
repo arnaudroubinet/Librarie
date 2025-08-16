@@ -1,10 +1,10 @@
 package org.motpassants.application.service;
 
+import org.motpassants.domain.core.model.Page;
 import org.motpassants.domain.core.model.Series;
 import org.motpassants.domain.core.model.Book;
 import org.motpassants.domain.port.in.SeriesUseCase;
 import org.motpassants.domain.port.out.SeriesRepositoryPort;
-import org.motpassants.infrastructure.adapter.in.rest.dto.PageResponseDto;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -31,7 +31,7 @@ public class SeriesService implements SeriesUseCase {
     }
     
     @Override
-    public PageResponseDto<Series> getAllSeries(int page, int size) {
+    public Page<Series> getAllSeries(int page, int size) {
         if (page < 0) page = 0;
         if (size <= 0) size = 20;
         if (size > 100) size = 100;
@@ -40,13 +40,13 @@ public class SeriesService implements SeriesUseCase {
         List<Series> series = seriesRepository.findAll(offset, size);
         long totalCount = seriesRepository.count();
         
-        PageResponseDto.PaginationMetadata metadata = new PageResponseDto.PaginationMetadata(
-            page + 1, // API uses 1-based page numbers 
+        Page.PaginationMetadata metadata = new Page.PaginationMetadata(
+            page, // Keep 0-based for domain layer
             size, 
             totalCount
         );
         
-        return new PageResponseDto<>(series, metadata);
+        return new Page<>(series, metadata);
     }
     
     @Override

@@ -1,5 +1,6 @@
 package org.motpassants.infrastructure.adapter.in.rest;
 
+import org.motpassants.domain.core.model.Page;
 import org.motpassants.domain.core.model.Series;
 import org.motpassants.domain.core.model.Book;
 import org.motpassants.domain.port.in.SeriesUseCase;
@@ -60,16 +61,23 @@ public class SeriesController {
             // Use limit if provided, otherwise use size
             int pageSize = (limit != null) ? limit : size;
             
-            PageResponseDto<Series> pageResult = seriesUseCase.getAllSeries(page, pageSize);
+            Page<Series> pageResult = seriesUseCase.getAllSeries(page, pageSize);
             
-            List<SeriesResponseDto> seriesDtos = pageResult.getData().stream()
+            List<SeriesResponseDto> seriesDtos = pageResult.getContent().stream()
                 .map(this::toDto)
                 .collect(Collectors.toList());
             
-            // Create response with same metadata but converted DTOs
+            // Convert domain pagination metadata to infrastructure DTO
+            // API uses 1-based page numbers for compatibility
+            PageResponseDto.PaginationMetadata responseMetadata = new PageResponseDto.PaginationMetadata(
+                pageResult.getMetadata().getPage() + 1, // Convert to 1-based
+                pageResult.getMetadata().getSize(),
+                pageResult.getMetadata().getTotalElements()
+            );
+            
             PageResponseDto<SeriesResponseDto> response = new PageResponseDto<>(
                 seriesDtos,
-                pageResult.getMetadata()
+                responseMetadata
             );
             
             return Response.ok(response).build();

@@ -1,7 +1,7 @@
 package org.motpassants.domain.port.in;
 
+import org.motpassants.domain.core.model.Page;
 import org.motpassants.domain.core.model.Series;
-import org.motpassants.infrastructure.adapter.in.rest.dto.PageResponseDto;
 
 import java.util.List;
 import java.util.Optional;
@@ -20,7 +20,7 @@ public interface SeriesUseCase {
      * @param size Number of items per page
      * @return Paginated result of series
      */
-    PageResponseDto<Series> getAllSeries(int page, int size);
+    Page<Series> getAllSeries(int page, int size);
     
     /**
      * Get a series by its ID.
