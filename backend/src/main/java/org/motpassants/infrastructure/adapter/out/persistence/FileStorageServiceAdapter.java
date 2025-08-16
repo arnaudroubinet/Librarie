@@ -6,6 +6,7 @@ import org.jboss.logging.Logger;
 import org.motpassants.domain.port.out.FileStorageService;
 import org.motpassants.domain.port.out.ConfigurationPort;
 import org.motpassants.domain.port.out.SecureFileProcessingPort;
+import org.motpassants.infrastructure.config.LibrarieConfigProperties;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -25,11 +26,11 @@ public class FileStorageServiceAdapter implements FileStorageService {
     private static final Logger LOG = Logger.getLogger(FileStorageServiceAdapter.class);
     
     private final LibrarieConfigProperties config;
-    private final SecureFileProcessingService secureFileProcessingService;
+    private final SecureFileProcessingPort secureFileProcessingPort;
     
     @Inject
     public FileStorageServiceAdapter(LibrarieConfigProperties config,
-                                   SecureFileProcessingService secureFileProcessingService) {
+                                   SecureFileProcessingPort secureFileProcessingPort) {
         this.config = config;
         this.secureFileProcessingPort = secureFileProcessingPort;
     }
@@ -37,7 +38,7 @@ public class FileStorageServiceAdapter implements FileStorageService {
     @Override
     public Path storeFile(byte[] content, String relativePath) throws IOException {
         Path absolutePath = secureFileProcessingPort.sanitizePath(
-            config.getStorageConfig().getBaseDir(), relativePath);
+            config.storage().baseDir(), relativePath);
         
         // Ensure parent directory exists
         Path parentDir = absolutePath.getParent();
@@ -55,7 +56,7 @@ public class FileStorageServiceAdapter implements FileStorageService {
     @Override
     public byte[] retrieveFile(String relativePath) throws IOException {
         Path absolutePath = secureFileProcessingPort.sanitizePath(
-            config.getStorageConfig().getBaseDir(), relativePath);
+            config.storage().baseDir(), relativePath);
         
         if (!Files.exists(absolutePath)) {
             throw new IOException("File not found: " + relativePath);
@@ -68,7 +69,7 @@ public class FileStorageServiceAdapter implements FileStorageService {
     public boolean fileExists(String relativePath) {
         try {
             Path absolutePath = secureFileProcessingPort.sanitizePath(
-                config.getStorageConfig().getBaseDir(), relativePath);
+                config.storage().baseDir(), relativePath);
             return Files.exists(absolutePath);
         } catch (Exception e) {
             LOG.warn("Error checking file existence: " + relativePath, e);
@@ -79,7 +80,7 @@ public class FileStorageServiceAdapter implements FileStorageService {
     @Override
     public boolean deleteFile(String relativePath) throws IOException {
         Path absolutePath = secureFileProcessingPort.sanitizePath(
-            config.getStorageConfig().getBaseDir(), relativePath);
+            config.storage().baseDir(), relativePath);
         
         if (Files.exists(absolutePath)) {
             Files.delete(absolutePath);
@@ -93,7 +94,7 @@ public class FileStorageServiceAdapter implements FileStorageService {
     @Override
     public List<String> listFiles(String directoryPath) throws IOException {
         Path absolutePath = secureFileProcessingPort.sanitizePath(
-            config.getStorageConfig().getBaseDir(), directoryPath);
+            config.storage().baseDir(), directoryPath);
         
         if (!Files.exists(absolutePath) || !Files.isDirectory(absolutePath)) {
             throw new IOException("Directory not found: " + directoryPath);
@@ -110,13 +111,13 @@ public class FileStorageServiceAdapter implements FileStorageService {
     @Override
     public Path getAbsolutePath(String relativePath) {
         return secureFileProcessingPort.sanitizePath(
-            config.getStorageConfig().getBaseDir(), relativePath);
+            config.storage().baseDir(), relativePath);
     }
     
     @Override
     public void ensureDirectoryExists(String directoryPath) throws IOException {
         Path absolutePath = secureFileProcessingPort.sanitizePath(
-            config.getStorageConfig().getBaseDir(), directoryPath);
+            config.storage().baseDir(), directoryPath);
         
         if (!Files.exists(absolutePath)) {
             Files.createDirectories(absolutePath);

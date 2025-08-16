@@ -5,6 +5,7 @@ import jakarta.inject.Inject;
 import org.jboss.logging.Logger;
 import org.motpassants.domain.port.out.ConfigurationPort;
 import org.motpassants.domain.port.out.SecureFileProcessingPort;
+import org.motpassants.infrastructure.config.LibrarieConfigProperties;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -22,14 +23,14 @@ public class ImageCachingService {
     private static final Logger LOG = Logger.getLogger(ImageCachingService.class);
     
     private final LibrarieConfigProperties config;
-    private final SecureFileProcessingService secureFileProcessingService;
+    private final SecureFileProcessingPort secureFileProcessingPort;
     private final ConcurrentMap<String, byte[]> imageCache = new ConcurrentHashMap<>();
     
     @Inject
     public ImageCachingService(LibrarieConfigProperties config, 
-                              SecureFileProcessingService secureFileProcessingService) {
+                              SecureFileProcessingPort secureFileProcessingPort) {
         this.config = config;
-        this.secureFileProcessingService = secureFileProcessingService;
+        this.secureFileProcessingPort = secureFileProcessingPort;
     }
     
     /**
@@ -49,7 +50,7 @@ public class ImageCachingService {
         
         // Load from file system
         try {
-            Path imagePath = secureFileProcessingService.sanitizePath(
+            Path imagePath = secureFileProcessingPort.sanitizePath(
                 config.storage().baseDir(), relativePath);
             
             if (!Files.exists(imagePath)) {

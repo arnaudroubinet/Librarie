@@ -9,6 +9,7 @@ import org.motpassants.domain.port.out.FileStorageService;
 import org.motpassants.domain.core.model.Book;
 import org.motpassants.domain.port.out.ConfigurationPort;
 import org.motpassants.domain.port.out.SecureFileProcessingPort;
+import org.motpassants.infrastructure.config.LibrarieConfigProperties;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -31,13 +32,13 @@ public class IngestService implements IngestUseCase {
     
     private final BookUseCase bookUseCase;
     private final FileStorageService fileStorageService;
-    private final SecureFileProcessingService secureFileProcessingService;
+    private final SecureFileProcessingPort secureFileProcessingPort;
     private final LibrarieConfigProperties config;
     
     @Inject
     public IngestService(BookUseCase bookUseCase, 
                         FileStorageService fileStorageService,
-                        SecureFileProcessingService secureFileProcessingService,
+                        SecureFileProcessingPort secureFileProcessingPort,
                         LibrarieConfigProperties config) {
         this.bookUseCase = bookUseCase;
         this.fileStorageService = fileStorageService;
@@ -117,7 +118,7 @@ public class IngestService implements IngestUseCase {
     
     @Override
     public List<String> getSupportedFormats() {
-        return Arrays.asList(config.getStorageConfig().getAllowedBookExtensions().split(","));
+        return Arrays.asList(config.storage().allowedBookExtensions().split(","));
     }
     
     @Override
