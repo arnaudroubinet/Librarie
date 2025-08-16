@@ -7,6 +7,7 @@ package org.motpassants.domain.core.model;
 public class BookSearchCriteria {
     
     private String query;
+    private String title;
     private String author;
     private String series;
     private String language;
@@ -26,6 +27,14 @@ public class BookSearchCriteria {
 
     public void setQuery(String query) {
         this.query = query;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
     }
 
     public String getAuthor() {

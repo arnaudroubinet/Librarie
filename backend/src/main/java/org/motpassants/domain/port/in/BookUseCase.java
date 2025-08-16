@@ -72,6 +72,14 @@ public interface BookUseCase {
     PageResult<Book> searchBooks(BookSearchCriteria criteria);
 
     /**
+     * Search books with criteria returning a list.
+     * 
+     * @param criteria the search criteria
+     * @return list of matching books
+     */
+    List<Book> searchBooksByCriteria(BookSearchCriteria criteria);
+
+    /**
      * Count total number of books.
      * 
      * @return total book count

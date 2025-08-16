@@ -10,6 +10,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -61,8 +62,9 @@ public class BookService implements BookUseCase {
             throw new IllegalArgumentException("Book title cannot be empty");
         }
         
+        // Generate path if not provided
         if (book.getPath() == null || book.getPath().trim().isEmpty()) {
-            throw new IllegalArgumentException("Book path cannot be empty");
+            book.setPath("/books/" + UUID.randomUUID().toString());
         }
         
         // Check if book with same path already exists
@@ -70,6 +72,16 @@ public class BookService implements BookUseCase {
         if (existing.isPresent()) {
             throw new IllegalArgumentException("Book with path '" + book.getPath() + "' already exists");
         }
+        
+        // Set ID if not present
+        if (book.getId() == null) {
+            book.setId(UUID.randomUUID());
+        }
+        
+        // Set timestamps
+        OffsetDateTime now = OffsetDateTime.now();
+        book.setCreatedAt(now);
+        book.setUpdatedAt(now);
         
         return bookRepository.save(book);
     }
@@ -123,6 +135,15 @@ public class BookService implements BookUseCase {
         }
         
         return bookRepository.search(criteria);
+    }
+
+    @Override
+    public List<Book> searchBooksByCriteria(BookSearchCriteria criteria) {
+        if (criteria == null) {
+            throw new IllegalArgumentException("Search criteria cannot be null");
+        }
+        
+        return bookRepository.findByCriteria(criteria);
     }
 
     @Override

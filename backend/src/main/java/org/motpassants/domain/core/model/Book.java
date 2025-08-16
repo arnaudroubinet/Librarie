@@ -18,6 +18,11 @@ public class Book {
     private String title;
     private String titleSort;
     private String isbn;
+    private String description;
+    private Integer pageCount;
+    private Integer publicationYear;
+    private String language;  // Simple string for now, can be enhanced later
+    private String coverUrl;
     private String path;
     private Long fileSize;
     private String fileHash;
@@ -25,7 +30,7 @@ public class Book {
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
     private LocalDate publicationDate;
-    private Language language;
+    private Language languageEntity;  // Keep the entity relationship
     private Publisher publisher;
     private Map<String, Object> metadata;
     private String searchVector;
@@ -121,6 +126,46 @@ public class Book {
         this.isbn = isbn;
     }
 
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public Integer getPageCount() {
+        return pageCount;
+    }
+
+    public void setPageCount(Integer pageCount) {
+        this.pageCount = pageCount;
+    }
+
+    public Integer getPublicationYear() {
+        return publicationYear;
+    }
+
+    public void setPublicationYear(Integer publicationYear) {
+        this.publicationYear = publicationYear;
+    }
+
+    public String getLanguage() {
+        return language;
+    }
+
+    public void setLanguage(String language) {
+        this.language = language;
+    }
+
+    public String getCoverUrl() {
+        return coverUrl;
+    }
+
+    public void setCoverUrl(String coverUrl) {
+        this.coverUrl = coverUrl;
+    }
+
     public String getPath() {
         return path;
     }
@@ -177,12 +222,12 @@ public class Book {
         this.publicationDate = publicationDate;
     }
 
-    public Language getLanguage() {
-        return language;
+    public Language getLanguageEntity() {
+        return languageEntity;
     }
 
-    public void setLanguage(Language language) {
-        this.language = language;
+    public void setLanguageEntity(Language languageEntity) {
+        this.languageEntity = languageEntity;
     }
 
     public Publisher getPublisher() {

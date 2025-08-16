@@ -93,4 +93,12 @@ public interface BookRepository {
      * @return list of matching books
      */
     List<Book> findByTitleOrAuthorContaining(String query);
+
+    /**
+     * Find books by criteria.
+     * 
+     * @param criteria search criteria
+     * @return list of matching books
+     */
+    List<Book> findByCriteria(BookSearchCriteria criteria);
 }
