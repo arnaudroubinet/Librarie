@@ -49,7 +49,6 @@ public class Author extends PanacheEntityBase {
     @Column(name = "death_date")
     private LocalDate deathDate;
 
-    // TODO: Website URL should be externalized by language  
     @Column(name = "website_url")
     private String websiteUrl;
 

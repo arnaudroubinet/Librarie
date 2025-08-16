@@ -308,7 +308,6 @@ public class DemoDataService {
         Publisher randomHouse = publishers.get("Penguin Random House");
         Publisher tor = publishers.get("Tor Books");
         Publisher bantam = publishers.get("Bantam Books");
-        Publisher delRey = publishers.get("Del Rey");
         
         // J.R.R. Tolkien - The Lord of the Rings series
         createTolkienBooks(english, randomHouse, authors.get("J.R.R. Tolkien"), series.get("The Lord of the Rings"));

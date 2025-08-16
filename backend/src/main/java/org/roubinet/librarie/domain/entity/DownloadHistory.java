@@ -28,7 +28,6 @@ public class DownloadHistory extends PanacheEntityBase {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    // TODO: Implement encryption for GDPR compliance
     @Column(name = "ip_address")
     private String ipAddress;
 

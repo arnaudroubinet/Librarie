@@ -10,7 +10,6 @@ import org.roubinet.librarie.infrastructure.adapter.in.rest.dto.AuthorResponseDt
 import org.roubinet.librarie.infrastructure.adapter.in.rest.dto.BookResponseDto;
 import org.roubinet.librarie.infrastructure.adapter.in.rest.dto.SeriesResponseDto;
 import org.roubinet.librarie.infrastructure.adapter.in.rest.dto.UnifiedSearchResultDto;
-import org.roubinet.librarie.infrastructure.config.LibrarieConfigProperties;
 import org.roubinet.librarie.infrastructure.security.InputSanitizationService;
 
 import org.eclipse.microprofile.openapi.annotations.Operation;
@@ -41,19 +40,17 @@ public class UnifiedSearchController {
     private final SeriesUseCase seriesUseCase;
     private final AuthorUseCase authorUseCase;
     private final InputSanitizationService sanitizationService;
-    private final LibrarieConfigProperties config;
     
     @Inject
     public UnifiedSearchController(BookUseCase bookUseCase, 
                                    SeriesUseCase seriesUseCase,
                                    AuthorUseCase authorUseCase,
-                                   InputSanitizationService sanitizationService,
-                                   LibrarieConfigProperties config) {
+                                   InputSanitizationService sanitizationService) {
         this.bookUseCase = bookUseCase;
         this.seriesUseCase = seriesUseCase;
         this.authorUseCase = authorUseCase;
         this.sanitizationService = sanitizationService;
-        this.config = config;
+
     }
     
     @GET

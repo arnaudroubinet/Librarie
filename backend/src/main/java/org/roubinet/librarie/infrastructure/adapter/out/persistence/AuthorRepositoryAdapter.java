@@ -12,7 +12,6 @@ import io.quarkus.panache.common.Sort;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
-import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -127,35 +126,6 @@ public class AuthorRepositoryAdapter implements AuthorRepository {
         return Author.count();
     }
     
-    /**
-     * Helper method to build cursor page result from list of authors.
-     */
-    private CursorPageResult<Author> buildCursorPageResult(List<Author> authors, int limit, String currentCursor) {
-        boolean hasNext = authors.size() > limit;
-        boolean hasPrevious = currentCursor != null && !currentCursor.trim().isEmpty();
-        
-        // Remove the extra item if we have more than requested
-        List<Author> resultAuthors = hasNext ? authors.subList(0, limit) : authors;
-        
-        String nextCursor = null;
-        if (hasNext && !resultAuthors.isEmpty()) {
-            Author lastAuthor = resultAuthors.get(resultAuthors.size() - 1);
-            if (lastAuthor.getCreatedAt() != null && lastAuthor.getId() != null) {
-                nextCursor = cursorUtils.createCursor(lastAuthor.getId(), lastAuthor.getCreatedAt());
-            }
-        }
-        
-        return CursorPageResult.<Author>builder()
-            .items(resultAuthors)
-            .nextCursor(nextCursor)
-            .previousCursor(null) // Previous cursor logic would need additional implementation
-            .hasNext(hasNext)
-            .hasPrevious(hasPrevious)
-            .limit(limit)
-            .totalCount(null) // Count would require separate query for performance
-            .build();
-    }
-
     /**
      * Helper method to build cursor page result from list of authors using sortName for cursor.
      */
