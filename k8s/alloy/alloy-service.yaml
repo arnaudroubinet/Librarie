@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: alloy
+  namespace: librarie
+  labels:
+    app: alloy
+    component: logging
+spec:
+  type: ClusterIP
+  ports:
+  - name: http-metrics
+    port: 12345
+    targetPort: 12345
+    protocol: TCP
+  selector:
+    app: alloy
+    component: logging

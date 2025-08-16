@@ -1,0 +1,111 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: alloy-config
+  namespace: librarie
+  labels:
+    app: alloy
+    component: logging
+data:
+  config.alloy: |
+    // Alloy configuration for Librarie application log collection
+    // This configuration collects logs from the Librarie application and forwards them to Loki
+    
+    logging {
+      level  = "info"
+      format = "logfmt"
+    }
+    
+    // Discover pods in the librarie namespace
+    discovery.kubernetes "pods" {
+      role = "pod"
+      namespaces {
+        names = ["librarie"]
+      }
+    }
+    
+    // Scrape logs from Librarie application pods
+    discovery.relabel "librarie_logs" {
+      targets = discovery.kubernetes.pods.targets
+      
+      // Only collect logs from librarie application pods
+      rule {
+        source_labels = ["__meta_kubernetes_pod_label_app"]
+        regex         = "librarie"
+        action        = "keep"
+      }
+      
+      // Set the job name
+      rule {
+        source_labels = ["__meta_kubernetes_pod_label_app"]
+        target_label  = "job"
+      }
+      
+      // Add pod metadata
+      rule {
+        source_labels = ["__meta_kubernetes_pod_name"]
+        target_label  = "pod"
+      }
+      
+      rule {
+        source_labels = ["__meta_kubernetes_namespace"]
+        target_label  = "namespace"
+      }
+      
+      rule {
+        source_labels = ["__meta_kubernetes_pod_container_name"]
+        target_label  = "container"
+      }
+    }
+    
+    // Collect logs from the discovered targets
+    loki.source.kubernetes "librarie_logs" {
+      targets    = discovery.relabel.librarie_logs.output
+      forward_to = [loki.process.librarie_logs.receiver]
+    }
+    
+    // Process and enhance log entries
+    loki.process "librarie_logs" {
+      forward_to = [loki.write.loki.receiver]
+      
+      // Parse JSON logs from Quarkus
+      stage.json {
+        expressions = {
+          timestamp   = "timestamp",
+          level       = "level", 
+          logger      = "loggerName",
+          message     = "message",
+          thread      = "threadName",
+          trace_id    = "traceId",
+          span_id     = "spanId",
+        }
+      }
+      
+      // Add labels for better querying
+      stage.labels {
+        values = {
+          level     = "level",
+          logger    = "logger", 
+          trace_id  = "trace_id",
+        }
+      }
+      
+      // Set timestamp if available
+      stage.timestamp {
+        source = "timestamp"
+        format = "RFC3339"
+      }
+    }
+    
+    // Write logs to Loki
+    loki.write "loki" {
+      endpoint {
+        url = env("LOKI_URL")
+        
+        // Optional authentication
+        basic_auth {
+          username = env("LOKI_USERNAME")
+          password = env("LOKI_PASSWORD")
+        }
+      }
+    }

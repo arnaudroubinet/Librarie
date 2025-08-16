@@ -1,0 +1,110 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: librarie-backend
+  namespace: librarie
+  labels:
+    app: librarie
+    component: backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: librarie
+      component: backend
+  template:
+    metadata:
+      labels:
+        app: librarie
+        component: backend
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      
+      containers:
+      - name: librarie-backend
+        image: librarie/backend:latest
+        imagePullPolicy: IfNotPresent
+        
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: false
+          capabilities:
+            drop:
+            - ALL
+        
+        ports:
+        - name: http
+          containerPort: 8080
+          protocol: TCP
+        
+        env:
+        - name: QUARKUS_PROFILE
+          value: "prod"
+        - name: DB_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: librarie-db-credentials
+              key: username
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: librarie-db-credentials
+              key: password
+        - name: DB_URL
+          value: "jdbc:postgresql://postgresql:5432/librarie"
+        - name: OIDC_AUTH_SERVER_URL
+          valueFrom:
+            configMapKeyRef:
+              name: librarie-config
+              key: oidc.auth-server-url
+        - name: OIDC_CLIENT_ID
+          valueFrom:
+            configMapKeyRef:
+              name: librarie-config
+              key: oidc.client-id
+        - name: OIDC_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: librarie-oidc-credentials
+              key: client-secret
+        
+        resources:
+          requests:
+            cpu: 500m
+            memory: 512Mi
+          limits:
+            cpu: 1000m
+            memory: 1Gi
+        
+        livenessProbe:
+          httpGet:
+            path: /q/health/live
+            port: 8080
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 3
+        
+        readinessProbe:
+          httpGet:
+            path: /q/health/ready
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        
+        volumeMounts:
+        - name: assets
+          mountPath: /app/assets
+        
+      volumes:
+      - name: assets
+        persistentVolumeClaim:
+          claimName: librarie-assets-pvc
