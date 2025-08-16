@@ -56,6 +56,9 @@ public class PageResponseDto<T> {
         @Schema(description = "Number of items per page", example = "20")
         private int pageSize;
         
+        @Schema(description = "Limit used in this request", example = "20")
+        private int limit;
+        
         @Schema(description = "Total number of items", example = "156")
         private long totalElements;
         
@@ -79,6 +82,7 @@ public class PageResponseDto<T> {
         public PaginationMetadata(int page, int pageSize, long totalElements) {
             this.page = page;
             this.pageSize = pageSize;
+            this.limit = pageSize; // limit is same as pageSize
             this.totalElements = totalElements;
             this.totalPages = (int) Math.ceil((double) totalElements / pageSize);
             this.first = page == 1;
@@ -90,7 +94,16 @@ public class PageResponseDto<T> {
         public void setPage(int page) { this.page = page; }
         
         public int getPageSize() { return pageSize; }
-        public void setPageSize(int pageSize) { this.pageSize = pageSize; }
+        public void setPageSize(int pageSize) { 
+            this.pageSize = pageSize; 
+            this.limit = pageSize;
+        }
+        
+        public int getLimit() { return limit; }
+        public void setLimit(int limit) { 
+            this.limit = limit; 
+            this.pageSize = limit;
+        }
         
         public long getTotalElements() { return totalElements; }
         public void setTotalElements(long totalElements) { this.totalElements = totalElements; }

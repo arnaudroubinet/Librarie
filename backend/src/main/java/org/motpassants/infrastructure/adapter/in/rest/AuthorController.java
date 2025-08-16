@@ -126,6 +126,24 @@ public class AuthorController {
     })
     public Response createAuthor(AuthorRequestDto requestDto) {
         try {
+            // Basic input validation
+            if (requestDto == null) {
+                return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of("error", "Request body is required"))
+                    .build();
+            }
+            
+            if (requestDto.getName() == null || requestDto.getName().trim().isEmpty()) {
+                return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of("error", "Author name is required"))
+                    .build();
+            }
+            
+            if (requestDto.getSortName() == null || requestDto.getSortName().trim().isEmpty()) {
+                return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of("error", "Sort name is required"))
+                    .build();
+            }
             Author author = authorService.createAuthor(
                 requestDto.getName(),
                 requestDto.getSortName(),

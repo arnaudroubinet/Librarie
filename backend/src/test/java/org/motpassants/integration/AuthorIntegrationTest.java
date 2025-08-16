@@ -52,7 +52,7 @@ public class AuthorIntegrationTest {
             {
                 "name": "Test Author Integration",
                 "sortName": "Author, Test Integration",
-                "bio": "A test author for integration testing",
+                "bio": {"en": "A test author for integration testing"},
                 "birthDate": "1970-01-01",
                 "websiteUrl": "https://testauthor.com"
             }
@@ -89,7 +89,7 @@ public class AuthorIntegrationTest {
             {
                 "name": "Updated Test Author",
                 "sortName": "Author, Updated Test",
-                "bio": "An updated test author for integration testing",
+                "bio": {"en": "An updated test author for integration testing"},
                 "birthDate": "1970-01-01",
                 "websiteUrl": "https://updatedtestauthor.com"
             }
