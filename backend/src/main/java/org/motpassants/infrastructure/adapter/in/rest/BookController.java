@@ -24,7 +24,6 @@ import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
-import java.net.URI;
 
 /**
  * REST controller for book operations.
@@ -39,11 +38,16 @@ public class BookController {
 
     private final BookService bookService;
     private final org.motpassants.infrastructure.media.ImageCachingService imageCachingService;
+    private final org.motpassants.infrastructure.config.LibrarieConfigProperties config;
+
+    @Context
+    Request httpRequest;
 
     @Inject
-    public BookController(BookService bookService, org.motpassants.infrastructure.media.ImageCachingService imageCachingService) {
+    public BookController(BookService bookService, org.motpassants.infrastructure.media.ImageCachingService imageCachingService, org.motpassants.infrastructure.config.LibrarieConfigProperties config) {
         this.bookService = bookService;
         this.imageCachingService = imageCachingService;
+        this.config = config;
     }
 
     @GET
@@ -333,7 +337,7 @@ public class BookController {
     @GET
     @Path("/{id}/cover")
     @Produces("image/*")
-    @Operation(summary = "Get book cover image", description = "Streams the cover image bytes resolved from stored coverUrl")
+    @Operation(summary = "Get book cover image", description = "Streams the book cover image from local assets with strong ETag; demo seeding hydrates files")
     @APIResponses(value = {
         @APIResponse(responseCode = "200", description = "Image bytes returned"),
         @APIResponse(responseCode = "404", description = "Cover not found")
@@ -345,35 +349,23 @@ public class BookController {
             if (bookOpt.isEmpty()) {
                 return Response.status(Response.Status.NOT_FOUND).entity("Book not found").build();
             }
-            Book book = bookOpt.get();
-            // Try to serve cover
-            String path = book.getCoverUrl();
-            if (path != null && !path.isBlank()) {
-                // External URL: redirect regardless of hasCover flag
-                if (path.startsWith("http://") || path.startsWith("https://")) {
-                    return Response.seeOther(URI.create(path))
-                            .header("Cache-Control", "max-age=3600")
-                            .build();
-                }
-                // Local file: serve only if marked as having a cover
-                if (Boolean.TRUE.equals(book.getHasCover())) {
-                    byte[] bytes = imageCachingService.getImage(path);
-                    if (bytes != null) {
-                        String mime = imageCachingService.getImageMimeType(path);
-                        return Response.ok(bytes)
-                                .type(mime)
-                                .header("Cache-Control", "max-age=3600")
-                                .build();
-                    }
-                }
-            }
-            // Fallback placeholder
-            byte[] failoverSvg = getFailoverSvg();
-            return Response.ok(failoverSvg)
-                    .type("image/svg+xml")
-                    .header("Cache-Control", "max-age=300")
-                    .build();
-                    
+            // We only need existence check; no further book usage required here
+
+            // Remote URLs are no longer used; covers are hydrated into local assets during seeding/ingest
+            String storedUrl = null;
+
+            java.nio.file.Path baseDir = java.nio.file.Paths.get(config.storage().baseDir());
+            // Prefer using injected config bean rather than static; but we can derive from image service's config through its sanitize call by passing baseDir string used in app config
+            // Call the local-first service (it will hydrate from remote if needed and set ETag/Last-Modified)
+            return imageCachingService.serveLocalFirstStrongETag(
+                httpRequest,
+                baseDir,
+                "books",
+                "covers",
+                id,
+                storedUrl,
+                getFailoverSvg()
+            );
         } catch (IllegalArgumentException e) {
             return Response.status(Response.Status.BAD_REQUEST).entity("Invalid book ID format").build();
         } catch (Exception e) {
@@ -403,23 +395,45 @@ public class BookController {
      * Convert domain entity to response DTO.
      */
     private BookResponseDto toResponseDto(Book book) {
-        BookResponseDto dto = new BookResponseDto();
-        dto.setId(book.getId());
-        dto.setTitle(book.getTitle());
-        dto.setTitleSort(book.getTitleSort());
-        dto.setIsbn(book.getIsbn());
-        dto.setDescription(book.getDescription());
-        dto.setPageCount(book.getPageCount());
-        dto.setPublicationYear(book.getPublicationYear());
-        dto.setLanguage(book.getLanguage());
-    dto.setCoverUrl(book.getCoverUrl());
-    // If domain hasn't set hasCover, infer from coverUrl presence to let UI request the endpoint
-    boolean computedHasCover = Boolean.TRUE.equals(book.getHasCover())
-        || (book.getCoverUrl() != null && !book.getCoverUrl().isBlank());
-    dto.setHasCover(computedHasCover);
-        dto.setCreatedAt(book.getCreatedAt());
-        dto.setUpdatedAt(book.getUpdatedAt());
-        return dto;
+        BookResponseDto.Builder builder = BookResponseDto.builder()
+            .id(book.getId())
+            .title(book.getTitle())
+            .titleSort(book.getTitleSort())
+            .isbn(book.getIsbn())
+            .description(book.getDescription())
+            .pageCount(book.getPageCount())
+            .publicationYear(book.getPublicationYear())
+            .language(book.getLanguage())
+            .path(book.getPath())
+            .fileSize(book.getFileSize())
+            .fileHash(book.getFileHash())
+            .hasCover(book.getHasCover())
+            .publicationDate(book.getPublicationDate())
+            .metadata(book.getMetadata())
+            .createdAt(book.getCreatedAt())
+            .updatedAt(book.getUpdatedAt());
+
+        if (book.getPublisher() != null) {
+            builder.publisher(book.getPublisher().getName());
+        }
+
+        if (book.getSeries() != null && !book.getSeries().isEmpty()) {
+            var first = book.getSeries().stream().findFirst().orElse(null);
+            if (first != null && first.getSeries() != null) {
+                builder.series(first.getSeries().getName())
+                       .seriesId(first.getSeries().getId());
+            }
+        }
+
+        if (book.getFormats() != null && !book.getFormats().isEmpty()) {
+            builder.formats(book.getFormats().stream()
+                .map(f -> f.getFormatType())
+                .filter(Objects::nonNull)
+                .distinct()
+                .collect(Collectors.toList()));
+        }
+
+        return builder.build();
     }
     
     /**
@@ -432,8 +446,8 @@ public class BookController {
         book.setDescription(dto.getDescription());
         book.setPageCount(dto.getPageCount());
         book.setPublicationYear(dto.getPublicationYear());
-        book.setLanguage(dto.getLanguage());
-        book.setCoverUrl(dto.getCoverUrl());
+    book.setLanguage(dto.getLanguage());
+    // Cover hydration is file-based; no coverUrl in API
         book.setCreatedAt(OffsetDateTime.now());
         book.setUpdatedAt(OffsetDateTime.now());
         return book;

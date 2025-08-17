@@ -19,9 +19,10 @@ import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.Request;
+import jakarta.ws.rs.core.Context;
 
 import java.util.List;
-import java.net.URI;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -38,11 +39,16 @@ public class SeriesController {
     
     private final SeriesUseCase seriesUseCase;
     private final org.motpassants.infrastructure.media.ImageCachingService imageCachingService;
+    private final org.motpassants.infrastructure.config.LibrarieConfigProperties config;
+
+    @Context
+    Request httpRequest;
     
     @Inject
-    public SeriesController(SeriesUseCase seriesUseCase, org.motpassants.infrastructure.media.ImageCachingService imageCachingService) {
+    public SeriesController(SeriesUseCase seriesUseCase, org.motpassants.infrastructure.media.ImageCachingService imageCachingService, org.motpassants.infrastructure.config.LibrarieConfigProperties config) {
         this.seriesUseCase = seriesUseCase;
         this.imageCachingService = imageCachingService;
+        this.config = config;
     }
     
     @GET
@@ -313,35 +319,74 @@ public class SeriesController {
     public Response getSeriesPicture(
             @Parameter(description = "Series UUID", required = true)
             @PathParam("id") String id) {
-        
         try {
             UUID seriesId = UUID.fromString(id);
             Optional<Series> seriesOpt = seriesUseCase.getSeriesById(seriesId);
-            
             if (seriesOpt.isEmpty()) {
                 return Response.status(Response.Status.NOT_FOUND)
                     .entity("Series not found")
                     .build();
             }
+
             Series series = seriesOpt.get();
-            String path = series.getImagePath();
-            if (path != null && !path.isBlank()) {
-                if (path.startsWith("http://") || path.startsWith("https://")) {
-                    return Response.seeOther(URI.create(path))
-                        .header("Cache-Control", "max-age=3600")
-                        .build();
-                }
-                byte[] bytes = imageCachingService.getImage(path);
-                if (bytes != null) {
-                    String mime = imageCachingService.getImageMimeType(path);
-                    return Response.ok(bytes)
-                        .type(mime)
-                        .header("Cache-Control", "max-age=3600")
-                        .build();
+            String remoteUrl = null;
+
+            // 1) If imagePath is a remote URL, prefer it
+            String imagePath = series.getImagePath();
+            if (imagePath != null && !imagePath.isBlank()) {
+                String trimmed = imagePath.trim();
+                if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+                    remoteUrl = trimmed;
+                } else {
+                    // 2) If imagePath is a local relative path, try serving it directly for backward compatibility
+                    byte[] bytes = imageCachingService.getImage(trimmed);
+                    if (bytes != null) {
+                        String mime = imageCachingService.getImageMimeType(trimmed);
+                        return Response.ok(bytes)
+                            .type(mime)
+                            .header("Cache-Control", "max-age=3600")
+                            .build();
+                    }
                 }
             }
-            // Fallback placeholder
-            String svg = """
+
+            // 3) Otherwise check metadata for a remote URL (support both keys: seriesImageUrl and imageUrl)
+            if (remoteUrl == null && series.getMetadata() != null) {
+                Object urlObj = series.getMetadata().get("seriesImageUrl");
+                if (!(urlObj instanceof String) || ((String) urlObj).isBlank()) {
+                    urlObj = series.getMetadata().get("imageUrl");
+                }
+                if (urlObj instanceof String s) {
+                    String trimmed = s.trim();
+                    if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+                        remoteUrl = trimmed;
+                    }
+                }
+            }
+
+            java.nio.file.Path baseDir = java.nio.file.Paths.get(config.storage().baseDir());
+            return imageCachingService.serveLocalFirstStrongETag(
+                httpRequest,
+                baseDir,
+                "series",
+                "covers",
+                id,
+                remoteUrl,
+                getSeriesFailoverSvg()
+            );
+        } catch (IllegalArgumentException e) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                .entity("Invalid series ID format")
+                .build();
+        } catch (Exception e) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                .entity("Internal server error: " + e.getMessage())
+                .build();
+        }
+    }
+
+    private static byte[] getSeriesFailoverSvg() {
+        String svg = """
                 <svg xmlns='http://www.w3.org/2000/svg' width='320' height='320' viewBox='0 0 320 320'>
                     <defs>
                         <linearGradient id='g' x1='0' y1='0' x2='1' y2='1'>
@@ -357,20 +402,7 @@ public class SeriesController {
                     </g>
                 </svg>
                 """;
-            return Response.ok(svg.getBytes())
-                .type("image/svg+xml")
-                .header("Cache-Control", "max-age=300")
-                .build();
-                
-        } catch (IllegalArgumentException e) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                .entity("Invalid series ID format")
-                .build();
-        } catch (Exception e) {
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                .entity("Internal server error: " + e.getMessage())
-                .build();
-        }
+        return svg.getBytes(java.nio.charset.StandardCharsets.UTF_8);
     }
     
     @GET
@@ -417,19 +449,19 @@ public class SeriesController {
             return null;
         }
         
-        SeriesResponseDto dto = new SeriesResponseDto();
-        dto.setId(series.getId());
-        dto.setName(series.getName());
-        dto.setSortName(series.getSortName());
-        dto.setDescription(series.getDescription());
-        dto.setImagePath(series.getImagePath());
-        dto.setTotalBooks(series.getTotalBooks());
-        dto.setIsCompleted(series.getIsCompleted());
-        dto.setMetadata(series.getMetadata());
-        dto.setCreatedAt(series.getCreatedAt());
-        dto.setUpdatedAt(series.getUpdatedAt());
-        dto.setFallbackImagePath(series.getEffectiveImagePath());
-        
-        return dto;
+        return SeriesResponseDto.builder()
+            .id(series.getId())
+            .name(series.getName())
+            .sortName(series.getSortName())
+            .description(series.getDescription())
+            .imagePath(series.getImagePath())
+            .totalBooks(series.getTotalBooks())
+            .isCompleted(series.getIsCompleted())
+            .metadata(series.getMetadata())
+            .createdAt(series.getCreatedAt())
+            .updatedAt(series.getUpdatedAt())
+            .fallbackImagePath(series.getEffectiveImagePath())
+            .hasPicture(series.getHasPicture())
+            .build();
     }
 }

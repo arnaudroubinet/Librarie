@@ -22,11 +22,9 @@ public class Book {
     private Integer pageCount;
     private Integer publicationYear;
     private String language;  // Simple string for now, can be enhanced later
-    private String coverUrl;
     private String path;
     private Long fileSize;
     private String fileHash;
-    private Boolean hasCover;
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
     private LocalDate publicationDate;
@@ -34,6 +32,7 @@ public class Book {
     private Publisher publisher;
     private Map<String, Object> metadata;
     private String searchVector;
+    private Boolean hasCover; // persisted flag, set by upload service; demo seeds TRUE
 
     // Relationships
     private Set<Format> formats = new HashSet<>();
@@ -45,7 +44,7 @@ public class Book {
 
     // Default constructor
     public Book() {
-        this.hasCover = false;
+    // cover presence is computed from assets; no DB flag
     }
 
     // Constructor for creating new books
@@ -158,13 +157,7 @@ public class Book {
         this.language = language;
     }
 
-    public String getCoverUrl() {
-        return coverUrl;
-    }
-
-    public void setCoverUrl(String coverUrl) {
-        this.coverUrl = coverUrl;
-    }
+    // coverUrl removed: images are stored in local assets and served via endpoints
 
     public String getPath() {
         return path;
@@ -322,5 +315,39 @@ public class Book {
                 ", title='" + title + '\'' +
                 ", path='" + path + '\'' +
                 '}';
+    }
+
+    // Builder for Book domain model
+    public static Builder builder() { return new Builder(); }
+    public static class Builder {
+        private final Book b = new Book();
+        public Builder id(UUID id) { b.setId(id); return this; }
+        public Builder title(String title) { b.setTitle(title); return this; }
+        public Builder titleSort(String titleSort) { b.setTitleSort(titleSort); return this; }
+        public Builder isbn(String isbn) { b.setIsbn(isbn); return this; }
+        public Builder description(String description) { b.setDescription(description); return this; }
+        public Builder pageCount(Integer pageCount) { b.setPageCount(pageCount); return this; }
+        public Builder publicationYear(Integer publicationYear) { b.setPublicationYear(publicationYear); return this; }
+        public Builder language(String language) { b.setLanguage(language); return this; }
+        public Builder path(String path) { b.setPath(path); return this; }
+        public Builder fileSize(Long fileSize) { b.setFileSize(fileSize); return this; }
+        public Builder fileHash(String fileHash) { b.setFileHash(fileHash); return this; }
+        public Builder hasCover(Boolean hasCover) { b.setHasCover(hasCover); return this; }
+        public Builder publicationDate(LocalDate publicationDate) { b.setPublicationDate(publicationDate); return this; }
+        public Builder languageEntity(Language languageEntity) { b.setLanguageEntity(languageEntity); return this; }
+        public Builder publisher(Publisher publisher) { b.setPublisher(publisher); return this; }
+        public Builder metadata(Map<String, Object> metadata) { b.setMetadata(metadata); return this; }
+        public Builder searchVector(String searchVector) { b.setSearchVector(searchVector); return this; }
+        public Builder formats(Set<Format> formats) { if (formats != null) b.setFormats(formats); return this; }
+        public Builder series(Set<BookSeries> series) { if (series != null) b.setSeries(series); return this; }
+        public Builder tags(Set<Tag> tags) { if (tags != null) b.setTags(tags); return this; }
+        public Builder ratings(Set<Rating> ratings) { if (ratings != null) b.setRatings(ratings); return this; }
+        public Builder createdAt(java.time.OffsetDateTime createdAt) { b.setCreatedAt(createdAt); return this; }
+        public Builder updatedAt(java.time.OffsetDateTime updatedAt) { b.setUpdatedAt(updatedAt); return this; }
+        public Book build() {
+            if (b.getCreatedAt() == null) b.setCreatedAt(java.time.OffsetDateTime.now());
+            if (b.getUpdatedAt() == null) b.setUpdatedAt(java.time.OffsetDateTime.now());
+            return b;
+        }
     }
 }

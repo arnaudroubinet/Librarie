@@ -23,8 +23,8 @@ public class Author {
     private Map<String, Object> metadata;
     private final OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
+    private Boolean hasPicture;
 
-    // Private constructor for creation with ID (used by repository)
     private Author(UUID id, String name, String sortName, Map<String, String> bio,
                    LocalDate birthDate, LocalDate deathDate, String websiteUrl,
                    Map<String, Object> metadata, OffsetDateTime createdAt,
@@ -41,7 +41,6 @@ public class Author {
         this.updatedAt = updatedAt;
     }
 
-    // Factory method for creating new author (without ID)
     public static Author create(String name, String sortName, Map<String, String> bio,
                                LocalDate birthDate, LocalDate deathDate, String websiteUrl,
                                Map<String, Object> metadata) {
@@ -177,6 +176,9 @@ public class Author {
         return updatedAt;
     }
 
+    public Boolean getHasPicture() { return hasPicture; }
+    public void setHasPicture(Boolean hasPicture) { this.hasPicture = hasPicture; }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -196,5 +198,47 @@ public class Author {
                 ", name='" + name + '\'' +
                 ", sortName='" + sortName + '\'' +
                 '}';
+    }
+
+    // Builder for Author domain model
+    public static Builder builder() { return new Builder(); }
+    public static class Builder {
+        private UUID id;
+        private String name;
+        private String sortName;
+        private Map<String, String> bio;
+        private LocalDate birthDate;
+        private LocalDate deathDate;
+        private String websiteUrl;
+        private Map<String, Object> metadata;
+        private OffsetDateTime createdAt;
+        private OffsetDateTime updatedAt;
+        private Boolean hasPicture;
+
+        public Builder id(UUID id) { this.id = id; return this; }
+        public Builder name(String name) { this.name = name; return this; }
+        public Builder sortName(String sortName) { this.sortName = sortName; return this; }
+        public Builder bio(Map<String, String> bio) { this.bio = bio; return this; }
+        public Builder birthDate(LocalDate birthDate) { this.birthDate = birthDate; return this; }
+        public Builder deathDate(LocalDate deathDate) { this.deathDate = deathDate; return this; }
+        public Builder websiteUrl(String websiteUrl) { this.websiteUrl = websiteUrl; return this; }
+        public Builder metadata(Map<String, Object> metadata) { this.metadata = metadata; return this; }
+        public Builder createdAt(OffsetDateTime createdAt) { this.createdAt = createdAt; return this; }
+        public Builder updatedAt(OffsetDateTime updatedAt) { this.updatedAt = updatedAt; return this; }
+        public Builder hasPicture(Boolean hasPicture) { this.hasPicture = hasPicture; return this; }
+
+        public Author build() {
+            Author a;
+            if (id != null || createdAt != null || updatedAt != null) {
+                UUID effId = (id != null) ? id : java.util.UUID.randomUUID();
+                OffsetDateTime effCreated = (createdAt != null) ? createdAt : OffsetDateTime.now();
+                OffsetDateTime effUpdated = (updatedAt != null) ? updatedAt : OffsetDateTime.now();
+                a = Author.reconstitute(effId, name, sortName, bio, birthDate, deathDate, websiteUrl, metadata, effCreated, effUpdated);
+            } else {
+                a = Author.create(name, sortName, bio, birthDate, deathDate, websiteUrl, metadata);
+            }
+            if (hasPicture != null) a.setHasPicture(hasPicture);
+            return a;
+        }
     }
 }

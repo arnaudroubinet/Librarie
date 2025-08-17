@@ -2,7 +2,10 @@ package org.motpassants.infrastructure.adapter.in.rest.dto;
 
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -35,11 +38,32 @@ public class BookResponseDto {
     @Schema(description = "Language code", example = "en")
     private String language;
     
-    @Schema(description = "Cover image URL")
-    private String coverUrl;
+    @Schema(description = "File path in storage")
+    private String path;
     
-    @Schema(description = "Whether the book has a cover available")
-    private Boolean hasCover;
+    @Schema(description = "File size in bytes")
+    private Long fileSize;
+    
+    @Schema(description = "File content hash")
+    private String fileHash;
+    
+    @Schema(description = "Publication date (YYYY-MM-DD)")
+    private LocalDate publicationDate;
+    
+    @Schema(description = "Additional metadata")
+    private Map<String, Object> metadata;
+    
+    @Schema(description = "Publisher name")
+    private String publisher;
+    
+    @Schema(description = "Series name (first series if multiple)")
+    private String series;
+    
+    @Schema(description = "Series UUID (first series if multiple)")
+    private UUID seriesId;
+    
+    @Schema(description = "Available format types")
+    private List<String> formats;
     
     @Schema(description = "Creation timestamp")
     private OffsetDateTime createdAt;
@@ -47,8 +71,38 @@ public class BookResponseDto {
     @Schema(description = "Last update timestamp")
     private OffsetDateTime updatedAt;
     
+    @Schema(description = "Whether a cover is available for this book")
+    private Boolean hasCover;
+    
     // Default constructor
     public BookResponseDto() {}
+
+    // Builder
+    public static Builder builder() { return new Builder(); }
+    public static class Builder {
+        private final BookResponseDto dto = new BookResponseDto();
+        public Builder id(UUID id) { dto.id = id; return this; }
+        public Builder title(String title) { dto.title = title; return this; }
+        public Builder titleSort(String titleSort) { dto.titleSort = titleSort; return this; }
+        public Builder isbn(String isbn) { dto.isbn = isbn; return this; }
+        public Builder description(String description) { dto.description = description; return this; }
+        public Builder pageCount(Integer pageCount) { dto.pageCount = pageCount; return this; }
+        public Builder publicationYear(Integer publicationYear) { dto.publicationYear = publicationYear; return this; }
+        public Builder language(String language) { dto.language = language; return this; }
+        public Builder path(String path) { dto.path = path; return this; }
+        public Builder fileSize(Long fileSize) { dto.fileSize = fileSize; return this; }
+        public Builder fileHash(String fileHash) { dto.fileHash = fileHash; return this; }
+        public Builder publicationDate(LocalDate publicationDate) { dto.publicationDate = publicationDate; return this; }
+        public Builder metadata(Map<String, Object> metadata) { dto.metadata = metadata; return this; }
+        public Builder publisher(String publisher) { dto.publisher = publisher; return this; }
+        public Builder series(String series) { dto.series = series; return this; }
+        public Builder seriesId(UUID seriesId) { dto.seriesId = seriesId; return this; }
+        public Builder formats(List<String> formats) { dto.formats = formats; return this; }
+        public Builder createdAt(OffsetDateTime createdAt) { dto.createdAt = createdAt; return this; }
+        public Builder updatedAt(OffsetDateTime updatedAt) { dto.updatedAt = updatedAt; return this; }
+        public Builder hasCover(Boolean hasCover) { dto.hasCover = hasCover; return this; }
+        public BookResponseDto build() { return dto; }
+    }
     
     // Getters and setters
     public UUID getId() {
@@ -115,20 +169,78 @@ public class BookResponseDto {
         this.language = language;
     }
     
-    public String getCoverUrl() {
-        return coverUrl;
+    public String getPath() {
+        return path;
     }
     
-    public void setCoverUrl(String coverUrl) {
-        this.coverUrl = coverUrl;
+    public void setPath(String path) {
+        this.path = path;
     }
     
-    public Boolean getHasCover() {
-        return hasCover;
+    public Long getFileSize() {
+        return fileSize;
     }
     
-    public void setHasCover(Boolean hasCover) {
-        this.hasCover = hasCover;
+    public void setFileSize(Long fileSize) {
+        this.fileSize = fileSize;
+    }
+    
+    public String getFileHash() {
+        return fileHash;
+    }
+    
+    public void setFileHash(String fileHash) {
+        this.fileHash = fileHash;
+    }
+    
+    // Cover fields removed from API; presence can be inferred by clients via cover endpoint
+    
+    public LocalDate getPublicationDate() {
+        return publicationDate;
+    }
+    
+    public void setPublicationDate(LocalDate publicationDate) {
+        this.publicationDate = publicationDate;
+    }
+    
+    public Map<String, Object> getMetadata() {
+        return metadata;
+    }
+    
+    public void setMetadata(Map<String, Object> metadata) {
+        this.metadata = metadata;
+    }
+    
+    public String getPublisher() {
+        return publisher;
+    }
+    
+    public void setPublisher(String publisher) {
+        this.publisher = publisher;
+    }
+    
+    public String getSeries() {
+        return series;
+    }
+    
+    public void setSeries(String series) {
+        this.series = series;
+    }
+    
+    public UUID getSeriesId() {
+        return seriesId;
+    }
+    
+    public void setSeriesId(UUID seriesId) {
+        this.seriesId = seriesId;
+    }
+    
+    public List<String> getFormats() {
+        return formats;
+    }
+    
+    public void setFormats(List<String> formats) {
+        this.formats = formats;
     }
     
     public OffsetDateTime getCreatedAt() {
@@ -146,4 +258,7 @@ public class BookResponseDto {
     public void setUpdatedAt(OffsetDateTime updatedAt) {
         this.updatedAt = updatedAt;
     }
+    
+    public Boolean getHasCover() { return hasCover; }
+    public void setHasCover(Boolean hasCover) { this.hasCover = hasCover; }
 }

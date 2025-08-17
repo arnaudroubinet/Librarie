@@ -16,6 +16,7 @@ public class SeriesResponseDto {
     private String imagePath;
     private int totalBooks; // Using totalBooks to match integration test expectations
     private boolean isCompleted; // Added for integration test compatibility
+    private Boolean hasPicture; // persisted flag
     private Map<String, Object> metadata;
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
@@ -23,6 +24,25 @@ public class SeriesResponseDto {
     
     // Default constructor
     public SeriesResponseDto() {}
+
+    // Builder
+    public static Builder builder() { return new Builder(); }
+    public static class Builder {
+        private final SeriesResponseDto dto = new SeriesResponseDto();
+        public Builder id(UUID id) { dto.id = id; return this; }
+        public Builder name(String name) { dto.name = name; return this; }
+        public Builder sortName(String sortName) { dto.sortName = sortName; return this; }
+        public Builder description(String description) { dto.description = description; return this; }
+        public Builder imagePath(String imagePath) { dto.imagePath = imagePath; return this; }
+        public Builder totalBooks(int totalBooks) { dto.totalBooks = totalBooks; return this; }
+        public Builder isCompleted(boolean isCompleted) { dto.isCompleted = isCompleted; return this; }
+        public Builder hasPicture(Boolean hasPicture) { dto.hasPicture = hasPicture; return this; }
+        public Builder metadata(Map<String, Object> metadata) { dto.metadata = metadata; return this; }
+        public Builder createdAt(OffsetDateTime createdAt) { dto.createdAt = createdAt; return this; }
+        public Builder updatedAt(OffsetDateTime updatedAt) { dto.updatedAt = updatedAt; return this; }
+        public Builder fallbackImagePath(String fallbackImagePath) { dto.fallbackImagePath = fallbackImagePath; return this; }
+        public SeriesResponseDto build() { return dto; }
+    }
     
     // Getters and setters
     public UUID getId() {
@@ -112,6 +132,9 @@ public class SeriesResponseDto {
     public void setFallbackImagePath(String fallbackImagePath) {
         this.fallbackImagePath = fallbackImagePath;
     }
+    
+    public Boolean getHasPicture() { return hasPicture; }
+    public void setHasPicture(Boolean hasPicture) { this.hasPicture = hasPicture; }
     
     @Override
     public String toString() {

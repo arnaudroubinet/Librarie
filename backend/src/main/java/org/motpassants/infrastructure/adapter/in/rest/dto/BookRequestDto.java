@@ -26,8 +26,6 @@ public class BookRequestDto {
     @Schema(description = "Language code", example = "en")
     private String language;
     
-    @Schema(description = "Cover image URL")
-    private String coverUrl;
     
     // Default constructor
     public BookRequestDto() {}
@@ -81,11 +79,5 @@ public class BookRequestDto {
         this.language = language;
     }
     
-    public String getCoverUrl() {
-        return coverUrl;
-    }
-    
-    public void setCoverUrl(String coverUrl) {
-        this.coverUrl = coverUrl;
-    }
+    // Cover URL removed: images are hydrated to assets; not accepted via API
 }

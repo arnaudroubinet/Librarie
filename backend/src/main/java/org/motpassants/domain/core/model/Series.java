@@ -14,9 +14,11 @@ public class Series {
     private String name;
     private String sortName;
     private String description;
+    // imagePath is no longer stored in DB; kept for backward-compat metadata/use only
     private String imagePath;
     private int totalBooks;
     private boolean isCompleted;
+    private Boolean hasPicture; // persisted flag
     private Map<String, Object> metadata;
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
@@ -166,6 +168,9 @@ public class Series {
     public void setUpdatedAt(OffsetDateTime updatedAt) {
         this.updatedAt = updatedAt;
     }
+
+    public Boolean getHasPicture() { return hasPicture; }
+    public void setHasPicture(Boolean hasPicture) { this.hasPicture = hasPicture; }
     
     // Legacy compatibility methods for bookCount
     public int getBookCount() {
@@ -196,5 +201,28 @@ public class Series {
                 ", name='" + name + '\'' +
                 ", totalBooks=" + totalBooks +
                 '}';
+    }
+
+    // Builder for Series domain model
+    public static Builder builder() { return new Builder(); }
+    public static class Builder {
+        private final Series s = new Series();
+        public Builder id(UUID id) { s.setId(id); return this; }
+        public Builder name(String name) { s.setName(name); return this; }
+        public Builder sortName(String sortName) { s.setSortName(sortName); return this; }
+        public Builder description(String description) { s.setDescription(description); return this; }
+        public Builder imagePath(String imagePath) { s.setImagePath(imagePath); return this; }
+        public Builder totalBooks(int totalBooks) { s.setTotalBooks(totalBooks); return this; }
+        public Builder isCompleted(boolean isCompleted) { s.setIsCompleted(isCompleted); return this; }
+        public Builder hasPicture(Boolean hasPicture) { s.setHasPicture(hasPicture); return this; }
+        public Builder metadata(Map<String, Object> metadata) { s.setMetadata(metadata); return this; }
+        public Builder createdAt(OffsetDateTime createdAt) { s.setCreatedAt(createdAt); return this; }
+        public Builder updatedAt(OffsetDateTime updatedAt) { s.setUpdatedAt(updatedAt); return this; }
+        public Series build() {
+            if (s.getCreatedAt() == null) s.setCreatedAt(OffsetDateTime.now());
+            if (s.getUpdatedAt() == null) s.setUpdatedAt(OffsetDateTime.now());
+            if (s.getSortName() == null || s.getSortName().isBlank()) s.setSortName(s.getName());
+            return s;
+        }
     }
 }

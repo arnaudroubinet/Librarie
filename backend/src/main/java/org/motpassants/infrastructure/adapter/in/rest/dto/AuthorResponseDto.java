@@ -42,25 +42,29 @@ public class AuthorResponseDto {
 
     @JsonProperty("updatedAt")
     private OffsetDateTime updatedAt;
+    
+    @JsonProperty("hasPicture")
+    private Boolean hasPicture;
 
     // Default constructor
     public AuthorResponseDto() {}
 
-    // Constructor for easy creation
-    public AuthorResponseDto(UUID id, String name, String sortName, Map<String, String> bio,
-                            LocalDate birthDate, LocalDate deathDate, String websiteUrl,
-                            Map<String, Object> metadata, OffsetDateTime createdAt,
-                            OffsetDateTime updatedAt) {
-        this.id = id;
-        this.name = name;
-        this.sortName = sortName;
-        this.bio = bio;
-        this.birthDate = birthDate;
-        this.deathDate = deathDate;
-        this.websiteUrl = websiteUrl;
-        this.metadata = metadata;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
+    // Builder
+    public static Builder builder() { return new Builder(); }
+    public static class Builder {
+        private final AuthorResponseDto dto = new AuthorResponseDto();
+        public Builder id(UUID id) { dto.id = id; return this; }
+        public Builder name(String name) { dto.name = name; return this; }
+        public Builder sortName(String sortName) { dto.sortName = sortName; return this; }
+        public Builder bio(Map<String, String> bio) { dto.bio = bio; return this; }
+        public Builder birthDate(LocalDate birthDate) { dto.birthDate = birthDate; return this; }
+        public Builder deathDate(LocalDate deathDate) { dto.deathDate = deathDate; return this; }
+        public Builder websiteUrl(String websiteUrl) { dto.websiteUrl = websiteUrl; return this; }
+        public Builder metadata(Map<String, Object> metadata) { dto.metadata = metadata; return this; }
+        public Builder createdAt(OffsetDateTime createdAt) { dto.createdAt = createdAt; return this; }
+        public Builder updatedAt(OffsetDateTime updatedAt) { dto.updatedAt = updatedAt; return this; }
+        public Builder hasPicture(Boolean hasPicture) { dto.hasPicture = hasPicture; return this; }
+        public AuthorResponseDto build() { return dto; }
     }
 
     // Getters and setters
@@ -143,6 +147,9 @@ public class AuthorResponseDto {
     public void setUpdatedAt(OffsetDateTime updatedAt) {
         this.updatedAt = updatedAt;
     }
+    
+    public Boolean getHasPicture() { return hasPicture; }
+    public void setHasPicture(Boolean hasPicture) { this.hasPicture = hasPicture; }
 
     @Override
     public String toString() {

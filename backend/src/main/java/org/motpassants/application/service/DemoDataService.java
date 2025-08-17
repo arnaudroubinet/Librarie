@@ -8,10 +8,18 @@ import org.motpassants.domain.port.out.BookRepository;
 import org.motpassants.domain.port.out.AuthorRepositoryPort;
 import org.motpassants.domain.port.out.ConfigurationPort;
 import org.motpassants.domain.port.out.SeriesRepositoryPort;
+import org.motpassants.domain.port.out.SecureFileProcessingPort;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.*;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 
 /**
  * Service for populating demo data when demo mode is enabled.
@@ -24,16 +32,19 @@ public class DemoDataService {
     private final BookRepository bookRepository;
     private final AuthorRepositoryPort authorRepository;
     private final SeriesRepositoryPort seriesRepository;
+    private final SecureFileProcessingPort secureFileProcessingPort;
     
     @Inject
     public DemoDataService(ConfigurationPort configurationPort, 
                           BookRepository bookRepository,
                           AuthorRepositoryPort authorRepository,
-                          SeriesRepositoryPort seriesRepository) {
+                          SeriesRepositoryPort seriesRepository,
+                          SecureFileProcessingPort secureFileProcessingPort) {
         this.configurationPort = configurationPort;
         this.bookRepository = bookRepository;
         this.authorRepository = authorRepository;
         this.seriesRepository = seriesRepository;
+        this.secureFileProcessingPort = secureFileProcessingPort;
     }
     
     @Transactional
@@ -61,24 +72,28 @@ public class DemoDataService {
         Map<String, Author> authors = new HashMap<>();
         
         // J.R.R. Tolkien
-        Author tolkien = Author.create(
-            "J.R.R. Tolkien",
-            "Tolkien, J.R.R.",
-            Map.of("en", "John Ronald Reuel Tolkien was an English writer, poet, philologist, and academic, best known as the author of the high fantasy works The Hobbit and The Lord of the Rings."),
-            LocalDate.of(1892, 1, 3),
-            LocalDate.of(1973, 9, 2),
-            "https://www.tolkienestate.com/",
-            Map.of(
-                "nationality", "British",
-                "genres", List.of("Fantasy", "Philology"),
-                "education", "Oxford University",
-                // external image to enable author picture endpoint (will redirect)
-                "imageUrl", "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d4/J._R._R._Tolkien%2C_ca._1925.jpg/256px-J._R._R._Tolkien%2C_ca._1925.jpg"
-            )
-        );
-        authors.put("J.R.R. Tolkien", authorRepository.save(tolkien));
+    String tolkienImage = "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d4/J._R._R._Tolkien%2C_ca._1925.jpg/256px-J._R._R._Tolkien%2C_ca._1925.jpg";
+    Author tolkien = Author.create(
+        "J.R.R. Tolkien",
+        "Tolkien, J.R.R.",
+        Map.of("en", "John Ronald Reuel Tolkien was an English writer, poet, philologist, and academic, best known as the author of the high fantasy works The Hobbit and The Lord of the Rings."),
+        LocalDate.of(1892, 1, 3),
+        LocalDate.of(1973, 9, 2),
+        "https://www.tolkienestate.com/",
+        Map.of(
+        "nationality", "British",
+        "genres", List.of("Fantasy", "Philology"),
+        "education", "Oxford University"
+        )
+    );
+    // For demo, mark picture present
+    tolkien.setHasPicture(true);
+    Author savedTolkien = authorRepository.save(tolkien);
+    authors.put("J.R.R. Tolkien", savedTolkien);
+    downloadImageToAssets(tolkienImage, "authors", "pictures", savedTolkien.getId());
         
         // Robert Jordan
+    String jordanImage = "https://images.findagrave.com/photos/2007/260/21632571_119013305313.jpg?size=photos250";
     Author jordan = Author.create(
             "Robert Jordan",
             "Jordan, Robert",
@@ -89,13 +104,16 @@ public class DemoDataService {
             Map.of(
                 "nationality", "American",
                 "genres", List.of("Epic Fantasy"),
-        "realName", "James Oliver Rigney Jr.",
-        "imageUrl", "https://images.findagrave.com/photos/2007/260/21632571_119013305313.jpg?size=photos250"
+        "realName", "James Oliver Rigney Jr."
             )
         );
-        authors.put("Robert Jordan", authorRepository.save(jordan));
+    jordan.setHasPicture(true);
+    Author savedJordan = authorRepository.save(jordan);
+    authors.put("Robert Jordan", savedJordan);
+    downloadImageToAssets(jordanImage, "authors", "pictures", savedJordan.getId());
         
         // Brandon Sanderson  
+    String sandersonImage = "https://cdn1.booknode.com/author_picture/5462/full/brandon-sanderson-5461821.jpg";
     Author sanderson = Author.create(
             "Brandon Sanderson",
             "Sanderson, Brandon",
@@ -106,14 +124,17 @@ public class DemoDataService {
             Map.of(
                 "nationality", "American",
                 "genres", List.of("Epic Fantasy", "Science Fiction"),
-        "university", "Brigham Young University",
-        "imageUrl", "https://cdn1.booknode.com/author_picture/5462/full/brandon-sanderson-5461821.jpg"
+        "university", "Brigham Young University"
             )
         );
-        authors.put("Brandon Sanderson", authorRepository.save(sanderson));
+    sanderson.setHasPicture(true);
+    Author savedSanderson = authorRepository.save(sanderson);
+    authors.put("Brandon Sanderson", savedSanderson);
+    downloadImageToAssets(sandersonImage, "authors", "pictures", savedSanderson.getId());
         
         // Stephen King
-        Author king = Author.create(
+    String kingImage = "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e3/Stephen_King%2C_Comicon.jpg/256px-Stephen_King%2C_Comicon.jpg";
+    Author king = Author.create(
             "Stephen King",
             "King, Stephen",
             Map.of("en", "Stephen Edwin King is an American author of horror, supernatural fiction, suspense, crime, science-fiction, and fantasy novels. He has published 64 novels, including seven under the pen name Richard Bachman, and more than 200 short stories."),
@@ -123,14 +144,17 @@ public class DemoDataService {
             Map.of(
                 "nationality", "American",
                 "genres", List.of("Horror", "Supernatural Fiction", "Suspense", "Science Fiction"),
-                "penNames", List.of("Richard Bachman"),
-                "imageUrl", "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e3/Stephen_King%2C_Comicon.jpg/256px-Stephen_King%2C_Comicon.jpg"
+                "penNames", List.of("Richard Bachman")
             )
         );
-        authors.put("Stephen King", authorRepository.save(king));
+    king.setHasPicture(true);
+    Author savedKing = authorRepository.save(king);
+    authors.put("Stephen King", savedKing);
+    downloadImageToAssets(kingImage, "authors", "pictures", savedKing.getId());
         
         // Isaac Asimov
-        Author asimov = Author.create(
+    String asimovImage = "https://upload.wikimedia.org/wikipedia/commons/thumb/3/34/Isaac.Asimov01.jpg/256px-Isaac.Asimov01.jpg";
+    Author asimov = Author.create(
             "Isaac Asimov",
             "Asimov, Isaac",
             Map.of("en", "Isaac Asimov was an American writer and professor of biochemistry at Boston University. He was known for his works of science fiction and popular science. Asimov was a prolific writer who wrote or edited more than 500 books."),
@@ -140,11 +164,13 @@ public class DemoDataService {
             Map.of(
                 "nationality", "American",
                 "genres", List.of("Science Fiction", "Popular Science", "Mystery"),
-                "profession", "Biochemist",
-                "imageUrl", "https://upload.wikimedia.org/wikipedia/commons/thumb/3/34/Isaac.Asimov01.jpg/256px-Isaac.Asimov01.jpg"
+        "profession", "Biochemist"
             )
         );
-        authors.put("Isaac Asimov", authorRepository.save(asimov));
+    asimov.setHasPicture(true);
+    Author savedAsimov = authorRepository.save(asimov);
+    authors.put("Isaac Asimov", savedAsimov);
+    downloadImageToAssets(asimovImage, "authors", "pictures", savedAsimov.getId());
         
         return authors;
     }
@@ -153,20 +179,23 @@ public class DemoDataService {
         Map<String, Series> series = new HashMap<>();
         
         // The Lord of the Rings
+    String lotrImage = "https://encrypted-tbn3.gstatic.com/images?q=tbn:ANd9GcRqBUw96HgCQoy6ivCbnviDPbGVFY7VZ_qw-WphuHfyvJmq-2Au";
     Series lotr = Series.create("The Lord of the Rings", "Lord of the Rings, The");
     lotr.setDescription("Epic high fantasy adventure in Middle-earth following the journey to destroy the One Ring and defeat the Dark Lord Sauron.");
-    lotr.setImagePath("https://encrypted-tbn3.gstatic.com/images?q=tbn:ANd9GcRqBUw96HgCQoy6ivCbnviDPbGVFY7VZ_qw-WphuHfyvJmq-2Au");
         lotr.setMetadata(Map.of(
             "genre", "Epic Fantasy",
             "setting", "Middle-earth",
             "totalBooks", 3
         ));
-        series.put("The Lord of the Rings", seriesRepository.save(lotr));
+    lotr.setHasPicture(true);
+    Series savedLotr = seriesRepository.save(lotr);
+    series.put("The Lord of the Rings", savedLotr);
+    downloadImageToAssets(lotrImage, "series", "covers", savedLotr.getId());
         
         // The Wheel of Time
-        Series wot = Series.create("The Wheel of Time", "Wheel of Time, The");
+    String wotImage = "https://m.media-amazon.com/images/I/71SGsrQY+yL._SL1500_.jpg";
+    Series wot = Series.create("The Wheel of Time", "Wheel of Time, The");
         wot.setDescription("High fantasy series following the Dragon Reborn and the Last Battle against the Dark One. Originally begun by Robert Jordan and completed by Brandon Sanderson after Jordan's death.");
-    wot.setImagePath("https://m.media-amazon.com/images/I/71SGsrQY+yL._SL1500_.jpg");
         wot.setMetadata(Map.of(
             "genre", "Epic Fantasy",
             "setting", "Randland",
@@ -174,40 +203,52 @@ public class DemoDataService {
             "originalAuthor", "Robert Jordan",
             "completedBy", "Brandon Sanderson"
         ));
-        series.put("The Wheel of Time", seriesRepository.save(wot));
+    wot.setHasPicture(true);
+    Series savedWot = seriesRepository.save(wot);
+    series.put("The Wheel of Time", savedWot);
+    downloadImageToAssets(wotImage, "series", "covers", savedWot.getId());
         
         // The Dark Tower (Stephen King)
-        Series darkTower = Series.create("The Dark Tower", "Dark Tower, The");
+    String darkTowerImage = "https://m.media-amazon.com/images/I/91EsBf4G0HL._SL1500_.jpg";
+    Series darkTower = Series.create("The Dark Tower", "Dark Tower, The");
         darkTower.setDescription("Dark fantasy series blending elements of science fiction, horror, and westerns, following Roland Deschain, the last gunslinger, on his quest for the Dark Tower.");
-    darkTower.setImagePath("https://m.media-amazon.com/images/I/91EsBf4G0HL._SL1500_.jpg");
         darkTower.setMetadata(Map.of(
             "genre", "Dark Fantasy",
             "subgenres", List.of("Science Fiction", "Horror", "Western"),
             "totalBooks", 8
         ));
-        series.put("The Dark Tower", seriesRepository.save(darkTower));
+    darkTower.setHasPicture(true);
+    Series savedDarkTower = seriesRepository.save(darkTower);
+    series.put("The Dark Tower", savedDarkTower);
+    downloadImageToAssets(darkTowerImage, "series", "covers", savedDarkTower.getId());
         
         // Foundation Series (Isaac Asimov)
-        Series foundation = Series.create("Foundation", "Foundation");
+    String foundationImage = "https://m.media-amazon.com/images/I/81fbZnrYyoS._SL1500_.jpg";
+    Series foundation = Series.create("Foundation", "Foundation");
         foundation.setDescription("Science fiction series about psychohistory and the fall and rebirth of the Galactic Empire, spanning thousands of years.");
-    foundation.setImagePath("https://m.media-amazon.com/images/I/81fbZnrYyoS._SL1500_.jpg");
         foundation.setMetadata(Map.of(
             "genre", "Science Fiction",
             "concepts", List.of("Psychohistory", "Galactic Empire"),
             "totalBooks", 7
         ));
-        series.put("Foundation", seriesRepository.save(foundation));
+    foundation.setHasPicture(true);
+    Series savedFoundation = seriesRepository.save(foundation);
+    series.put("Foundation", savedFoundation);
+    downloadImageToAssets(foundationImage, "series", "covers", savedFoundation.getId());
         
         // Robot Series (Isaac Asimov)
-        Series robot = Series.create("Robot", "Robot");
+    String robotImage = "https://m.media-amazon.com/images/I/71Vm4mFih+L._SL1500_.jpg";
+    Series robot = Series.create("Robot", "Robot");
         robot.setDescription("Science fiction series exploring the relationship between humans and robots, featuring the famous Three Laws of Robotics.");
-    robot.setImagePath("https://m.media-amazon.com/images/I/71Vm4mFih+L._SL1500_.jpg");
         robot.setMetadata(Map.of(
             "genre", "Science Fiction",
             "concepts", List.of("Three Laws of Robotics", "Artificial Intelligence"),
             "totalBooks", 4
         ));
-        series.put("Robot", seriesRepository.save(robot));
+    robot.setHasPicture(true);
+    Series savedRobot = seriesRepository.save(robot);
+    series.put("Robot", savedRobot);
+    downloadImageToAssets(robotImage, "series", "covers", savedRobot.getId());
         
         return series;
     }
@@ -444,13 +485,11 @@ public class DemoDataService {
         Book book = new Book(title, path);
         book.setTitleSort(titleSort);
         book.setFileSize((long) (500000 + Math.random() * 2000000)); // 500KB to 2.5MB
-        book.setFileHash(generateRandomHash());
-        if (coverUrl != null && !coverUrl.trim().isEmpty()) {
-            book.setCoverUrl(coverUrl);
-            book.setHasCover(true);
-        } else {
-            book.setHasCover(false);
-        }
+    book.setFileHash(generateRandomHash());
+    // Populate identifiers and language with hardcoded demo values (BCP 47 tag)
+    book.setIsbn("9780000000002");
+    book.setLanguage("en-US");
+    // Do not persist cover info in DB; we'll hydrate local assets instead
         book.setPublicationDate(LocalDate.of(year, (int)(Math.random() * 12) + 1, (int)(Math.random() * 28) + 1));
         
         // Add enhanced metadata
@@ -462,8 +501,14 @@ public class DemoDataService {
         }
         book.setMetadata(metadata);
         
-        // Save book and create relationships
+    // In demo, mark cover present and ensure a placeholder book file exists
+    book.setHasCover(true);
+    ensureDemoBookFileExists(path);
+    // Save book and hydrate cover asset locally (if URL provided)
     bookRepository.save(book);
+        if (coverUrl != null && !coverUrl.isBlank() && book.getId() != null) {
+            downloadImageToAssets(coverUrl, "books", "covers", book.getId());
+        }
         
         // Note: In the new architecture, author and series relationships 
         // would need to be handled through separate relationship entities
@@ -476,13 +521,11 @@ public class DemoDataService {
         Book book = new Book(title, path);
         book.setTitleSort(titleSort);
         book.setFileSize((long) (500000 + Math.random() * 2000000)); // 500KB to 2.5MB
-        book.setFileHash(generateRandomHash());
-        if (coverUrl != null && !coverUrl.trim().isEmpty()) {
-            book.setCoverUrl(coverUrl);
-            book.setHasCover(true);
-        } else {
-            book.setHasCover(false);
-        }
+    book.setFileHash(generateRandomHash());
+    // Populate identifiers and language with hardcoded demo values (BCP 47 tag)
+    book.setIsbn("9780000000002");
+    book.setLanguage("en-US");
+    // Do not persist cover info in DB; we'll hydrate local assets instead
         book.setPublicationDate(LocalDate.of(year, (int)(Math.random() * 12) + 1, (int)(Math.random() * 28) + 1));
         
         // Add enhanced metadata
@@ -494,10 +537,61 @@ public class DemoDataService {
         }
         book.setMetadata(metadata);
         
-        // Save book
+    // In demo, mark cover present and ensure a placeholder book file exists
+    book.setHasCover(true);
+    ensureDemoBookFileExists(path);
+    // Save book and hydrate cover asset locally (if URL provided)
     bookRepository.save(book);
+        if (coverUrl != null && !coverUrl.isBlank() && book.getId() != null) {
+            downloadImageToAssets(coverUrl, "books", "covers", book.getId());
+        }
         
         // Note: Author relationship would need to be handled through 
         // separate relationship entities in the full implementation
+    }
+
+    private void downloadImageToAssets(String url, String folder, String subFolder, UUID id) {
+        try {
+            if (url == null || url.isBlank() || id == null) return;
+            // Prepare paths safely
+            String baseDir = configurationPort.getStorageConfig().getBaseDir();
+            Path base = secureFileProcessingPort.sanitizePath(baseDir, ".");
+            Path targetDir = base.resolve(folder).resolve(subFolder);
+            try { Files.createDirectories(targetDir); } catch (Exception ignored) {}
+            Path target = targetDir.resolve(id.toString());
+
+            HttpClient client = HttpClient.newBuilder()
+                    .followRedirects(HttpClient.Redirect.NORMAL)
+                    .build();
+            HttpRequest req = HttpRequest.newBuilder(URI.create(url))
+                    .header("User-Agent", "Librarie-Demo/1.0")
+                    .header("Accept", "image/avif,image/webp,image/apng,image/*,*/*;q=0.8")
+                    .GET()
+                    .build();
+            HttpResponse<byte[]> resp = client.send(req, HttpResponse.BodyHandlers.ofByteArray());
+            if (resp.statusCode() >= 200 && resp.statusCode() < 300 && resp.body() != null && resp.body().length > 0) {
+                Files.write(target, resp.body(), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+            }
+        } catch (Exception ignored) {
+            // Best-effort: demo hydration shouldn't fail startup
+        }
+    }
+
+    private void ensureDemoBookFileExists(String relativePath) {
+        try {
+            if (relativePath == null || relativePath.isBlank()) return;
+            String baseDir = configurationPort.getStorageConfig().getBaseDir();
+            // Normalize input path and ensure it's within baseDir
+            String safeRel = relativePath.startsWith("/") ? relativePath.substring(1) : relativePath;
+            Path safeTarget = secureFileProcessingPort.sanitizePath(baseDir, safeRel);
+            // Create parent directories
+            try { Files.createDirectories(safeTarget.getParent()); } catch (Exception ignored) {}
+            // If file doesn't exist, write a tiny placeholder EPUB-like file
+            if (!Files.exists(safeTarget)) {
+                byte[] minimalEpub = new byte[] { 'P','K',3,4,20,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 }; // zip header
+                Files.write(safeTarget, minimalEpub, StandardOpenOption.CREATE_NEW);
+            }
+        } catch (Exception ignored) {
+        }
     }
 }

@@ -35,11 +35,15 @@ public class AuthorController {
 
     private final AuthorService authorService;
     private final org.motpassants.infrastructure.media.ImageCachingService imageCachingService;
+    private final org.motpassants.infrastructure.config.LibrarieConfigProperties config;
+    @Context
+    Request httpRequest;
 
     @Inject
-    public AuthorController(AuthorService authorService, org.motpassants.infrastructure.media.ImageCachingService imageCachingService) {
+    public AuthorController(AuthorService authorService, org.motpassants.infrastructure.media.ImageCachingService imageCachingService, org.motpassants.infrastructure.config.LibrarieConfigProperties config) {
         this.authorService = authorService;
         this.imageCachingService = imageCachingService;
+        this.config = config;
     }
 
     @GET
@@ -310,7 +314,7 @@ public class AuthorController {
     @GET
     @Path("/{id}/picture")
     @Produces("image/*")
-    @Operation(summary = "Get author picture", description = "Retrieve author's picture image")
+    @Operation(summary = "Get author picture", description = "Serves author's picture using local-first strong ETag caching; populates from metadata.imageUrl if missing")
     @APIResponses({
         @APIResponse(responseCode = "200", description = "Image returned"),
         @APIResponse(responseCode = "404", description = "Author or image not found"),
@@ -330,23 +334,40 @@ public class AuthorController {
             }
 
             Author author = authorOpt.get();
-            String path = resolveAuthorImagePath(author);
-            if (path != null && !path.isBlank()) {
-                if (path.startsWith("http://") || path.startsWith("https://")) {
-                    return Response.seeOther(java.net.URI.create(path)).build();
-                }
-                byte[] bytes = imageCachingService.getImage(path);
-                if (bytes != null) {
-                    String mime = imageCachingService.getImageMimeType(path);
-                    return Response.ok(bytes)
-                            .type(mime)
-                            .header("Cache-Control", "max-age=3600")
-                            .build();
+            String remoteUrl = null;
+            if (author.getMetadata() != null) {
+                Object urlObj = author.getMetadata().get("imageUrl");
+                if (urlObj instanceof String s) {
+                    String trimmed = s.trim();
+                    if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+                        remoteUrl = trimmed;
+                    }
                 }
             }
 
-            // Fallback placeholder SVG
-            String svg = """
+            java.nio.file.Path baseDir = java.nio.file.Paths.get(config.storage().baseDir());
+            return imageCachingService.serveLocalFirstStrongETag(
+                httpRequest,
+                baseDir,
+                "authors",
+                "pictures",
+                id,
+                remoteUrl,
+                getAuthorFailoverSvg()
+            );
+        } catch (IllegalArgumentException e) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of("error", "Invalid author ID format"))
+                    .build();
+        } catch (Exception e) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity(Map.of("error", "Internal server error"))
+                    .build();
+        }
+    }
+
+    private static byte[] getAuthorFailoverSvg() {
+        String svg = """
                 <svg xmlns='http://www.w3.org/2000/svg' width='320' height='320' viewBox='0 0 320 320'>
                     <defs>
                         <linearGradient id='g' x1='0' y1='0' x2='1' y2='1'>
@@ -361,49 +382,25 @@ public class AuthorController {
                     </g>
                 </svg>
                 """;
-            return Response.ok(svg.getBytes())
-                    .type("image/svg+xml")
-                    .header("Cache-Control", "max-age=300")
-                    .build();
-        } catch (IllegalArgumentException e) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(Map.of("error", "Invalid author ID format"))
-                    .build();
-        } catch (Exception e) {
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                    .entity(Map.of("error", "Internal server error"))
-                    .build();
-        }
-    }
-
-    private String resolveAuthorImagePath(Author author) {
-        if (author == null || author.getMetadata() == null) return null;
-        Object value;
-        // Try common keys that might hold a relative path
-    for (String key : new String[]{"imagePath", "picturePath", "photoPath", "avatarPath", "image", "imageUrl"}) {
-            value = author.getMetadata().get(key);
-            if (value instanceof String) {
-                return (String) value;
-            }
-        }
-        return null;
+        return svg.getBytes(java.nio.charset.StandardCharsets.UTF_8);
     }
 
     /**
      * Convert Author domain object to response DTO.
      */
     private AuthorResponseDto toResponseDto(Author author) {
-        return new AuthorResponseDto(
-            author.getId(),
-            author.getName(),
-            author.getSortName(),
-            author.getBio(),
-            author.getBirthDate(),
-            author.getDeathDate(),
-            author.getWebsiteUrl(),
-            author.getMetadata(),
-            author.getCreatedAt(),
-            author.getUpdatedAt()
-        );
+        return AuthorResponseDto.builder()
+            .id(author.getId())
+            .name(author.getName())
+            .sortName(author.getSortName())
+            .bio(author.getBio())
+            .birthDate(author.getBirthDate())
+            .deathDate(author.getDeathDate())
+            .websiteUrl(author.getWebsiteUrl())
+            .metadata(author.getMetadata())
+            .createdAt(author.getCreatedAt())
+            .updatedAt(author.getUpdatedAt())
+            .hasPicture(author.getHasPicture())
+            .build();
     }
 }

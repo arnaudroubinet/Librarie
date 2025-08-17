@@ -196,19 +196,19 @@ public class UnifiedSearchController {
             return null;
         }
         
-        BookResponseDto dto = new BookResponseDto();
-        dto.setId(book.getId());
-        dto.setTitle(book.getTitle());
-        dto.setTitleSort(book.getTitleSort());
-        dto.setIsbn(book.getIsbn());
-        dto.setDescription(book.getDescription());
-        dto.setPageCount(book.getPageCount());
-        dto.setPublicationYear(book.getPublicationYear());
-        dto.setLanguage(book.getLanguage());
-        dto.setCoverUrl(book.getCoverUrl());
-        dto.setCreatedAt(book.getCreatedAt());
-        dto.setUpdatedAt(book.getUpdatedAt());
-        return dto;
+    return BookResponseDto.builder()
+        .id(book.getId())
+        .title(book.getTitle())
+        .titleSort(book.getTitleSort())
+        .isbn(book.getIsbn())
+        .description(book.getDescription())
+        .pageCount(book.getPageCount())
+        .publicationYear(book.getPublicationYear())
+        .language(book.getLanguage())
+        .hasCover(book.getHasCover())
+        .createdAt(book.getCreatedAt())
+        .updatedAt(book.getUpdatedAt())
+        .build();
     }
     
     /**
@@ -219,18 +219,19 @@ public class UnifiedSearchController {
             return null;
         }
         
-        return new AuthorResponseDto(
-            author.getId(),
-            author.getName(),
-            author.getSortName(),
-            author.getBio(),
-            author.getBirthDate(),
-            author.getDeathDate(),
-            author.getWebsiteUrl(),
-            author.getMetadata(),
-            author.getCreatedAt(),
-            author.getUpdatedAt()
-        );
+        return AuthorResponseDto.builder()
+                .id(author.getId())
+                .name(author.getName())
+                .sortName(author.getSortName())
+                .bio(author.getBio())
+                .birthDate(author.getBirthDate())
+                .deathDate(author.getDeathDate())
+                .websiteUrl(author.getWebsiteUrl())
+                .metadata(author.getMetadata())
+                .createdAt(author.getCreatedAt())
+                .updatedAt(author.getUpdatedAt())
+                .hasPicture(author.getHasPicture())
+                .build();
     }
     
     /**
@@ -241,19 +242,19 @@ public class UnifiedSearchController {
             return null;
         }
         
-        SeriesResponseDto dto = new SeriesResponseDto();
-        dto.setId(series.getId());
-        dto.setName(series.getName());
-        dto.setSortName(series.getSortName());
-        dto.setDescription(series.getDescription());
-        dto.setImagePath(series.getImagePath());
-        dto.setTotalBooks(series.getTotalBooks());
-        dto.setIsCompleted(series.getIsCompleted());
-        dto.setMetadata(series.getMetadata());
-        dto.setCreatedAt(series.getCreatedAt());
-        dto.setUpdatedAt(series.getUpdatedAt());
-        dto.setFallbackImagePath(series.getEffectiveImagePath());
-        
-        return dto;
+        return SeriesResponseDto.builder()
+                .id(series.getId())
+                .name(series.getName())
+                .sortName(series.getSortName())
+                .description(series.getDescription())
+                .imagePath(series.getImagePath())
+                .totalBooks(series.getTotalBooks())
+                .isCompleted(series.getIsCompleted())
+                .hasPicture(series.getHasPicture())
+                .metadata(series.getMetadata())
+                .createdAt(series.getCreatedAt())
+                .updatedAt(series.getUpdatedAt())
+                .fallbackImagePath(series.getEffectiveImagePath())
+                .build();
     }
 }
