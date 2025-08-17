@@ -34,10 +34,12 @@ import java.util.stream.Collectors;
 public class AuthorController {
 
     private final AuthorService authorService;
+    private final org.motpassants.infrastructure.media.ImageCachingService imageCachingService;
 
     @Inject
-    public AuthorController(AuthorService authorService) {
+    public AuthorController(AuthorService authorService, org.motpassants.infrastructure.media.ImageCachingService imageCachingService) {
         this.authorService = authorService;
+        this.imageCachingService = imageCachingService;
     }
 
     @GET
@@ -307,6 +309,7 @@ public class AuthorController {
 
     @GET
     @Path("/{id}/picture")
+    @Produces("image/*")
     @Operation(summary = "Get author picture", description = "Retrieve author's picture image")
     @APIResponses({
         @APIResponse(responseCode = "200", description = "Image returned"),
@@ -316,19 +319,33 @@ public class AuthorController {
     public Response getAuthorPicture(
             @Parameter(description = "Author UUID", required = true)
             @PathParam("id") String id) {
-        
         try {
             UUID authorId = UUID.fromString(id);
-            Optional<Author> author = authorService.getAuthorById(authorId);
-            
-            if (author.isEmpty()) {
+            Optional<Author> authorOpt = authorService.getAuthorById(authorId);
+
+            if (authorOpt.isEmpty()) {
                 return Response.status(Response.Status.NOT_FOUND)
-                    .entity(Map.of("error", "Author not found"))
-                    .build();
+                        .entity(Map.of("error", "Author not found"))
+                        .build();
             }
-            
-            // For now, return a simple SVG placeholder
-            // TODO: Implement proper image handling
+
+            Author author = authorOpt.get();
+            String path = resolveAuthorImagePath(author);
+            if (path != null && !path.isBlank()) {
+                if (path.startsWith("http://") || path.startsWith("https://")) {
+                    return Response.seeOther(java.net.URI.create(path)).build();
+                }
+                byte[] bytes = imageCachingService.getImage(path);
+                if (bytes != null) {
+                    String mime = imageCachingService.getImageMimeType(path);
+                    return Response.ok(bytes)
+                            .type(mime)
+                            .header("Cache-Control", "max-age=3600")
+                            .build();
+                }
+            }
+
+            // Fallback placeholder SVG
             String svg = """
                 <svg xmlns='http://www.w3.org/2000/svg' width='320' height='320' viewBox='0 0 320 320'>
                     <defs>
@@ -344,20 +361,32 @@ public class AuthorController {
                     </g>
                 </svg>
                 """;
-            
             return Response.ok(svg.getBytes())
-                .type("image/svg+xml")
-                .build();
-                
+                    .type("image/svg+xml")
+                    .header("Cache-Control", "max-age=300")
+                    .build();
         } catch (IllegalArgumentException e) {
             return Response.status(Response.Status.BAD_REQUEST)
-                .entity(Map.of("error", "Invalid author ID format"))
-                .build();
+                    .entity(Map.of("error", "Invalid author ID format"))
+                    .build();
         } catch (Exception e) {
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                .entity(Map.of("error", "Internal server error"))
-                .build();
+                    .entity(Map.of("error", "Internal server error"))
+                    .build();
         }
+    }
+
+    private String resolveAuthorImagePath(Author author) {
+        if (author == null || author.getMetadata() == null) return null;
+        Object value;
+        // Try common keys that might hold a relative path
+    for (String key : new String[]{"imagePath", "picturePath", "photoPath", "avatarPath", "image", "imageUrl"}) {
+            value = author.getMetadata().get(key);
+            if (value instanceof String) {
+                return (String) value;
+            }
+        }
+        return null;
     }
 
     /**

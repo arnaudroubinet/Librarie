@@ -71,13 +71,15 @@ public class DemoDataService {
             Map.of(
                 "nationality", "British",
                 "genres", List.of("Fantasy", "Philology"),
-                "education", "Oxford University"
+                "education", "Oxford University",
+                // external image to enable author picture endpoint (will redirect)
+                "imageUrl", "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d4/J._R._R._Tolkien%2C_ca._1925.jpg/256px-J._R._R._Tolkien%2C_ca._1925.jpg"
             )
         );
         authors.put("J.R.R. Tolkien", authorRepository.save(tolkien));
         
         // Robert Jordan
-        Author jordan = Author.create(
+    Author jordan = Author.create(
             "Robert Jordan",
             "Jordan, Robert",
             Map.of("en", "Robert Jordan was an American author of epic fantasy. He is best known for the Wheel of Time series, which comprises 14 books and a prequel novel."),
@@ -87,13 +89,14 @@ public class DemoDataService {
             Map.of(
                 "nationality", "American",
                 "genres", List.of("Epic Fantasy"),
-                "realName", "James Oliver Rigney Jr."
+        "realName", "James Oliver Rigney Jr.",
+        "imageUrl", "https://images.findagrave.com/photos/2007/260/21632571_119013305313.jpg?size=photos250"
             )
         );
         authors.put("Robert Jordan", authorRepository.save(jordan));
         
         // Brandon Sanderson  
-        Author sanderson = Author.create(
+    Author sanderson = Author.create(
             "Brandon Sanderson",
             "Sanderson, Brandon",
             Map.of("en", "Brandon Sanderson is an American author of epic fantasy and science fiction. He is best known for the Cosmere fictional universe, in which most of his fantasy novels, most notably the Mistborn series and The Stormlight Archive, are set."),
@@ -103,7 +106,8 @@ public class DemoDataService {
             Map.of(
                 "nationality", "American",
                 "genres", List.of("Epic Fantasy", "Science Fiction"),
-                "university", "Brigham Young University"
+        "university", "Brigham Young University",
+        "imageUrl", "https://cdn1.booknode.com/author_picture/5462/full/brandon-sanderson-5461821.jpg"
             )
         );
         authors.put("Brandon Sanderson", authorRepository.save(sanderson));
@@ -119,7 +123,8 @@ public class DemoDataService {
             Map.of(
                 "nationality", "American",
                 "genres", List.of("Horror", "Supernatural Fiction", "Suspense", "Science Fiction"),
-                "penNames", List.of("Richard Bachman")
+                "penNames", List.of("Richard Bachman"),
+                "imageUrl", "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e3/Stephen_King%2C_Comicon.jpg/256px-Stephen_King%2C_Comicon.jpg"
             )
         );
         authors.put("Stephen King", authorRepository.save(king));
@@ -135,7 +140,8 @@ public class DemoDataService {
             Map.of(
                 "nationality", "American",
                 "genres", List.of("Science Fiction", "Popular Science", "Mystery"),
-                "profession", "Biochemist"
+                "profession", "Biochemist",
+                "imageUrl", "https://upload.wikimedia.org/wikipedia/commons/thumb/3/34/Isaac.Asimov01.jpg/256px-Isaac.Asimov01.jpg"
             )
         );
         authors.put("Isaac Asimov", authorRepository.save(asimov));
@@ -147,8 +153,9 @@ public class DemoDataService {
         Map<String, Series> series = new HashMap<>();
         
         // The Lord of the Rings
-        Series lotr = Series.create("The Lord of the Rings", "Lord of the Rings, The");
-        lotr.setDescription("Epic high fantasy adventure in Middle-earth following the journey to destroy the One Ring and defeat the Dark Lord Sauron.");
+    Series lotr = Series.create("The Lord of the Rings", "Lord of the Rings, The");
+    lotr.setDescription("Epic high fantasy adventure in Middle-earth following the journey to destroy the One Ring and defeat the Dark Lord Sauron.");
+    lotr.setImagePath("https://encrypted-tbn3.gstatic.com/images?q=tbn:ANd9GcRqBUw96HgCQoy6ivCbnviDPbGVFY7VZ_qw-WphuHfyvJmq-2Au");
         lotr.setMetadata(Map.of(
             "genre", "Epic Fantasy",
             "setting", "Middle-earth",
@@ -159,6 +166,7 @@ public class DemoDataService {
         // The Wheel of Time
         Series wot = Series.create("The Wheel of Time", "Wheel of Time, The");
         wot.setDescription("High fantasy series following the Dragon Reborn and the Last Battle against the Dark One. Originally begun by Robert Jordan and completed by Brandon Sanderson after Jordan's death.");
+    wot.setImagePath("https://m.media-amazon.com/images/I/71SGsrQY+yL._SL1500_.jpg");
         wot.setMetadata(Map.of(
             "genre", "Epic Fantasy",
             "setting", "Randland",
@@ -171,6 +179,7 @@ public class DemoDataService {
         // The Dark Tower (Stephen King)
         Series darkTower = Series.create("The Dark Tower", "Dark Tower, The");
         darkTower.setDescription("Dark fantasy series blending elements of science fiction, horror, and westerns, following Roland Deschain, the last gunslinger, on his quest for the Dark Tower.");
+    darkTower.setImagePath("https://m.media-amazon.com/images/I/91EsBf4G0HL._SL1500_.jpg");
         darkTower.setMetadata(Map.of(
             "genre", "Dark Fantasy",
             "subgenres", List.of("Science Fiction", "Horror", "Western"),
@@ -181,6 +190,7 @@ public class DemoDataService {
         // Foundation Series (Isaac Asimov)
         Series foundation = Series.create("Foundation", "Foundation");
         foundation.setDescription("Science fiction series about psychohistory and the fall and rebirth of the Galactic Empire, spanning thousands of years.");
+    foundation.setImagePath("https://m.media-amazon.com/images/I/81fbZnrYyoS._SL1500_.jpg");
         foundation.setMetadata(Map.of(
             "genre", "Science Fiction",
             "concepts", List.of("Psychohistory", "Galactic Empire"),
@@ -191,6 +201,7 @@ public class DemoDataService {
         // Robot Series (Isaac Asimov)
         Series robot = Series.create("Robot", "Robot");
         robot.setDescription("Science fiction series exploring the relationship between humans and robots, featuring the famous Three Laws of Robotics.");
+    robot.setImagePath("https://m.media-amazon.com/images/I/71Vm4mFih+L._SL1500_.jpg");
         robot.setMetadata(Map.of(
             "genre", "Science Fiction",
             "concepts", List.of("Three Laws of Robotics", "Artificial Intelligence"),
@@ -219,9 +230,9 @@ public class DemoDataService {
     private void createTolkienBooks(Author author, Series series) {
         // The Lord of the Rings trilogy
         String[][] lotrBooks = {
-            {"The Fellowship of the Ring", "1954", "The first volume of The Lord of the Rings follows Frodo Baggins as he begins his journey to destroy the One Ring."},
-            {"The Two Towers", "1954", "The second volume follows the continuing quest of the Fellowship as it divides into separate paths."},
-            {"The Return of the King", "1955", "The final volume of The Lord of the Rings chronicles the final battle against Sauron and the return of the king."}
+            {"The Fellowship of the Ring", "1954", "https://m.media-amazon.com/images/I/81krXXdKn2L._SL1500_.jpg", "The first volume of The Lord of the Rings follows Frodo Baggins as he begins his journey to destroy the One Ring."},
+            {"The Two Towers", "1954", "https://m.media-amazon.com/images/I/81OWByGqGdL._SL1500_.jpg", "The second volume follows the continuing quest of the Fellowship as it divides into separate paths."},
+            {"The Return of the King", "1955", "https://m.media-amazon.com/images/I/81krXXdKn2L._SL1500_.jpg", "The final volume of The Lord of the Rings chronicles the final battle against Sauron and the return of the king."}
         };
         
         for (int i = 0; i < lotrBooks.length; i++) {
@@ -233,15 +244,16 @@ public class DemoDataService {
                 series,
                 BigDecimal.valueOf(i + 1),
                 Integer.parseInt(bookData[1]),
-                bookData[2]  // description
+                bookData[2], // coverUrl
+                bookData[3]  // description
             );
         }
         
         // Other Tolkien standalone works
         String[][] standaloneBooks = {
-            {"The Hobbit", "1937", "A fantasy novel about the hobbit Bilbo Baggins' journey to help reclaim the Lonely Mountain from the dragon Smaug."},
-            {"The Silmarillion", "1977", "A collection of mythopoeic stories that forms the history and cosmology of Tolkien's Middle-earth."},
-            {"Unfinished Tales", "1980", "A collection of stories and essays by J.R.R. Tolkien, edited and published posthumously by his son Christopher Tolkien."}
+            {"The Hobbit", "1937", "https://m.media-amazon.com/images/I/812AkwqjfgL._SL1500_.jpg", "A fantasy novel about the hobbit Bilbo Baggins' journey to help reclaim the Lonely Mountain from the dragon Smaug."},
+            {"The Silmarillion", "1977", "https://m.media-amazon.com/images/I/81Ygs92I6GL._SL1500_.jpg", "A collection of mythopoeic stories that forms the history and cosmology of Tolkien's Middle-earth."},
+            {"Unfinished Tales", "1980", "https://m.media-amazon.com/images/I/812AkwqjfgL._SL1500_.jpg", "A collection of stories and essays by J.R.R. Tolkien, edited and published posthumously by his son Christopher Tolkien."}
         };
         
         for (String[] bookData : standaloneBooks) {
@@ -250,7 +262,8 @@ public class DemoDataService {
                 "Tolkien, " + bookData[0], // titleSort
                 author,
                 Integer.parseInt(bookData[1]),
-                bookData[2]  // description
+                bookData[2], // coverUrl
+                bookData[3]  // description
             );
         }
         
@@ -259,11 +272,11 @@ public class DemoDataService {
     private void createWheelOfTimeBooks(Author jordan, Author sanderson, Series series) {
         // Robert Jordan's books (1-11)
         String[][] jordanBooks = {
-            {"The Eye of the World", "1990", "The first book in The Wheel of Time series, introducing Rand al'Thor and his friends as they flee their village."},
-            {"The Great Hunt", "1990", "The second book follows the hunt for the stolen Horn of Valere."},
-            {"The Dragon Reborn", "1991", "The third book focuses on Rand's journey to claim Callandor in the Stone of Tear."},
-            {"The Shadow Rising", "1992", "The fourth book explores the history of the Aiel and the Two Rivers."},
-            {"The Fires of Heaven", "1993", "The fifth book deals with civil war in Cairhien and the Aiel Waste."}
+            {"The Eye of the World", "1990", "https://m.media-amazon.com/images/I/71SGsrQY+yL._SL1500_.jpg", "The first book in The Wheel of Time series, introducing Rand al'Thor and his friends as they flee their village."},
+            {"The Great Hunt", "1990", "https://m.media-amazon.com/images/I/81txFRYutnL._SL1500_.jpg", "The second book follows the hunt for the stolen Horn of Valere."},
+            {"The Dragon Reborn", "1991", "https://m.media-amazon.com/images/I/81gjpHrpWjL._SL1500_.jpg", "The third book focuses on Rand's journey to claim Callandor in the Stone of Tear."},
+            {"The Shadow Rising", "1992", "https://m.media-amazon.com/images/I/71Eztr2yp+L._SL1500_.jpg", "The fourth book explores the history of the Aiel and the Two Rivers."},
+            {"The Fires of Heaven", "1993", "https://m.media-amazon.com/images/I/81L6SV7D-GL._SL1500_.jpg", "The fifth book deals with civil war in Cairhien and the Aiel Waste."}
         };
         
         for (int i = 0; i < jordanBooks.length; i++) {
@@ -275,15 +288,16 @@ public class DemoDataService {
                 series,
                 BigDecimal.valueOf(i + 1),
                 Integer.parseInt(bookData[1]),
-                bookData[2]  // description
+                bookData[2], // coverUrl
+                bookData[3]  // description
             );
         }
         
         // Brandon Sanderson's completing books (12-14)
         String[][] sandersonBooks = {
-            {"The Gathering Storm", "2009", "The twelfth book, completed by Brandon Sanderson from Robert Jordan's notes."},
-            {"Towers of Midnight", "2010", "The thirteenth book, continuing Sanderson's completion of the series."},
-            {"A Memory of Light", "2013", "The fourteenth and final book in The Wheel of Time series."}
+            {"The Gathering Storm", "2009", "https://m.media-amazon.com/images/I/81nIiL65y2L._SL1500_.jpg", "The twelfth book, completed by Brandon Sanderson from Robert Jordan's notes."},
+            {"Towers of Midnight", "2010", "https://m.media-amazon.com/images/I/81s8xAwqrXL._SL1500_.jpg", "The thirteenth book, continuing Sanderson's completion of the series."},
+            {"A Memory of Light", "2013", "https://m.media-amazon.com/images/I/819qaQPNKoL._SL1500_.jpg", "The fourteenth and final book in The Wheel of Time series."}
         };
         
         for (int i = 0; i < sandersonBooks.length; i++) {
@@ -295,7 +309,8 @@ public class DemoDataService {
                 series,
                 BigDecimal.valueOf(jordanBooks.length + i + 1),
                 Integer.parseInt(bookData[1]),
-                bookData[2]  // description
+                bookData[2], // coverUrl
+                bookData[3]  // description
             );
         }
         
@@ -304,10 +319,10 @@ public class DemoDataService {
     private void createStephenKingBooks(Author author, Series darkTowerSeries) {
         // The Dark Tower series
         String[][] darkTowerBooks = {
-            {"The Gunslinger", "1982", "The first book in The Dark Tower series, introducing Roland Deschain, the last gunslinger."},
-            {"The Drawing of the Three", "1987", "The second book where Roland draws three companions from our world."},
-            {"The Waste Lands", "1991", "The third book as the ka-tet travels through the waste lands."},
-            {"Wizard and Glass", "1997", "The fourth book reveals Roland's past in Mejis."}
+            {"The Gunslinger", "1982", "https://m.media-amazon.com/images/I/91EsBf4G0HL._SL1500_.jpg", "The first book in The Dark Tower series, introducing Roland Deschain, the last gunslinger."},
+            {"The Drawing of the Three", "1987", "https://m.media-amazon.com/images/I/91W49YUjiML._SL1500_.jpg", "The second book where Roland draws three companions from our world."},
+            {"The Waste Lands", "1991", "https://m.media-amazon.com/images/I/91EsBf4G0HL._SL1500_.jpg", "The third book as the ka-tet travels through the waste lands."},
+            {"Wizard and Glass", "1997", "https://m.media-amazon.com/images/I/91xib2N15WL._SL1500_.jpg", "The fourth book reveals Roland's past in Mejis."}
         };
         
         for (int i = 0; i < darkTowerBooks.length; i++) {
@@ -319,16 +334,17 @@ public class DemoDataService {
                 darkTowerSeries,
                 BigDecimal.valueOf(i + 1),
                 Integer.parseInt(bookData[1]),
-                bookData[2]  // description
+                bookData[2], // coverUrl
+                bookData[3]  // description
             );
         }
         
         // Stephen King standalone books
         String[][] standaloneBooks = {
-            {"Carrie", "1974", "King's first published novel about a teenage girl with telekinetic powers."},
-            {"The Shining", "1977", "A horror novel about a family isolated in a haunted hotel."},
-            {"The Stand", "1978", "An epic post-apocalyptic dark fantasy novel."},
-            {"It", "1986", "A horror novel about a creature that preys on children in the town of Derry."}
+            {"Carrie", "1974", "https://m.media-amazon.com/images/I/71JVmpGUqhL._SL1500_.jpg", "King's first published novel about a teenage girl with telekinetic powers."},
+            {"The Shining", "1977", "https://m.media-amazon.com/images/I/71LWM5fjbRL._SL1500_.jpg", "A horror novel about a family isolated in a haunted hotel."},
+            {"The Stand", "1978", "https://m.media-amazon.com/images/I/815cT8CLaKL._SL1500_.jpg", "An epic post-apocalyptic dark fantasy novel."},
+            {"It", "1986", "https://m.media-amazon.com/images/I/71JVmpGUqhL._SL1500_.jpg", "A horror novel about a creature that preys on children in the town of Derry."}
         };
         
         for (String[] bookData : standaloneBooks) {
@@ -337,7 +353,8 @@ public class DemoDataService {
                 "King, " + bookData[0], // titleSort
                 author,
                 Integer.parseInt(bookData[1]),
-                bookData[2]  // description
+                bookData[2], // coverUrl
+                bookData[3]  // description
             );
         }
         
@@ -346,10 +363,10 @@ public class DemoDataService {
     private void createIsaacAsimovBooks(Author author, Series foundationSeries, Series robotSeries) {
         // Foundation series
         String[][] foundationBooks = {
-            {"Foundation", "1951", "The first book in the Foundation series about Hari Seldon's psychohistory."},
-            {"Foundation and Empire", "1952", "The second Foundation book dealing with the rise of the Mule."},
-            {"Second Foundation", "1953", "The third book revealing the location of the Second Foundation."},
-            {"Foundation's Edge", "1982", "The fourth book set centuries after the original trilogy."}
+            {"Foundation", "1951", "https://m.media-amazon.com/images/I/81fbZnrYyoS._SL1500_.jpg", "The first book in the Foundation series about Hari Seldon's psychohistory."},
+            {"Foundation and Empire", "1952", "https://m.media-amazon.com/images/I/91GMN74HkyS._SL1500_.jpg", "The second Foundation book dealing with the rise of the Mule."},
+            {"Second Foundation", "1953", "https://m.media-amazon.com/images/I/61yeuxTHLSL._SL1120_.jpg", "The third book revealing the location of the Second Foundation."},
+            {"Foundation's Edge", "1982", "https://m.media-amazon.com/images/I/81fbZnrYyoS._SL1500_.jpg", "The fourth book set centuries after the original trilogy."}
         };
         
         for (int i = 0; i < foundationBooks.length; i++) {
@@ -361,16 +378,17 @@ public class DemoDataService {
                 foundationSeries,
                 BigDecimal.valueOf(i + 1),
                 Integer.parseInt(bookData[1]),
-                bookData[2]  // description
+                bookData[2], // coverUrl
+                bookData[3]  // description
             );
         }
         
         // Robot series
         String[][] robotBooks = {
-            {"I, Robot", "1950", "A collection of nine short stories about robots and the Three Laws of Robotics."},
-            {"The Caves of Steel", "1954", "A science fiction detective novel featuring Elijah Baley and R. Daneel Olivaw."},
-            {"The Naked Sun", "1957", "The second robot novel continuing the partnership of Baley and Daneel."},
-            {"The Robots of Dawn", "1983", "The third robot novel set on the Spacer world of Aurora."}
+            {"I, Robot", "1950", "https://m.media-amazon.com/images/I/51v9O7rn83L.jpg", "A collection of nine short stories about robots and the Three Laws of Robotics."},
+            {"The Caves of Steel", "1954", "https://m.media-amazon.com/images/I/61vi13m2tvL._SL1120_.jpg", "A science fiction detective novel featuring Elijah Baley and R. Daneel Olivaw."},
+            {"The Naked Sun", "1957", "https://m.media-amazon.com/images/I/71mvqJWhTKL._SL1500_.jpg", "The second robot novel continuing the partnership of Baley and Daneel."},
+            {"The Robots of Dawn", "1983", "https://m.media-amazon.com/images/I/71Vm4mFih+L._SL1500_.jpg", "The third robot novel set on the Spacer world of Aurora."}
         };
         
         for (int i = 0; i < robotBooks.length; i++) {
@@ -382,15 +400,16 @@ public class DemoDataService {
                 robotSeries,
                 BigDecimal.valueOf(i + 1),
                 Integer.parseInt(bookData[1]),
-                bookData[2]  // description
+                bookData[2], // coverUrl
+                bookData[3]  // description
             );
         }
         
         // Isaac Asimov standalone books
         String[][] standaloneBooks = {
-            {"The End of Eternity", "1955", "A science fiction novel about time travel and the organization Eternity."},
-            {"The Gods Themselves", "1972", "A science fiction novel about parallel universes and energy exchange."},
-            {"Nightfall", "1990", "An expansion of his famous short story about a planet with six suns."}
+            {"The End of Eternity", "1955", "https://m.media-amazon.com/images/I/71GVYzeOtYL._SL1500_.jpg", "A science fiction novel about time travel and the organization Eternity."},
+            {"The Gods Themselves", "1972", "https://m.media-amazon.com/images/I/917nJWgAiBL._SL1500_.jpg", "A science fiction novel about parallel universes and energy exchange."},
+            {"Nightfall", "1990", "https://m.media-amazon.com/images/I/81jNOXtgQWL._SL1500_.jpg", "An expansion of his famous short story about a planet with six suns."}
         };
         
         for (String[] bookData : standaloneBooks) {
@@ -399,7 +418,8 @@ public class DemoDataService {
                 "Asimov, " + bookData[0], // titleSort
                 author,
                 Integer.parseInt(bookData[1]),
-                bookData[2]  // description
+                bookData[2], // coverUrl
+                bookData[3]  // description
             );
         }
         
@@ -417,7 +437,7 @@ public class DemoDataService {
     
     private void createBookInSeries(String title, String titleSort, Author author, 
                                    Series seriesEntity, BigDecimal seriesIndex, int year,
-                                   String description) {
+                                   String coverUrl, String description) {
         
         // Create book using new Book constructor
         String path = "/demo/books/" + title.replaceAll("[^a-zA-Z0-9]", "_") + ".epub";
@@ -425,20 +445,25 @@ public class DemoDataService {
         book.setTitleSort(titleSort);
         book.setFileSize((long) (500000 + Math.random() * 2000000)); // 500KB to 2.5MB
         book.setFileHash(generateRandomHash());
-        book.setHasCover(true);
+        if (coverUrl != null && !coverUrl.trim().isEmpty()) {
+            book.setCoverUrl(coverUrl);
+            book.setHasCover(true);
+        } else {
+            book.setHasCover(false);
+        }
         book.setPublicationDate(LocalDate.of(year, (int)(Math.random() * 12) + 1, (int)(Math.random() * 28) + 1));
         
         // Add enhanced metadata
         Map<String, Object> metadata = new HashMap<>();
         metadata.put("genre", "Fiction");
         metadata.put("pages", (int)(200 + Math.random() * 600));
-        if (description != null && !description.trim().isEmpty()) {
+    if (description != null && !description.trim().isEmpty()) {
             metadata.put("description", description);
         }
         book.setMetadata(metadata);
         
         // Save book and create relationships
-        Book savedBook = bookRepository.save(book);
+    bookRepository.save(book);
         
         // Note: In the new architecture, author and series relationships 
         // would need to be handled through separate relationship entities
@@ -446,13 +471,18 @@ public class DemoDataService {
     }
     
     private void createStandaloneBook(String title, String titleSort, Author author, 
-                                     int year, String description) {
+                                     int year, String coverUrl, String description) {
         String path = "/demo/books/" + title.replaceAll("[^a-zA-Z0-9]", "_") + ".epub";
         Book book = new Book(title, path);
         book.setTitleSort(titleSort);
         book.setFileSize((long) (500000 + Math.random() * 2000000)); // 500KB to 2.5MB
         book.setFileHash(generateRandomHash());
-        book.setHasCover(true);
+        if (coverUrl != null && !coverUrl.trim().isEmpty()) {
+            book.setCoverUrl(coverUrl);
+            book.setHasCover(true);
+        } else {
+            book.setHasCover(false);
+        }
         book.setPublicationDate(LocalDate.of(year, (int)(Math.random() * 12) + 1, (int)(Math.random() * 28) + 1));
         
         // Add enhanced metadata
@@ -465,7 +495,7 @@ public class DemoDataService {
         book.setMetadata(metadata);
         
         // Save book
-        Book savedBook = bookRepository.save(book);
+    bookRepository.save(book);
         
         // Note: Author relationship would need to be handled through 
         // separate relationship entities in the full implementation

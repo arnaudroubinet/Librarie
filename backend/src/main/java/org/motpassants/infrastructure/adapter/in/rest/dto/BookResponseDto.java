@@ -38,6 +38,9 @@ public class BookResponseDto {
     @Schema(description = "Cover image URL")
     private String coverUrl;
     
+    @Schema(description = "Whether the book has a cover available")
+    private Boolean hasCover;
+    
     @Schema(description = "Creation timestamp")
     private OffsetDateTime createdAt;
     
@@ -118,6 +121,14 @@ public class BookResponseDto {
     
     public void setCoverUrl(String coverUrl) {
         this.coverUrl = coverUrl;
+    }
+    
+    public Boolean getHasCover() {
+        return hasCover;
+    }
+    
+    public void setHasCover(Boolean hasCover) {
+        this.hasCover = hasCover;
     }
     
     public OffsetDateTime getCreatedAt() {

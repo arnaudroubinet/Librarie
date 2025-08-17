@@ -24,6 +24,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.net.URI;
 
 /**
  * REST controller for book operations.
@@ -37,10 +38,12 @@ import java.util.stream.Collectors;
 public class BookController {
 
     private final BookService bookService;
+    private final org.motpassants.infrastructure.media.ImageCachingService imageCachingService;
 
     @Inject
-    public BookController(BookService bookService) {
+    public BookController(BookService bookService, org.motpassants.infrastructure.media.ImageCachingService imageCachingService) {
         this.bookService = bookService;
+        this.imageCachingService = imageCachingService;
     }
 
     @GET
@@ -329,6 +332,7 @@ public class BookController {
 
     @GET
     @Path("/{id}/cover")
+    @Produces("image/*")
     @Operation(summary = "Get book cover image", description = "Streams the cover image bytes resolved from stored coverUrl")
     @APIResponses(value = {
         @APIResponse(responseCode = "200", description = "Image bytes returned"),
@@ -341,13 +345,33 @@ public class BookController {
             if (bookOpt.isEmpty()) {
                 return Response.status(Response.Status.NOT_FOUND).entity("Book not found").build();
             }
-            
-            // For now, return a simple SVG placeholder to maintain API compatibility
-            // In a real implementation, this would fetch the actual cover image
+            Book book = bookOpt.get();
+            // Try to serve cover
+            String path = book.getCoverUrl();
+            if (path != null && !path.isBlank()) {
+                // External URL: redirect regardless of hasCover flag
+                if (path.startsWith("http://") || path.startsWith("https://")) {
+                    return Response.seeOther(URI.create(path))
+                            .header("Cache-Control", "max-age=3600")
+                            .build();
+                }
+                // Local file: serve only if marked as having a cover
+                if (Boolean.TRUE.equals(book.getHasCover())) {
+                    byte[] bytes = imageCachingService.getImage(path);
+                    if (bytes != null) {
+                        String mime = imageCachingService.getImageMimeType(path);
+                        return Response.ok(bytes)
+                                .type(mime)
+                                .header("Cache-Control", "max-age=3600")
+                                .build();
+                    }
+                }
+            }
+            // Fallback placeholder
             byte[] failoverSvg = getFailoverSvg();
             return Response.ok(failoverSvg)
                     .type("image/svg+xml")
-                    .header("Cache-Control", "max-age=3600")
+                    .header("Cache-Control", "max-age=300")
                     .build();
                     
         } catch (IllegalArgumentException e) {
@@ -388,7 +412,11 @@ public class BookController {
         dto.setPageCount(book.getPageCount());
         dto.setPublicationYear(book.getPublicationYear());
         dto.setLanguage(book.getLanguage());
-        dto.setCoverUrl(book.getCoverUrl());
+    dto.setCoverUrl(book.getCoverUrl());
+    // If domain hasn't set hasCover, infer from coverUrl presence to let UI request the endpoint
+    boolean computedHasCover = Boolean.TRUE.equals(book.getHasCover())
+        || (book.getCoverUrl() != null && !book.getCoverUrl().isBlank());
+    dto.setHasCover(computedHasCover);
         dto.setCreatedAt(book.getCreatedAt());
         dto.setUpdatedAt(book.getUpdatedAt());
         return dto;

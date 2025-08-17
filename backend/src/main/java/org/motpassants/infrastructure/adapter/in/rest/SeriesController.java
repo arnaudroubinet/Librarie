@@ -2,7 +2,6 @@ package org.motpassants.infrastructure.adapter.in.rest;
 
 import org.motpassants.domain.core.model.Page;
 import org.motpassants.domain.core.model.Series;
-import org.motpassants.domain.core.model.Book;
 import org.motpassants.domain.port.in.SeriesUseCase;
 import org.motpassants.infrastructure.adapter.in.rest.dto.SeriesRequestDto;
 import org.motpassants.infrastructure.adapter.in.rest.dto.SeriesResponseDto;
@@ -22,6 +21,7 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
 import java.util.List;
+import java.net.URI;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -37,10 +37,12 @@ import java.util.stream.Collectors;
 public class SeriesController {
     
     private final SeriesUseCase seriesUseCase;
+    private final org.motpassants.infrastructure.media.ImageCachingService imageCachingService;
     
     @Inject
-    public SeriesController(SeriesUseCase seriesUseCase) {
+    public SeriesController(SeriesUseCase seriesUseCase, org.motpassants.infrastructure.media.ImageCachingService imageCachingService) {
         this.seriesUseCase = seriesUseCase;
+        this.imageCachingService = imageCachingService;
     }
     
     @GET
@@ -321,8 +323,24 @@ public class SeriesController {
                     .entity("Series not found")
                     .build();
             }
-            
-            // Return a simple SVG placeholder for now
+            Series series = seriesOpt.get();
+            String path = series.getImagePath();
+            if (path != null && !path.isBlank()) {
+                if (path.startsWith("http://") || path.startsWith("https://")) {
+                    return Response.seeOther(URI.create(path))
+                        .header("Cache-Control", "max-age=3600")
+                        .build();
+                }
+                byte[] bytes = imageCachingService.getImage(path);
+                if (bytes != null) {
+                    String mime = imageCachingService.getImageMimeType(path);
+                    return Response.ok(bytes)
+                        .type(mime)
+                        .header("Cache-Control", "max-age=3600")
+                        .build();
+                }
+            }
+            // Fallback placeholder
             String svg = """
                 <svg xmlns='http://www.w3.org/2000/svg' width='320' height='320' viewBox='0 0 320 320'>
                     <defs>
@@ -339,9 +357,9 @@ public class SeriesController {
                     </g>
                 </svg>
                 """;
-            
             return Response.ok(svg.getBytes())
                 .type("image/svg+xml")
+                .header("Cache-Control", "max-age=300")
                 .build();
                 
         } catch (IllegalArgumentException e) {
@@ -377,9 +395,7 @@ public class SeriesController {
                     .build();
             }
             
-            List<Book> books = seriesUseCase.getSeriesBooks(seriesId);
-            
-            // For now, return empty list since Book DTO conversion is not implemented yet
+            // Fetching books will be wired to DTO later; return empty list for now to keep API stable
             return Response.ok(List.of()).build();
             
         } catch (IllegalArgumentException e) {
