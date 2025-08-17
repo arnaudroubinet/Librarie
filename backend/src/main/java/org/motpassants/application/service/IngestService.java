@@ -2,14 +2,12 @@ package org.motpassants.application.service;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import org.jboss.logging.Logger;
 import org.motpassants.domain.port.in.IngestUseCase;
 import org.motpassants.domain.port.in.BookUseCase;
 import org.motpassants.domain.port.out.FileStorageService;
 import org.motpassants.domain.core.model.Book;
 import org.motpassants.domain.port.out.ConfigurationPort;
 import org.motpassants.domain.port.out.SecureFileProcessingPort;
-import org.motpassants.infrastructure.config.LibrarieConfigProperties;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -28,22 +26,20 @@ import java.util.stream.Stream;
 @ApplicationScoped
 public class IngestService implements IngestUseCase {
     
-    private static final Logger LOG = Logger.getLogger(IngestService.class);
-    
     private final BookUseCase bookUseCase;
     private final FileStorageService fileStorageService;
     private final SecureFileProcessingPort secureFileProcessingPort;
-    private final LibrarieConfigProperties config;
+    private final ConfigurationPort configurationPort;
     
     @Inject
     public IngestService(BookUseCase bookUseCase, 
                         FileStorageService fileStorageService,
                         SecureFileProcessingPort secureFileProcessingPort,
-                        LibrarieConfigProperties config) {
+                        ConfigurationPort configurationPort) {
         this.bookUseCase = bookUseCase;
         this.fileStorageService = fileStorageService;
         this.secureFileProcessingPort = secureFileProcessingPort;
-        this.config = config;
+        this.configurationPort = configurationPort;
     }
     
     @Override
@@ -53,11 +49,9 @@ public class IngestService implements IngestUseCase {
         try {
             Path scanPath = Paths.get(directoryPath);
             if (!Files.exists(scanPath) || !Files.isDirectory(scanPath)) {
-                LOG.warn("Invalid directory path for ingestion: " + directoryPath);
                 return ingestedBooks;
             }
             
-            LOG.info("Starting directory ingestion from: " + directoryPath);
             
             try (Stream<Path> files = Files.walk(scanPath)) {
                 files.filter(Files::isRegularFile)
@@ -67,18 +61,14 @@ public class IngestService implements IngestUseCase {
                              String bookId = ingestSingleBook(filePath);
                              if (bookId != null) {
                                  ingestedBooks.add(bookId);
-                                 LOG.info("Successfully ingested: " + filePath.getFileName());
                              }
                          } catch (Exception e) {
-                             LOG.error("Failed to ingest file: " + filePath, e);
                          }
                      });
             }
             
-            LOG.info("Directory ingestion completed. Ingested " + ingestedBooks.size() + " books");
             
         } catch (IOException e) {
-            LOG.error("Error during directory ingestion: " + directoryPath, e);
         }
         
         return ingestedBooks;
@@ -87,7 +77,6 @@ public class IngestService implements IngestUseCase {
     @Override
     public String ingestSingleBook(Path bookPath) {
         if (!canIngest(bookPath)) {
-            LOG.warn("Cannot ingest file: " + bookPath);
             return null;
         }
         
@@ -107,18 +96,16 @@ public class IngestService implements IngestUseCase {
             // Save the book
             Book savedBook = bookUseCase.createBook(book);
             
-            LOG.info("Successfully ingested book: " + titleFromFilename + " (ID: " + savedBook.getId() + ")");
             return savedBook.getId().toString();
             
         } catch (Exception e) {
-            LOG.error("Failed to ingest book: " + bookPath, e);
             return null;
         }
     }
     
     @Override
     public List<String> getSupportedFormats() {
-        return Arrays.asList(config.storage().allowedBookExtensions().split(","));
+        return Arrays.asList(configurationPort.getStorageConfig().getAllowedBookExtensions().split(","));
     }
     
     @Override
@@ -192,7 +179,6 @@ public class IngestService implements IngestUseCase {
             book.setDescription("Automatically ingested from: " + bookPath.getFileName());
             
         } catch (IOException e) {
-            LOG.warn("Could not enhance metadata for: " + bookPath, e);
         }
     }
 }

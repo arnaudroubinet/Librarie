@@ -6,6 +6,11 @@ package org.motpassants.domain.port.out;
 public interface ConfigurationPort {
     
     /**
+     * Demo mode configuration.
+     */
+    boolean isDemoEnabled();
+    
+    /**
      * Storage configuration.
      */
     StorageConfig getStorageConfig();

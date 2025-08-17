@@ -3,12 +3,11 @@ package org.motpassants.application.service;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
-import org.jboss.logging.Logger;
 import org.motpassants.domain.core.model.*;
 import org.motpassants.domain.port.out.BookRepository;
 import org.motpassants.domain.port.out.AuthorRepositoryPort;
+import org.motpassants.domain.port.out.ConfigurationPort;
 import org.motpassants.domain.port.out.SeriesRepositoryPort;
-import org.motpassants.infrastructure.config.LibrarieConfigProperties;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -21,19 +20,17 @@ import java.util.*;
 @ApplicationScoped
 public class DemoDataService {
     
-    private static final Logger LOG = Logger.getLogger(DemoDataService.class);
-    
-    private final LibrarieConfigProperties config;
+    private final ConfigurationPort configurationPort;
     private final BookRepository bookRepository;
     private final AuthorRepositoryPort authorRepository;
     private final SeriesRepositoryPort seriesRepository;
     
     @Inject
-    public DemoDataService(LibrarieConfigProperties config, 
+    public DemoDataService(ConfigurationPort configurationPort, 
                           BookRepository bookRepository,
                           AuthorRepositoryPort authorRepository,
                           SeriesRepositoryPort seriesRepository) {
-        this.config = config;
+        this.configurationPort = configurationPort;
         this.bookRepository = bookRepository;
         this.authorRepository = authorRepository;
         this.seriesRepository = seriesRepository;
@@ -41,17 +38,13 @@ public class DemoDataService {
     
     @Transactional
     public void populateDemoData() {
-        if (!config.demo().enabled()) {
-            LOG.info("Demo mode disabled, skipping demo data population");
+        if (!configurationPort.isDemoEnabled()) {
             return;
         }
         
         if (bookRepository.count() > 0) {
-            LOG.info("Database already contains books, skipping demo data population");
             return;
         }
-        
-        LOG.info("Demo mode enabled, populating comprehensive demo data...");
         
         try {
             // Create comprehensive demo data
@@ -59,10 +52,7 @@ public class DemoDataService {
             Map<String, Series> series = createComprehensiveSeries();
             createComprehensiveBooks(authors, series);
             
-            LOG.info("Demo data population completed successfully");
-            
         } catch (Exception e) {
-            LOG.error("Failed to populate demo data", e);
             throw new RuntimeException("Demo data population failed", e);
         }
     }
@@ -150,7 +140,6 @@ public class DemoDataService {
         );
         authors.put("Isaac Asimov", authorRepository.save(asimov));
         
-        LOG.infof("Created %d comprehensive authors", authors.size());
         return authors;
     }
     
@@ -209,7 +198,6 @@ public class DemoDataService {
         ));
         series.put("Robot", seriesRepository.save(robot));
         
-        LOG.infof("Created %d comprehensive series", series.size());
         return series;
     }
     
@@ -226,7 +214,6 @@ public class DemoDataService {
         // Isaac Asimov books
         createIsaacAsimovBooks(authors.get("Isaac Asimov"), series.get("Foundation"), series.get("Robot"));
         
-        LOG.info("Created comprehensive books for all requested authors");
     }
     
     private void createTolkienBooks(Author author, Series series) {
@@ -267,7 +254,6 @@ public class DemoDataService {
             );
         }
         
-        LOG.infof("Created %d books for J.R.R. Tolkien", lotrBooks.length + standaloneBooks.length);
     }
     
     private void createWheelOfTimeBooks(Author jordan, Author sanderson, Series series) {
@@ -313,7 +299,6 @@ public class DemoDataService {
             );
         }
         
-        LOG.infof("Created %d books for The Wheel of Time series", jordanBooks.length + sandersonBooks.length);
     }
     
     private void createStephenKingBooks(Author author, Series darkTowerSeries) {
@@ -356,7 +341,6 @@ public class DemoDataService {
             );
         }
         
-        LOG.infof("Created %d books for Stephen King", darkTowerBooks.length + standaloneBooks.length);
     }
     
     private void createIsaacAsimovBooks(Author author, Series foundationSeries, Series robotSeries) {
@@ -419,7 +403,6 @@ public class DemoDataService {
             );
         }
         
-        LOG.infof("Created %d books for Isaac Asimov", foundationBooks.length + robotBooks.length + standaloneBooks.length);
     }
     
     private String generateRandomHash() {
@@ -435,7 +418,6 @@ public class DemoDataService {
     private void createBookInSeries(String title, String titleSort, Author author, 
                                    Series seriesEntity, BigDecimal seriesIndex, int year,
                                    String description) {
-        LOG.infof("Creating book '%s' with author '%s'", title, author.getName());
         
         // Create book using new Book constructor
         String path = "/demo/books/" + title.replaceAll("[^a-zA-Z0-9]", "_") + ".epub";

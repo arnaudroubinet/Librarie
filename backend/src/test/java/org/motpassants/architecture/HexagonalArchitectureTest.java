@@ -80,8 +80,10 @@ class HexagonalArchitectureTest {
                             "..application..",
                             "javax..",
                             "jakarta.enterprise.context..",
+                            "jakarta.enterprise.event..",
                             "jakarta.inject..",
                             "jakarta.transaction..",
+                            "io.quarkus.runtime..",
                             "org.motpassants.domain..",
                             "org.motpassants.application.."
                     )

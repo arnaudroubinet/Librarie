@@ -19,6 +19,11 @@ public class ConfigurationPortAdapter implements ConfigurationPort {
     }
     
     @Override
+    public boolean isDemoEnabled() {
+        return config.demo().enabled();
+    }
+    
+    @Override
     public StorageConfig getStorageConfig() {
         return new StorageConfigImpl(config.storage());
     }
