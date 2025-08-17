@@ -1,2 +1,0 @@
--- Deprecated after consolidating into V1.0.0__Initial_schema.sql
--- Intentionally left blank to keep Flyway history consistent
