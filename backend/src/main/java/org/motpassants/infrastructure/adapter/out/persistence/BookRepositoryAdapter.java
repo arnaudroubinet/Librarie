@@ -133,7 +133,7 @@ public class BookRepositoryAdapter implements BookRepository {
 
     @Override
     public Optional<Book> findById(UUID id) {
-    String sql = "SELECT id, title, title_sort, isbn, path, file_size, file_hash, has_cover, created_at, updated_at, publication_date, language_code, publisher_id, metadata, search_vector FROM books WHERE id = ?";
+        String sql = "SELECT id, title, title_sort, isbn, path, file_size, file_hash, has_cover, created_at, updated_at, publication_date, language_code, publisher_id, metadata, search_vector FROM books WHERE id = ?";
         try (Connection conn = dataSource.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setObject(1, id);
             try (ResultSet rs = ps.executeQuery()) {
@@ -145,6 +145,104 @@ public class BookRepositoryAdapter implements BookRepository {
             throw new RuntimeException("DB error finding book by id", e);
         }
         return Optional.empty();
+    }
+
+    @Override
+    public PageResult<Book> findBySeries(UUID seriesId, String cursor, int limit) {
+        if (seriesId == null) {
+            return new PageResult<>(List.of(), null, null, false, false, 0);
+        }
+        if (limit <= 0) limit = 20;
+
+        // Parse cursor
+        java.sql.Timestamp cursorTimestamp = null;
+        UUID cursorUuid = null;
+        if (cursor != null && !cursor.isBlank()) {
+            try {
+                String decoded = new String(java.util.Base64.getUrlDecoder().decode(cursor));
+                String[] parts = decoded.split("\\|");
+                if (parts.length == 2) {
+                    long epochNumber = Long.parseLong(parts[0]);
+                    if (epochNumber >= 1_000_000_000_000_000L) {
+                        long seconds = epochNumber / 1_000_000L;
+                        long microsRemainder = epochNumber % 1_000_000L;
+                        long nanos = microsRemainder * 1_000L;
+                        cursorTimestamp = java.sql.Timestamp.from(java.time.Instant.ofEpochSecond(seconds, nanos));
+                    } else {
+                        cursorTimestamp = new java.sql.Timestamp(epochNumber);
+                    }
+                    cursorUuid = java.util.UUID.fromString(parts[1]);
+                }
+            } catch (Exception ignore) {
+                cursorTimestamp = null;
+                cursorUuid = null;
+            }
+        }
+
+        StringBuilder sql = new StringBuilder();
+        sql.append("SELECT b.id, b.title, b.title_sort, b.isbn, b.path, b.file_size, b.file_hash, b.has_cover, b.created_at, b.updated_at, b.publication_date, b.language_code, b.publisher_id, b.metadata, b.search_vector ")
+           .append("FROM books b JOIN book_series bs ON b.id = bs.book_id ")
+           .append("WHERE bs.series_id = ? ");
+        if (cursorTimestamp != null && cursorUuid != null) {
+            sql.append("AND (b.created_at < ? OR (b.created_at = ? AND b.id < ?)) ");
+        }
+        sql.append("ORDER BY b.created_at DESC, b.id DESC LIMIT ").append(Math.max(1, limit + 1));
+
+        List<Book> items = new ArrayList<>();
+        int totalCount = 0;
+
+        try (Connection conn = dataSource.getConnection()) {
+            // Total count for series
+            try (PreparedStatement cps = conn.prepareStatement("SELECT COUNT(*) FROM book_series WHERE series_id = ?")) {
+                cps.setObject(1, seriesId);
+                try (ResultSet crs = cps.executeQuery()) {
+                    if (crs.next()) totalCount = crs.getInt(1);
+                }
+            }
+
+            try (PreparedStatement ps = conn.prepareStatement(sql.toString())) {
+                int idx = 1;
+                ps.setObject(idx++, seriesId);
+                if (cursorTimestamp != null && cursorUuid != null) {
+                    ps.setTimestamp(idx++, cursorTimestamp);
+                    ps.setTimestamp(idx++, cursorTimestamp);
+                    ps.setObject(idx++, cursorUuid);
+                }
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        Book book = mapRowToBook(rs);
+                        hydratePublisher(conn, book);
+                        hydrateFormats(conn, book);
+                        hydrateFirstSeries(conn, book);
+                        items.add(book);
+                    }
+                }
+            }
+
+            String nextCursor = null;
+            boolean hasNext = false;
+            if (items.size() > limit) {
+                hasNext = true;
+                Book lastOfPage = items.get(limit - 1);
+                items = new ArrayList<>(items.subList(0, limit));
+                java.time.OffsetDateTime createdAt = lastOfPage.getCreatedAt();
+                UUID id = lastOfPage.getId();
+                long micros;
+                if (createdAt != null) {
+                    long seconds = createdAt.toInstant().getEpochSecond();
+                    long nanos = createdAt.toInstant().getNano();
+                    micros = seconds * 1_000_000L + (nanos / 1_000L);
+                } else {
+                    micros = 0L;
+                }
+                String raw = micros + "|" + id;
+                nextCursor = java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(raw.getBytes());
+            }
+
+            return new PageResult<>(items, nextCursor, null, hasNext, false, totalCount);
+        } catch (SQLException e) {
+            throw new RuntimeException("DB error listing books by series", e);
+        }
     }
 
     @Override

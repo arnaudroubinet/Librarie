@@ -38,6 +38,7 @@ import java.util.stream.Collectors;
 public class SeriesController {
     
     private final SeriesUseCase seriesUseCase;
+    private final org.motpassants.application.service.BookService bookService;
     private final org.motpassants.infrastructure.media.ImageCachingService imageCachingService;
     private final org.motpassants.infrastructure.config.LibrarieConfigProperties config;
 
@@ -45,14 +46,15 @@ public class SeriesController {
     Request httpRequest;
     
     @Inject
-    public SeriesController(SeriesUseCase seriesUseCase, org.motpassants.infrastructure.media.ImageCachingService imageCachingService, org.motpassants.infrastructure.config.LibrarieConfigProperties config) {
+    public SeriesController(SeriesUseCase seriesUseCase, org.motpassants.application.service.BookService bookService, org.motpassants.infrastructure.media.ImageCachingService imageCachingService, org.motpassants.infrastructure.config.LibrarieConfigProperties config) {
         this.seriesUseCase = seriesUseCase;
+        this.bookService = bookService;
         this.imageCachingService = imageCachingService;
         this.config = config;
     }
     
     @GET
-    @Operation(summary = "Get all series with pagination", description = "Retrieve all series using offset-based pagination")
+    @Operation(summary = "Get all series with pagination", description = "Retrieve all series using cursor-based pagination (preferred) or legacy offset-based")
     @APIResponses(value = {
         @APIResponse(responseCode = "200", description = "Series retrieved successfully",
             content = @Content(schema = @Schema(implementation = PageResponseDto.class)))
@@ -62,29 +64,42 @@ public class SeriesController {
             @DefaultValue("0") @QueryParam("page") int page,
             @Parameter(description = "Number of items per page", example = "20")
             @DefaultValue("20") @QueryParam("size") int size,
-            @Parameter(description = "Number of items per page (alternative to size)", example = "20")
-            @QueryParam("limit") Integer limit) {
+            @Parameter(description = "Max items per page", example = "20")
+            @QueryParam("limit") Integer limit,
+            @Parameter(description = "Cursor for next page")
+            @QueryParam("cursor") String cursor) {
         
         try {
-            // Use limit if provided, otherwise use size
-            int pageSize = (limit != null) ? limit : size;
-            
-            Page<Series> pageResult = seriesUseCase.getAllSeries(page, pageSize);
-            
-            List<SeriesResponseDto> seriesDtos = pageResult.getContent().stream()
-                .map(this::toDto)
-                .collect(Collectors.toList());
-            
-            // Convert domain pagination metadata to infrastructure DTO
-            PageResponseDto<SeriesResponseDto> response = new PageResponseDto<SeriesResponseDto>(
-                seriesDtos,
-                null, // nextCursor - not implemented for now
-                null, // previousCursor - not implemented for now
-                pageSize, // limit
-                pageResult.getMetadata().getPage() < pageResult.getMetadata().getTotalPages() - 1, // hasNext (0-based page)
-                pageResult.getMetadata().getPage() > 0, // hasPrevious (0-based page)
-                pageResult.getMetadata().getTotalElements()
-            );
+        // Prefer cursor-based when cursor or limit is provided explicitly
+        if ((cursor != null && !cursor.isBlank()) || limit != null) {
+        int pageSize = (limit != null) ? limit : size;
+        org.motpassants.domain.core.model.PageResult<Series> result = seriesUseCase.getAllSeries(cursor, pageSize);
+        List<SeriesResponseDto> items = result.getItems().stream().map(this::toDto).collect(Collectors.toList());
+        PageResponseDto<SeriesResponseDto> response = new PageResponseDto<>(
+            items,
+            result.getNextCursor(),
+            result.getPreviousCursor(),
+            pageSize,
+            result.hasNext(),
+            result.hasPrevious(),
+            (long) result.getTotalCount()
+        );
+        return Response.ok(response).build();
+        }
+
+        // Fallback legacy offset-based
+        int pageSize = (limit != null) ? limit : size;
+        Page<Series> pageResult = seriesUseCase.getAllSeries(page, pageSize);
+        List<SeriesResponseDto> seriesDtos = pageResult.getContent().stream().map(this::toDto).collect(Collectors.toList());
+        PageResponseDto<SeriesResponseDto> response = new PageResponseDto<>(
+            seriesDtos,
+            null,
+            null,
+            pageSize,
+            pageResult.getMetadata().getPage() < pageResult.getMetadata().getTotalPages() - 1,
+            pageResult.getMetadata().getPage() > 0,
+            pageResult.getMetadata().getTotalElements()
+        );
             
             return Response.ok(response).build();
             
@@ -414,7 +429,9 @@ public class SeriesController {
     })
     public Response getSeriesBooks(
             @Parameter(description = "Series UUID", required = true)
-            @PathParam("id") String id) {
+            @PathParam("id") String id,
+            @Parameter(description = "Cursor for next page") @QueryParam("cursor") String cursor,
+            @Parameter(description = "Max items per page", example = "20") @DefaultValue("20") @QueryParam("limit") int limit) {
         
         try {
             UUID seriesId = UUID.fromString(id);
@@ -427,8 +444,23 @@ public class SeriesController {
                     .build();
             }
             
-            // Fetching books will be wired to DTO later; return empty list for now to keep API stable
-            return Response.ok(List.of()).build();
+            org.motpassants.domain.core.model.PageResult<org.motpassants.domain.core.model.Book> result =
+                bookService.getBooksBySeries(seriesId, cursor, limit);
+
+            java.util.List<org.motpassants.infrastructure.adapter.in.rest.dto.BookResponseDto> items = result.getItems().stream()
+                .map(this::toBookDto)
+                .collect(java.util.stream.Collectors.toList());
+
+            PageResponseDto<org.motpassants.infrastructure.adapter.in.rest.dto.BookResponseDto> response = new PageResponseDto<>(
+                items,
+                result.getNextCursor(),
+                result.getPreviousCursor(),
+                limit,
+                result.hasNext(),
+                result.hasPrevious(),
+                (long) result.getTotalCount()
+            );
+            return Response.ok(response).build();
             
         } catch (IllegalArgumentException e) {
             return Response.status(Response.Status.BAD_REQUEST)
@@ -463,5 +495,46 @@ public class SeriesController {
             .fallbackImagePath(series.getEffectiveImagePath())
             .hasPicture(series.getHasPicture())
             .build();
+    }
+
+    private org.motpassants.infrastructure.adapter.in.rest.dto.BookResponseDto toBookDto(org.motpassants.domain.core.model.Book book) {
+        // Reuse mapping from BookController to ensure consistency
+        org.motpassants.infrastructure.adapter.in.rest.dto.BookResponseDto.Builder builder = org.motpassants.infrastructure.adapter.in.rest.dto.BookResponseDto.builder()
+            .id(book.getId())
+            .title(book.getTitle())
+            .titleSort(book.getTitleSort())
+            .isbn(book.getIsbn())
+            .description(book.getDescription())
+            .pageCount(book.getPageCount())
+            .publicationYear(book.getPublicationYear())
+            .language(book.getLanguage())
+            .path(book.getPath())
+            .fileSize(book.getFileSize())
+            .fileHash(book.getFileHash())
+            .hasCover(book.getHasCover())
+            .publicationDate(book.getPublicationDate())
+            .metadata(book.getMetadata())
+            .createdAt(book.getCreatedAt())
+            .updatedAt(book.getUpdatedAt());
+
+        if (book.getPublisher() != null) {
+            builder.publisher(book.getPublisher().getName());
+        }
+        if (book.getSeries() != null && !book.getSeries().isEmpty()) {
+            var first = book.getSeries().stream().findFirst().orElse(null);
+            if (first != null && first.getSeries() != null) {
+                builder.series(first.getSeries().getName())
+                       .seriesId(first.getSeries().getId())
+                       .seriesIndex(first.getSeriesIndex());
+            }
+        }
+        if (book.getFormats() != null && !book.getFormats().isEmpty()) {
+            builder.formats(book.getFormats().stream()
+                .map(f -> f.getFormatType())
+                .filter(java.util.Objects::nonNull)
+                .distinct()
+                .collect(java.util.stream.Collectors.toList()));
+        }
+        return builder.build();
     }
 }

@@ -135,6 +135,12 @@ public class SeriesResponseDto {
     
     public Boolean getHasPicture() { return hasPicture; }
     public void setHasPicture(Boolean hasPicture) { this.hasPicture = hasPicture; }
+
+    /**
+     * Frontend expects "bookCount"; keep "totalBooks" for tests and provide this alias for FE.
+     */
+    public int getBookCount() { return totalBooks; }
+    public void setBookCount(int bookCount) { this.totalBooks = bookCount; }
     
     @Override
     public String toString() {

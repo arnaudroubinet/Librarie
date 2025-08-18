@@ -38,6 +38,93 @@ public class SeriesRepositoryAdapter implements SeriesRepositoryPort {
     }
 
     @Override
+    public org.motpassants.domain.core.model.PageResult<Series> findAll(String cursor, int limit) {
+        String baseSql = "SELECT id, name, sort_name, description, book_count, has_picture, metadata, created_at, updated_at FROM series ";
+        String orderClause = " ORDER BY created_at DESC, id DESC";
+
+        java.sql.Timestamp cursorTimestamp = null;
+        UUID cursorUuid = null;
+        if (cursor != null && !cursor.isBlank()) {
+            try {
+                String decoded = new String(java.util.Base64.getUrlDecoder().decode(cursor));
+                String[] parts = decoded.split("\\|");
+                if (parts.length == 2) {
+                    long epochNumber = Long.parseLong(parts[0]);
+                    if (epochNumber >= 1_000_000_000_000_000L) { // micros
+                        long seconds = epochNumber / 1_000_000L;
+                        long microsRemainder = epochNumber % 1_000_000L;
+                        long nanos = microsRemainder * 1_000L;
+                        cursorTimestamp = java.sql.Timestamp.from(java.time.Instant.ofEpochSecond(seconds, nanos));
+                    } else {
+                        cursorTimestamp = new java.sql.Timestamp(epochNumber); // legacy millis
+                    }
+                    cursorUuid = java.util.UUID.fromString(parts[1]);
+                }
+            } catch (Exception ignore) {
+                cursorTimestamp = null;
+                cursorUuid = null;
+            }
+        }
+
+        StringBuilder sql = new StringBuilder(baseSql);
+        if (cursorTimestamp != null && cursorUuid != null) {
+            sql.append("WHERE (created_at < ? OR (created_at = ? AND id < ?))");
+        }
+        sql.append(orderClause).append(" LIMIT ").append(Math.max(1, limit + 1));
+
+        List<Series> items = new ArrayList<>();
+        boolean hasNext = false;
+        String nextCursor = null;
+        int totalCount = 0;
+
+        try (Connection conn = dataSource.getConnection()) {
+            try (PreparedStatement ps = conn.prepareStatement(sql.toString())) {
+                int idx = 1;
+                if (cursorTimestamp != null && cursorUuid != null) {
+                    ps.setTimestamp(idx++, cursorTimestamp);
+                    ps.setTimestamp(idx++, cursorTimestamp);
+                    ps.setObject(idx++, cursorUuid);
+                }
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) items.add(map(rs));
+                }
+            }
+
+            // Count total for UI
+            try (PreparedStatement cps = conn.prepareStatement("SELECT COUNT(*) FROM series")) {
+                try (ResultSet rs = cps.executeQuery()) {
+                    if (rs.next()) totalCount = rs.getInt(1);
+                }
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("DB error listing series (cursor)", e);
+        }
+
+        if (items.size() > limit) {
+            hasNext = true;
+            Series lastOfPage = items.get(limit - 1);
+            items = new ArrayList<>(items.subList(0, limit));
+            java.time.OffsetDateTime createdAt = lastOfPage.getCreatedAt();
+            UUID id = lastOfPage.getId();
+            long micros;
+            if (createdAt != null) {
+                long seconds = createdAt.toInstant().getEpochSecond();
+                long nanos = createdAt.toInstant().getNano();
+                micros = seconds * 1_000_000L + (nanos / 1_000L);
+            } else {
+                micros = 0L;
+            }
+            String raw = micros + "|" + id;
+            nextCursor = java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(raw.getBytes());
+        } else if (!items.isEmpty()) {
+            hasNext = false;
+            nextCursor = null;
+        }
+
+        return new org.motpassants.domain.core.model.PageResult<>(items, nextCursor, null, hasNext, false, totalCount);
+    }
+
+    @Override
     public long count() {
         String sql = "SELECT COUNT(*) FROM series";
         try (Connection conn = dataSource.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {

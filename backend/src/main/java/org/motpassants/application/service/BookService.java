@@ -42,6 +42,16 @@ public class BookService implements BookUseCase {
         
         return bookRepository.findAll(cursor, limit);
     }
+
+    @Override
+    public PageResult<Book> getBooksBySeries(UUID seriesId, String cursor, int limit) {
+        if (seriesId == null) {
+            return new PageResult<>(java.util.List.of(), null, null, false, false, 0);
+        }
+        if (limit <= 0) limit = 20;
+        if (limit > 100) limit = 100;
+        return bookRepository.findBySeries(seriesId, cursor, limit);
+    }
     
     @Override
     public Optional<Book> getBookById(UUID id) {

@@ -23,6 +23,16 @@ public interface BookUseCase {
      * @return cursor-paginated result containing books and navigation info
      */
     PageResult<Book> getAllBooks(String cursor, int limit);
+
+    /**
+     * Retrieve books in a given series using cursor-based pagination.
+     *
+     * @param seriesId the series UUID
+     * @param cursor pagination cursor (null for first page)
+     * @param limit max items per page
+     * @return cursor-paginated result of books in the series
+     */
+    PageResult<Book> getBooksBySeries(UUID seriesId, String cursor, int limit);
     
     /**
      * Retrieve a book by its unique identifier.

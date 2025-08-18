@@ -1,6 +1,7 @@
 package org.motpassants.application.service;
 
 import org.motpassants.domain.core.model.Page;
+import org.motpassants.domain.core.model.PageResult;
 import org.motpassants.domain.core.model.Series;
 import org.motpassants.domain.core.model.Book;
 import org.motpassants.domain.port.in.SeriesUseCase;
@@ -47,6 +48,13 @@ public class SeriesService implements SeriesUseCase {
         );
         
         return new Page<>(series, metadata);
+    }
+
+    @Override
+    public PageResult<Series> getAllSeries(String cursor, int limit) {
+        if (limit <= 0) limit = 20;
+        if (limit > 100) limit = 100;
+        return seriesRepository.findAll(cursor, limit);
     }
     
     @Override

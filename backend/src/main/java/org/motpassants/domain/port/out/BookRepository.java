@@ -25,6 +25,19 @@ public interface BookRepository {
     PageResult<Book> findAll(String cursor, int limit);
 
     /**
+     * Find books that belong to a given series, using the same cursor-based pagination
+     * contract as findAll.
+     * The ordering must match the global listing (created_at DESC, id DESC) to keep
+     * cursor semantics consistent across lists.
+     *
+     * @param seriesId the series ID to filter on
+     * @param cursor pagination cursor, base64("<epochMicros>|<uuid>") or null for first page
+     * @param limit max items per page
+     * @return paginated result of books in the series
+     */
+    PageResult<Book> findBySeries(UUID seriesId, String cursor, int limit);
+
+    /**
      * Find a book by its ID.
      * 
      * @param id the book ID

@@ -1,6 +1,7 @@
 package org.motpassants.domain.port.in;
 
 import org.motpassants.domain.core.model.Page;
+import org.motpassants.domain.core.model.PageResult;
 import org.motpassants.domain.core.model.Series;
 
 import java.util.List;
@@ -21,6 +22,13 @@ public interface SeriesUseCase {
      * @return Paginated result of series
      */
     Page<Series> getAllSeries(int page, int size);
+
+    /**
+     * Cursor-based pagination for series.
+     * @param cursor base64("<epochMicros>|<uuid>") or legacy millis
+     * @param limit page size
+     */
+    PageResult<Series> getAllSeries(String cursor, int limit);
     
     /**
      * Get a series by its ID.

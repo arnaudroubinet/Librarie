@@ -20,6 +20,14 @@ public interface SeriesRepositoryPort {
      * @return List of series
      */
     List<Series> findAll(int offset, int limit);
+
+    /**
+     * Cursor-based listing of series ordered by created_at DESC, id DESC.
+     * @param cursor base64("<epochMicros>|<uuid>") or legacy millis
+     * @param limit page size
+     * @return PageResult with items and nextCursor
+     */
+    org.motpassants.domain.core.model.PageResult<Series> findAll(String cursor, int limit);
     
     /**
      * Count total number of series.
