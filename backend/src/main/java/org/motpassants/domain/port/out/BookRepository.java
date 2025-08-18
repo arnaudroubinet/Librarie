@@ -38,6 +38,17 @@ public interface BookRepository {
     PageResult<Book> findBySeries(UUID seriesId, String cursor, int limit);
 
     /**
+     * Find books that belong to a given series ordered by their series index (ascending).
+     * Null indexes are ordered last. This is intended for selecting a representative cover
+     * for a series from its earliest-indexed book.
+     *
+     * @param seriesId the series ID to filter on
+     * @param limit maximum number of books to return (use a small cap like 50)
+     * @return list of books in the series ordered by index
+     */
+    java.util.List<Book> findBySeriesOrderByIndex(UUID seriesId, int limit);
+
+    /**
      * Find a book by its ID.
      * 
      * @param id the book ID

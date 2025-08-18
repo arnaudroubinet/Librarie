@@ -246,6 +246,33 @@ public class BookRepositoryAdapter implements BookRepository {
     }
 
     @Override
+    public java.util.List<Book> findBySeriesOrderByIndex(UUID seriesId, int limit) {
+        if (seriesId == null) return java.util.List.of();
+        if (limit <= 0) limit = 10;
+        String sql = "SELECT b.id, b.title, b.title_sort, b.isbn, b.path, b.file_size, b.file_hash, b.has_cover, b.created_at, b.updated_at, b.publication_date, b.language_code, b.publisher_id, b.metadata, b.search_vector " +
+                     "FROM books b JOIN book_series bs ON b.id = bs.book_id " +
+                     "WHERE bs.series_id = ? " +
+                     "ORDER BY bs.series_index NULLS LAST, b.created_at, b.id LIMIT " + Math.max(1, limit);
+        java.util.List<Book> items = new java.util.ArrayList<>();
+        try (Connection conn = dataSource.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setObject(1, seriesId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Book book = mapRowToBook(rs);
+                    // we only need has_cover flag for fallback, but hydrate minimal for consistency
+                    hydratePublisher(conn, book);
+                    hydrateFormats(conn, book);
+                    hydrateFirstSeries(conn, book);
+                    items.add(book);
+                }
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("DB error listing books by series ordered by index", e);
+        }
+        return items;
+    }
+
+    @Override
     public Optional<Book> findByPath(String path) {
     String sql = "SELECT id, title, title_sort, isbn, path, file_size, file_hash, has_cover, created_at, updated_at, publication_date, language_code, publisher_id, metadata, search_vector FROM books WHERE path = ?";
         try (Connection conn = dataSource.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {

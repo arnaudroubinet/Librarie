@@ -345,6 +345,8 @@ public class SeriesController {
 
             Series series = seriesOpt.get();
             String remoteUrl = null;
+            boolean remoteUrlFromImagePath = false;
+            String remoteUrlMetadataKey = null;
 
             // 1) If imagePath is a remote URL, prefer it
             String imagePath = series.getImagePath();
@@ -352,6 +354,7 @@ public class SeriesController {
                 String trimmed = imagePath.trim();
                 if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
                     remoteUrl = trimmed;
+                    remoteUrlFromImagePath = true;
                 } else {
                     // 2) If imagePath is a local relative path, try serving it directly for backward compatibility
                     byte[] bytes = imageCachingService.getImage(trimmed);
@@ -375,11 +378,63 @@ public class SeriesController {
                     String trimmed = s.trim();
                     if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
                         remoteUrl = trimmed;
+                        // track which key we used
+                        if (series.getMetadata().get("seriesImageUrl") instanceof String && ((String) series.getMetadata().get("seriesImageUrl")).trim().equals(trimmed)) {
+                            remoteUrlMetadataKey = "seriesImageUrl";
+                        } else if (series.getMetadata().get("imageUrl") instanceof String && ((String) series.getMetadata().get("imageUrl")).trim().equals(trimmed)) {
+                            remoteUrlMetadataKey = "imageUrl";
+                        }
+                    }
+                }
+            }
+
+            // Validate remote URL if present. If broken, clear it from the series and metadata, then fall back to books.
+            if (remoteUrl != null && !isRemoteImageReachable(remoteUrl)) {
+                try {
+                    String newImagePath = remoteUrlFromImagePath ? null : series.getImagePath();
+                    java.util.Map<String, Object> newMeta = series.getMetadata();
+                    if (newMeta != null && remoteUrlMetadataKey != null) {
+                        newMeta = new java.util.HashMap<>(newMeta);
+                        newMeta.remove(remoteUrlMetadataKey);
+                    }
+                    // Important: preserve current description to avoid nulling it (updateDetails sets description directly)
+                    seriesUseCase.updateSeries(
+                        seriesId,
+                        null, // name unchanged
+                        null, // sortName unchanged
+                        series.getDescription(),
+                        newImagePath,
+                        null, // totalBooks unchanged
+                        null, // isCompleted unchanged
+                        newMeta
+                    );
+                } catch (Exception ignored) { /* non-blocking cleanup */ }
+                remoteUrl = null; // force fallback path
+            }
+
+            // 4) If still nothing, try series-cover fallback from first book with a cover
+            if (remoteUrl == null) {
+                java.util.List<org.motpassants.domain.core.model.Book> ordered = bookService.getBooksBySeriesOrderedByIndex(seriesId, 20);
+                for (org.motpassants.domain.core.model.Book b : ordered) {
+                    if (Boolean.TRUE.equals(b.getHasCover())) {
+                        // Attempt to serve local cover directly from books/covers/<bookId>
+                        java.nio.file.Path baseDir = java.nio.file.Paths.get(config.storage().baseDir());
+                        // Reuse the same serving helper but pointing to books folder; no remote URL
+                        return imageCachingService.serveLocalFirstStrongETag(
+                            httpRequest,
+                            baseDir,
+                            "books",
+                            "covers",
+                            b.getId().toString(),
+                            null,
+                            getSeriesFailoverSvg()
+                        );
                     }
                 }
             }
 
             java.nio.file.Path baseDir = java.nio.file.Paths.get(config.storage().baseDir());
+            // If no series image and no fallback from books, return 404 (no covers)
             return imageCachingService.serveLocalFirstStrongETag(
                 httpRequest,
                 baseDir,
@@ -387,7 +442,7 @@ public class SeriesController {
                 "covers",
                 id,
                 remoteUrl,
-                getSeriesFailoverSvg()
+                null
             );
         } catch (IllegalArgumentException e) {
             return Response.status(Response.Status.BAD_REQUEST)
@@ -397,6 +452,45 @@ public class SeriesController {
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
                 .entity("Internal server error: " + e.getMessage())
                 .build();
+        }
+    }
+
+    private boolean isRemoteImageReachable(String url) {
+        try {
+            java.net.http.HttpClient client = java.net.http.HttpClient.newBuilder()
+                .connectTimeout(java.time.Duration.ofSeconds(5))
+                .followRedirects(java.net.http.HttpClient.Redirect.NORMAL)
+                .build();
+            // First try HEAD
+            java.net.http.HttpRequest head = java.net.http.HttpRequest.newBuilder(java.net.URI.create(url))
+                .timeout(java.time.Duration.ofSeconds(6))
+                .method("HEAD", java.net.http.HttpRequest.BodyPublishers.noBody())
+                .header("User-Agent", "Librarie/1.0")
+                .build();
+            java.net.http.HttpResponse<Void> hr = client.send(head, java.net.http.HttpResponse.BodyHandlers.discarding());
+            int sc = hr.statusCode();
+            String ct = hr.headers().firstValue("content-type").orElse("").toLowerCase();
+            if (sc >= 200 && sc < 300 && ct.startsWith("image/")) return true;
+        } catch (Exception ignore) {
+            // fall through to GET
+        }
+        try {
+            java.net.http.HttpClient client = java.net.http.HttpClient.newBuilder()
+                .connectTimeout(java.time.Duration.ofSeconds(5))
+                .followRedirects(java.net.http.HttpClient.Redirect.NORMAL)
+                .build();
+            java.net.http.HttpRequest get = java.net.http.HttpRequest.newBuilder(java.net.URI.create(url))
+                .timeout(java.time.Duration.ofSeconds(8))
+                .header("User-Agent", "Librarie/1.0")
+                .header("Accept", "image/avif,image/webp,image/apng,image/*,*/*;q=0.8")
+                .GET()
+                .build();
+            java.net.http.HttpResponse<byte[]> gr = client.send(get, java.net.http.HttpResponse.BodyHandlers.ofByteArray());
+            int sc = gr.statusCode();
+            String ct = gr.headers().firstValue("content-type").orElse("").toLowerCase();
+            return sc >= 200 && sc < 300 && ct.startsWith("image/") && gr.body() != null && gr.body().length > 0;
+        } catch (Exception e) {
+            return false;
         }
     }
 

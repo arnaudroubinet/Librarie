@@ -61,6 +61,16 @@ public class BookService implements BookUseCase {
         return bookRepository.findById(id);
     }
 
+    /**
+     * Helper for series image fallback: fetch a few books of a series ordered by series index.
+     */
+    public java.util.List<Book> getBooksBySeriesOrderedByIndex(UUID seriesId, int limit) {
+        if (seriesId == null) return java.util.List.of();
+        if (limit <= 0) limit = 10;
+        if (limit > 100) limit = 100;
+        return bookRepository.findBySeriesOrderByIndex(seriesId, limit);
+    }
+
     @Override
     @Transactional
     public Book createBook(Book book) {
