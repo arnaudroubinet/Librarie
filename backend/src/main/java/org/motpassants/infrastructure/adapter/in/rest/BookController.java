@@ -202,15 +202,17 @@ public class BookController {
         @APIResponse(responseCode = "400", description = "Invalid search parameters")
     })
     public Response searchBooks(
-            @Parameter(description = "Search query") @QueryParam("query") String query) {
-        
-        if (query == null || query.trim().isEmpty()) {
+            @Parameter(description = "Search query") @QueryParam("q") String q,
+            @Parameter(description = "Search query (alias)") @QueryParam("query") String query) {
+        // Support both 'q' and 'query' params (frontend uses 'q')
+        String effective = (q != null && !q.isBlank()) ? q : query;
+        if (effective == null || effective.trim().isEmpty()) {
             return Response.status(Response.Status.BAD_REQUEST)
                     .entity(Map.of("error", "Search query cannot be empty"))
                     .build();
         }
         
-        List<Book> books = bookService.searchBooks(query);
+        List<Book> books = bookService.searchBooks(effective);
         List<BookResponseDto> bookDtos = books.stream()
             .map(this::toResponseDto)
             .collect(Collectors.toList());

@@ -221,6 +221,24 @@ public class BookRepositoryAdapter implements BookRepository {
         return findAll(null, 0).getItems();
     }
 
+    @Override
+    public void linkBookToSeries(UUID bookId, UUID seriesId, Double seriesIndex) {
+        String upsert = "INSERT INTO book_series (book_id, series_id, series_index) VALUES (?, ?, ?) " +
+                        "ON CONFLICT (book_id, series_id) DO UPDATE SET series_index = EXCLUDED.series_index";
+        try (Connection conn = dataSource.getConnection(); PreparedStatement ps = conn.prepareStatement(upsert)) {
+            ps.setObject(1, bookId);
+            ps.setObject(2, seriesId);
+            if (seriesIndex != null) {
+                ps.setBigDecimal(3, java.math.BigDecimal.valueOf(seriesIndex));
+            } else {
+                ps.setNull(3, Types.NUMERIC);
+            }
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException("DB error linking book to series", e);
+        }
+    }
+
     private Book mapRowToBook(ResultSet rs) throws SQLException {
         Book b = new Book();
         b.setId((UUID) rs.getObject("id"));

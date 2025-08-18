@@ -274,6 +274,7 @@ CREATE INDEX idx_import_jobs_created ON import_jobs(created_at);
 INSERT INTO languages VALUES 
     ('en-US', 'English (United States)', FALSE),
     ('en-GB', 'English (United Kingdom)', FALSE),
+    ('pl-PL', 'Polish (Poland)', FALSE),
     ('fr-FR', 'French (France)', FALSE),
     ('fr-CA', 'French (Canada)', FALSE),
     ('es-ES', 'Spanish (Spain)', FALSE),

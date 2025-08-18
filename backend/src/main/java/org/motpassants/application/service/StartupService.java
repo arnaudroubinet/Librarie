@@ -10,6 +10,7 @@ import org.motpassants.domain.port.out.LoggingPort;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * Service that handles application startup events and initialization.
@@ -40,7 +41,15 @@ public class StartupService {
     void onStart(@Observes StartupEvent event) {
         try {
             ensureStorageBaseDirectory();
-            demoDataService.populateDemoData();
+            // Run demo seeding asynchronously to avoid blocking startup
+            log.info("Scheduling asynchronous demo data population...");
+            CompletableFuture.runAsync(() -> {
+                try {
+                    demoDataService.populateDemoData();
+                } catch (Throwable t) {
+                    log.warn("Asynchronous demo data population failed; continuing");
+                }
+            });
         } catch (Exception e) {
             // Don't fail application startup if demo data population fails
             log.warn("Demo data population failed at startup; continuing without demo seed");

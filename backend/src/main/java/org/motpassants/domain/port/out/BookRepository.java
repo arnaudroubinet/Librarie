@@ -101,4 +101,10 @@ public interface BookRepository {
      * @return list of matching books
      */
     List<Book> findByCriteria(BookSearchCriteria criteria);
+
+    /**
+     * Link a book to a series with an optional index (order within the series).
+     * If the link already exists, the index will be updated.
+     */
+    void linkBookToSeries(UUID bookId, UUID seriesId, Double seriesIndex);
 }

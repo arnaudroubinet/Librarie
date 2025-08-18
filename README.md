@@ -15,29 +15,30 @@ This workspace contains:
 
 ## Development
 
-### Quick Start
-Run both development servers with a single command:
-```bash
-./start-dev.sh
+### Quick Start (Windows)
+Use the provided wrappers for a smooth experience:
+
+```powershell
+# Backend (runs on :8080 by default)
+./backend/mvnw.cmd quarkus:dev
+
+# Frontend (runs on :4200)
+cd frontend
+npm start
 ```
 
-This will start:
-- Quarkus backend on http://localhost:8080
-- Angular frontend on http://localhost:4200
+Once started:
+- Backend Dev UI: http://localhost:8080/q/dev-ui/extensions
+- Frontend app: http://localhost:4200/books
 
 ### Manual Start
 
 #### Backend (Quarkus)
 ```bash
 cd backend
-mvn quarkus:dev
+./mvnw quarkus:dev
 ```
-The backend will be available at http://localhost:8080
-
-Test the API:
-```bash
-curl http://localhost:8080/hello
-```
+The backend Dev UI is at http://localhost:8080/q/dev-ui/extensions
 
 #### Frontend (Angular)
 ```bash
@@ -62,11 +63,12 @@ npm test
 
 ## API Endpoints
 
-- `GET /hello` - Simple greeting endpoint
+- See the OpenAPI docs at http://localhost:8080/q/swagger-ui
 
 ## Features
 
 - Quarkus REST API with Jackson JSON support
 - Angular SPA with routing
 - Development hot reload for both backend and frontend
+- Dev Services for PostgreSQL and Keycloak in tests
 - Integrated test suites
