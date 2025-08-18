@@ -62,6 +62,9 @@ public class BookResponseDto {
     @Schema(description = "Series UUID (first series if multiple)")
     private UUID seriesId;
     
+    @Schema(description = "Series index within the series (first series if multiple)")
+    private Double seriesIndex;
+    
     @Schema(description = "Available format types")
     private List<String> formats;
     
@@ -97,6 +100,7 @@ public class BookResponseDto {
         public Builder publisher(String publisher) { dto.publisher = publisher; return this; }
         public Builder series(String series) { dto.series = series; return this; }
         public Builder seriesId(UUID seriesId) { dto.seriesId = seriesId; return this; }
+    public Builder seriesIndex(Double seriesIndex) { dto.seriesIndex = seriesIndex; return this; }
         public Builder formats(List<String> formats) { dto.formats = formats; return this; }
         public Builder createdAt(OffsetDateTime createdAt) { dto.createdAt = createdAt; return this; }
         public Builder updatedAt(OffsetDateTime updatedAt) { dto.updatedAt = updatedAt; return this; }
@@ -233,6 +237,14 @@ public class BookResponseDto {
     
     public void setSeriesId(UUID seriesId) {
         this.seriesId = seriesId;
+    }
+    
+    public Double getSeriesIndex() {
+        return seriesIndex;
+    }
+    
+    public void setSeriesIndex(Double seriesIndex) {
+        this.seriesIndex = seriesIndex;
     }
     
     public List<String> getFormats() {

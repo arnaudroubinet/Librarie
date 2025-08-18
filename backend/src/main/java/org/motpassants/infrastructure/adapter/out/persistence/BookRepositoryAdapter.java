@@ -25,18 +25,110 @@ public class BookRepositoryAdapter implements BookRepository {
 
     @Override
     public PageResult<Book> findAll(String cursor, int limit) {
-    String sql = "SELECT id, title, title_sort, isbn, path, file_size, file_hash, has_cover, created_at, updated_at, publication_date, language_code, publisher_id, metadata, search_vector FROM books ORDER BY created_at";
+        // Cursor-based pagination ordered by newest first (created_at DESC, id DESC)
+        // Cursor format: base64("<epochMicros>|<uuid>")
+        // Backward-compatible: also accepts legacy epochMillis cursors.
+    String baseSql = "SELECT id, title, title_sort, isbn, path, file_size, file_hash, has_cover, created_at, updated_at, publication_date, language_code, publisher_id, metadata, search_vector " +
+        "FROM books ";
+
+        String orderClause = " ORDER BY created_at DESC, id DESC";
+
+        // We'll bind exact Timestamp + UUID for stable keyset pagination
+        java.sql.Timestamp cursorTimestamp = null;
+        UUID cursorUuid = null;
+        if (cursor != null && !cursor.isBlank()) {
+            try {
+                String decoded = new String(java.util.Base64.getUrlDecoder().decode(cursor));
+                String[] parts = decoded.split("\\|");
+                if (parts.length == 2) {
+                    long epochNumber = Long.parseLong(parts[0]);
+                    // Detect unit: micros (>= 10^15) vs millis (<= 10^14)
+                    if (epochNumber >= 1_000_000_000_000_000L) {
+                        long seconds = epochNumber / 1_000_000L;
+                        long microsRemainder = epochNumber % 1_000_000L;
+                        long nanos = microsRemainder * 1_000L;
+                        cursorTimestamp = java.sql.Timestamp.from(java.time.Instant.ofEpochSecond(seconds, nanos));
+                    } else {
+                        // Legacy millis
+                        cursorTimestamp = new java.sql.Timestamp(epochNumber);
+                    }
+                    cursorUuid = java.util.UUID.fromString(parts[1]);
+                }
+            } catch (Exception ignore) {
+                // If cursor is invalid, treat as no cursor
+                cursorTimestamp = null;
+                cursorUuid = null;
+            }
+        }
+
+        StringBuilder sql = new StringBuilder(baseSql);
+        if (cursorTimestamp != null && cursorUuid != null) {
+            // For DESC, fetch strictly older rows, or same timestamp with smaller UUID
+            sql.append("WHERE (created_at < ? OR (created_at = ? AND id < ?))");
+        }
+        sql.append(orderClause).append(" LIMIT ").append(Math.max(1, limit + 1)); // fetch one extra to know hasNext
+
         List<Book> items = new ArrayList<>();
-        try (Connection conn = dataSource.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    items.add(mapRowToBook(rs));
+        boolean hasNext = false;
+        String nextCursor = null;
+        int totalCount = 0;
+
+    try (Connection conn = dataSource.getConnection()) {
+            // Count total (for convenience in UI; not required for paging correctness)
+            try (PreparedStatement cps = conn.prepareStatement("SELECT COUNT(*) FROM books"); ResultSet crs = cps.executeQuery()) {
+                if (crs.next()) totalCount = crs.getInt(1);
+            }
+
+            try (PreparedStatement ps = conn.prepareStatement(sql.toString())) {
+                int idx = 1;
+                if (cursorTimestamp != null && cursorUuid != null) {
+                    // Bind exact timestamp twice (for < and =) and the UUID as tiebreaker
+                    ps.setTimestamp(idx++, cursorTimestamp);
+                    ps.setTimestamp(idx++, cursorTimestamp);
+                    ps.setObject(idx++, cursorUuid);
+                }
+
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        Book book = mapRowToBook(rs);
+                        // Enrich minimal associated data required by frontend list
+                        hydratePublisher(conn, book);
+                        hydrateFormats(conn, book);
+                        hydrateFirstSeries(conn, book);
+                        items.add(book);
+                    }
                 }
             }
+
+            if (items.size() > limit) {
+                hasNext = true;
+                // The (limit+1)th row indicates more pages; derive next cursor from the limit-th item
+                Book lastOfPage = items.get(limit - 1);
+                items = new ArrayList<>(items.subList(0, limit));
+                // Build nextCursor from lastOfPage created_at and id
+                java.time.OffsetDateTime createdAt = lastOfPage.getCreatedAt();
+                UUID id = lastOfPage.getId();
+                long micros;
+                if (createdAt != null) {
+                    long seconds = createdAt.toInstant().getEpochSecond();
+                    long nanos = createdAt.toInstant().getNano();
+                    micros = seconds * 1_000_000L + (nanos / 1_000L);
+                } else {
+                    micros = 0L;
+                }
+                String raw = micros + "|" + id;
+                nextCursor = java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(raw.getBytes());
+            } else if (!items.isEmpty()) {
+                // No more pages
+                hasNext = false;
+                nextCursor = null;
+            }
+
         } catch (SQLException e) {
             throw new RuntimeException("DB error fetching books", e);
         }
-        return new PageResult<>(items, null, null, false, false, items.size());
+
+        return new PageResult<>(items, nextCursor, null, hasNext, false, totalCount);
     }
 
     @Override
@@ -263,6 +355,64 @@ public class BookRepositoryAdapter implements BookRepository {
         }
         b.setSearchVector(rs.getString("search_vector"));
         return b;
+    }
+
+    private void hydratePublisher(Connection conn, Book b) {
+        if (b.getPublisher() != null) return; // already set
+        String sql = "SELECT p.id, p.name FROM publishers p WHERE p.id = (SELECT publisher_id FROM books WHERE id = ? AND publisher_id IS NOT NULL)";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setObject(1, b.getId());
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    org.motpassants.domain.core.model.Publisher pub = new org.motpassants.domain.core.model.Publisher();
+                    pub.setId((java.util.UUID) rs.getObject("id"));
+                    pub.setName(rs.getString("name"));
+                    b.setPublisher(pub);
+                }
+            }
+        } catch (SQLException ignored) { }
+    }
+
+    private void hydrateFormats(Connection conn, Book b) {
+        String sql = "SELECT id, format_type, file_path, file_size FROM formats WHERE book_id = ?";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setObject(1, b.getId());
+            try (ResultSet rs = ps.executeQuery()) {
+                java.util.Set<org.motpassants.domain.core.model.Format> set = new java.util.HashSet<>();
+                while (rs.next()) {
+                    org.motpassants.domain.core.model.Format f = new org.motpassants.domain.core.model.Format();
+                    f.setId((java.util.UUID) rs.getObject("id"));
+                    f.setFormatType(rs.getString("format_type"));
+                    f.setFilePath(rs.getString("file_path"));
+                    long sz = rs.getLong("file_size"); if (!rs.wasNull()) f.setFileSize(sz);
+                    set.add(f);
+                }
+                if (!set.isEmpty()) b.setFormats(set);
+            }
+        } catch (SQLException ignored) { }
+    }
+
+    private void hydrateFirstSeries(Connection conn, Book b) {
+        String sql = "SELECT bs.series_id, bs.series_index, s.name, s.sort_name FROM book_series bs JOIN series s ON bs.series_id = s.id WHERE bs.book_id = ? ORDER BY bs.series_index NULLS LAST, s.sort_name LIMIT 1";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setObject(1, b.getId());
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    org.motpassants.domain.core.model.Series s = new org.motpassants.domain.core.model.Series();
+                    s.setId((java.util.UUID) rs.getObject("series_id"));
+                    s.setName(rs.getString("name"));
+                    s.setSortName(rs.getString("sort_name"));
+                    org.motpassants.domain.core.model.BookSeries link = new org.motpassants.domain.core.model.BookSeries();
+                    link.setBook(b);
+                    link.setSeries(s);
+                    java.math.BigDecimal idx = rs.getBigDecimal("series_index");
+                    if (idx != null) link.setSeriesIndex(idx.doubleValue());
+                    java.util.Set<org.motpassants.domain.core.model.BookSeries> set = new java.util.HashSet<>();
+                    set.add(link);
+                    b.setSeries(set);
+                }
+            }
+        } catch (SQLException ignored) { }
     }
 
     private Timestamp toTimestamp(OffsetDateTime odt) {

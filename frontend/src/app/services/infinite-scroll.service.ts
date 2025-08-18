@@ -122,12 +122,13 @@ export class InfiniteScrollService {
       _error.set(null);
 
   const effectiveLimit = typeof limitProvider === 'function' ? limitProvider() : limit;
-  loadDataFn(_nextCursor(), effectiveLimit).subscribe({
+    loadDataFn(_nextCursor(), effectiveLimit).subscribe({
         next: (response) => {
           const processedItems = addAlphabeticalSeparators(response.content);
           _items.update(existing => [...existing, ...processedItems]);
           _nextCursor.set(response.nextCursor);
-          _hasMore.set(response.hasNext ?? false);
+          // Drive hasMore solely from nextCursor presence to be resilient across endpoints
+          _hasMore.set(!!response.nextCursor);
           _loading.set(false);
         },
         error: (err) => {

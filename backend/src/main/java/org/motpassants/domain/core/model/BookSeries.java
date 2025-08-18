@@ -10,6 +10,7 @@ public class BookSeries {
     private UUID id;
     private Book book;
     private Series series;
+    private Double seriesIndex;
     
     public BookSeries() {}
     
@@ -19,4 +20,6 @@ public class BookSeries {
     public void setBook(Book book) { this.book = book; }
     public Series getSeries() { return series; }
     public void setSeries(Series series) { this.series = series; }
+    public Double getSeriesIndex() { return seriesIndex; }
+    public void setSeriesIndex(Double seriesIndex) { this.seriesIndex = seriesIndex; }
 }

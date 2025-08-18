@@ -1,6 +1,7 @@
 package org.motpassants.infrastructure.adapter.in.rest;
 
 import org.motpassants.application.service.BookService;
+import org.motpassants.application.service.DemoDataService;
 import org.motpassants.domain.core.model.Book;
 import org.motpassants.domain.core.model.BookSearchCriteria;
 import org.motpassants.domain.core.model.PageResult;
@@ -39,15 +40,17 @@ public class BookController {
     private final BookService bookService;
     private final org.motpassants.infrastructure.media.ImageCachingService imageCachingService;
     private final org.motpassants.infrastructure.config.LibrarieConfigProperties config;
+    private final DemoDataService demoDataService;
 
     @Context
     Request httpRequest;
 
     @Inject
-    public BookController(BookService bookService, org.motpassants.infrastructure.media.ImageCachingService imageCachingService, org.motpassants.infrastructure.config.LibrarieConfigProperties config) {
+    public BookController(BookService bookService, org.motpassants.infrastructure.media.ImageCachingService imageCachingService, org.motpassants.infrastructure.config.LibrarieConfigProperties config, DemoDataService demoDataService) {
         this.bookService = bookService;
         this.imageCachingService = imageCachingService;
         this.config = config;
+        this.demoDataService = demoDataService;
     }
 
     @GET
@@ -62,6 +65,8 @@ public class BookController {
             @Parameter(description = "Number of items per page") @QueryParam("limit") @DefaultValue("20") int limit) {
         
         try {
+            // Ensure demo data is present in dev/demo mode to avoid empty first load due to async seeding
+            demoDataService.populateDemoData();
             PageResult<Book> result = bookService.getAllBooks(cursor, limit);
             
             List<BookResponseDto> bookDtos = result.getItems().stream()
@@ -73,8 +78,8 @@ public class BookController {
                 result.getNextCursor(),
                 result.getPreviousCursor(),
                 limit,
-                result.getNextCursor() != null,
-                result.getPreviousCursor() != null,
+                result.hasNext(),
+                result.hasPrevious(),
                 (long) result.getTotalCount()
             );
             return Response.ok(response).build();
@@ -419,11 +424,12 @@ public class BookController {
             builder.publisher(book.getPublisher().getName());
         }
 
-        if (book.getSeries() != null && !book.getSeries().isEmpty()) {
+    if (book.getSeries() != null && !book.getSeries().isEmpty()) {
             var first = book.getSeries().stream().findFirst().orElse(null);
             if (first != null && first.getSeries() != null) {
                 builder.series(first.getSeries().getName())
-                       .seriesId(first.getSeries().getId());
+               .seriesId(first.getSeries().getId())
+               .seriesIndex(first.getSeriesIndex());
             }
         }
 
