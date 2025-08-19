@@ -542,12 +542,30 @@ public class BookRepositoryAdapter implements BookRepository {
         b.setId((UUID) rs.getObject("id"));
         b.setTitle(rs.getString("title"));
         b.setTitleSort(rs.getString("title_sort"));
-    boolean hc = rs.getBoolean("has_cover"); if (!rs.wasNull()) b.setHasCover(hc);
+        b.setIsbn(rs.getString("isbn"));
+        b.setPath(rs.getString("path"));
+        Long fileSize = rs.getLong("file_size"); if (!rs.wasNull()) b.setFileSize(fileSize);
+        b.setFileHash(rs.getString("file_hash"));
+        boolean hc = rs.getBoolean("has_cover"); if (!rs.wasNull()) b.setHasCover(hc);
         Timestamp created = rs.getTimestamp("created_at"); if (created != null) b.setCreatedAt(created.toInstant().atOffset(java.time.ZoneOffset.UTC));
         Timestamp updated = rs.getTimestamp("updated_at"); if (updated != null) b.setUpdatedAt(updated.toInstant().atOffset(java.time.ZoneOffset.UTC));
-    java.sql.Date pub = rs.getDate("publication_date"); if (pub != null) b.setPublicationDate(pub.toLocalDate());
+        java.sql.Date pub = rs.getDate("publication_date"); if (pub != null) b.setPublicationDate(pub.toLocalDate());
         b.setLanguage(rs.getString("language_code"));
-        // Light mapper intentionally skips heavy fields (isbn, path, file fields, metadata, search vector)
+        
+        // Parse metadata JSON
+        String metadataJson = rs.getString("metadata");
+        if (metadataJson != null && !metadataJson.trim().isEmpty()) {
+            try {
+                @SuppressWarnings("unchecked")
+                Map<String, Object> metadata = objectMapper.readValue(metadataJson, Map.class);
+                b.setMetadata(metadata);
+            } catch (Exception e) {
+                // If metadata parsing fails, set empty map
+                b.setMetadata(new HashMap<>());
+            }
+        }
+        
+        b.setSearchVector(rs.getString("search_vector"));
         return b;
     }
 
