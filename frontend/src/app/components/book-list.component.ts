@@ -1,4 +1,4 @@
-import { Component, OnInit, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
+import { Component, OnInit, CUSTOM_ELEMENTS_SCHEMA, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
@@ -9,8 +9,10 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatRippleModule } from '@angular/material/core';
 import { MatBadgeModule } from '@angular/material/badge';
+import { MatSelectModule } from '@angular/material/select';
+import { MatFormFieldModule } from '@angular/material/form-field';
 import { BookService } from '../services/book.service';
-import { Book } from '../models/book.model';
+import { Book, SortField, SortDirection, BookSortCriteria, SortOption } from '../models/book.model';
 import { environment } from '../../environments/environment';
 import { InfiniteScrollService } from '../services/infinite-scroll.service';
 import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive';
@@ -30,6 +32,8 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
     MatSnackBarModule,
     MatRippleModule,
     MatBadgeModule,
+    MatSelectModule,
+    MatFormFieldModule,
     InfiniteScrollDirective
   ],
   template: `
@@ -44,6 +48,18 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
             </button>
           </h1>
           <p class="library-subtitle">Discover and explore your digital book collection</p>
+        </div>
+        
+        <!-- Sorting Controls -->
+        <div class="sorting-controls">
+          <mat-form-field appearance="outline" class="sort-field">
+            <mat-label>Sort by</mat-label>
+            <mat-select [value]="selectedSortOption()" (selectionChange)="onSortChange($event.value)">
+              @for (option of sortOptions; track option.field + '_' + option.direction) {
+                <mat-option [value]="option">{{ option.label }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
         </div>
       </div>
       
@@ -162,14 +178,52 @@ export class BookListComponent implements OnInit {
   private readonly GRID_GAP = 24; // must match CSS gap for desktop
   private readonly PADDING_X = 32; // horizontal padding of .books-grid
 
+  // Available sort options for UI
+  sortOptions: SortOption[] = [
+    {
+      label: 'Recently Updated',
+      field: SortField.UPDATED_AT,
+      direction: SortDirection.DESC
+    },
+    {
+      label: 'Oldest Updated',
+      field: SortField.UPDATED_AT,
+      direction: SortDirection.ASC
+    },
+    {
+      label: 'Title A-Z',
+      field: SortField.TITLE_SORT,
+      direction: SortDirection.ASC
+    },
+    {
+      label: 'Title Z-A',
+      field: SortField.TITLE_SORT,
+      direction: SortDirection.DESC
+    },
+    {
+      label: 'Publication Date (Newest)',
+      field: SortField.PUBLICATION_DATE,
+      direction: SortDirection.DESC
+    },
+    {
+      label: 'Publication Date (Oldest)',
+      field: SortField.PUBLICATION_DATE,
+      direction: SortDirection.ASC
+    }
+  ];
+
+  // Sort state - initialize after sortOptions
+  currentSortCriteria = signal<BookSortCriteria>(BookService.DEFAULT_SORT);
+  selectedSortOption = signal<SortOption>(this.getSortOptionFromCriteria(BookService.DEFAULT_SORT));
+
   constructor(
     private bookService: BookService,
     private snackBar: MatSnackBar,
     private infiniteScrollService: InfiniteScrollService
   ) {
-    // Initialize infinite scroll state
+    // Initialize infinite scroll state with sorting support
     this.scrollState = this.infiniteScrollService.createInfiniteScrollState(
-      (cursor, limit) => this.bookService.getAllBooks(cursor, limit),
+      (cursor, limit) => this.bookService.getAllBooks(cursor, limit, this.currentSortCriteria()),
       {
         limit: 20,
         enableAlphabeticalSeparators: false,
@@ -306,5 +360,36 @@ export class BookListComponent implements OnInit {
     this.bookService.clearCache();
     this.scrollState.reset();
     this.snackBar.open('Books refreshed', 'Close', { duration: 1500 });
+  }
+
+  // Sort handling methods
+  onSortChange(sortOption: SortOption) {
+    const newCriteria: BookSortCriteria = {
+      field: sortOption.field,
+      direction: sortOption.direction
+    };
+    
+    this.currentSortCriteria.set(newCriteria);
+    this.selectedSortOption.set(sortOption);
+    
+    // Clear cache and reset scroll state to apply new sorting
+    this.bookService.clearCache();
+    this.scrollState.reset();
+    
+    this.snackBar.open(`Sorted by ${sortOption.label}`, 'Close', { duration: 2000 });
+  }
+
+  private getSortOptionFromCriteria(criteria: BookSortCriteria): SortOption {
+    if (!this.sortOptions || this.sortOptions.length === 0) {
+      // Return a default option if sortOptions not initialized yet
+      return {
+        label: 'Recently Updated',
+        field: SortField.UPDATED_AT,
+        direction: SortDirection.DESC
+      };
+    }
+    return this.sortOptions.find(option => 
+      option.field === criteria.field && option.direction === criteria.direction
+    ) || this.sortOptions[0];
   }
 }

@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
 import { tap } from 'rxjs/operators';
-import { Book, CursorPageResponse, BookRequest, CompletionRequest, CompletionResponse, BookSearchCriteria } from '../models/book.model';
+import { Book, CursorPageResponse, BookRequest, CompletionRequest, CompletionResponse, BookSearchCriteria, BookSortCriteria, SortField, SortDirection } from '../models/book.model';
 import { environment } from '../../environments/environment';
 
 @Injectable({
@@ -13,15 +13,28 @@ export class BookService {
   private readonly ttlMs = 5 * 60 * 1000; // 5 minutes
   private cache = new Map<string, { timestamp: number; data: any }>();
 
+  // Default sort criteria matching backend default
+  static readonly DEFAULT_SORT: BookSortCriteria = {
+    field: SortField.UPDATED_AT,
+    direction: SortDirection.DESC
+  };
+
   constructor(private http: HttpClient) {}
 
-  getAllBooks(cursor?: string, limit: number = 20): Observable<CursorPageResponse<Book>> {
+  getAllBooks(cursor?: string, limit: number = 20, sortCriteria?: BookSortCriteria): Observable<CursorPageResponse<Book>> {
     let params = new HttpParams().set('limit', limit.toString());
     
     if (cursor) {
       params = params.set('cursor', cursor);
     }
-    const key = `getAllBooks|cursor=${cursor || ''}|limit=${limit}`;
+    
+    // Add sorting parameters if provided
+    if (sortCriteria) {
+      params = params.set('sortField', sortCriteria.field);
+      params = params.set('sortDirection', sortCriteria.direction);
+    }
+    
+    const key = `getAllBooks|cursor=${cursor || ''}|limit=${limit}|sort=${sortCriteria ? `${sortCriteria.field}_${sortCriteria.direction}` : 'default'}`;
     const cached = this.cache.get(key);
     if (cached && Date.now() - cached.timestamp < this.ttlMs) {
       return of(cached.data as CursorPageResponse<Book>);
