@@ -4,7 +4,10 @@ import org.motpassants.application.service.BookService;
 import org.motpassants.application.service.DemoDataService;
 import org.motpassants.domain.core.model.Book;
 import org.motpassants.domain.core.model.BookSearchCriteria;
+import org.motpassants.domain.core.model.BookSortCriteria;
 import org.motpassants.domain.core.model.PageResult;
+import org.motpassants.domain.core.model.SortField;
+import org.motpassants.domain.core.model.SortDirection;
 import org.motpassants.infrastructure.adapter.in.rest.dto.BookRequestDto;
 import org.motpassants.infrastructure.adapter.in.rest.dto.BookResponseDto;
 import org.motpassants.infrastructure.adapter.in.rest.dto.BookListItemDto;
@@ -56,20 +59,39 @@ public class BookController {
     }
 
     @GET
-    @Operation(summary = "Get all books", description = "Retrieve all books with pagination (lightweight items)")
+    @Operation(summary = "Get all books", description = "Retrieve all books with pagination and sorting (lightweight items)")
     @APIResponses({
         @APIResponse(responseCode = "200", description = "Books retrieved successfully",
                     content = @Content(schema = @Schema(implementation = PageResponseDto.class))),
-        @APIResponse(responseCode = "400", description = "Invalid pagination parameters")
+        @APIResponse(responseCode = "400", description = "Invalid pagination or sorting parameters")
     })
     public Response getAllBooks(
             @Parameter(description = "Pagination cursor") @QueryParam("cursor") String cursor,
-            @Parameter(description = "Number of items per page") @QueryParam("limit") @DefaultValue("20") int limit) {
+            @Parameter(description = "Number of items per page") @QueryParam("limit") @DefaultValue("20") int limit,
+            @Parameter(description = "Sort field (UPDATED_AT, TITLE_SORT, PUBLICATION_DATE)") @QueryParam("sortField") String sortField,
+            @Parameter(description = "Sort direction (ASC, DESC)") @QueryParam("sortDirection") @DefaultValue("DESC") String sortDirection) {
         
         try {
+            // Parse and validate sorting parameters
+            BookSortCriteria sortCriteria;
+            if (sortField != null && !sortField.trim().isEmpty()) {
+                try {
+                    SortField field = SortField.fromString(sortField);
+                    SortDirection direction = SortDirection.fromString(sortDirection);
+                    sortCriteria = new BookSortCriteria(field, direction);
+                } catch (IllegalArgumentException e) {
+                    return Response.status(Response.Status.BAD_REQUEST)
+                            .entity(Map.of("error", "Invalid sort parameters: " + e.getMessage()))
+                            .build();
+                }
+            } else {
+                // Use default sorting if no sort field specified
+                sortCriteria = BookSortCriteria.DEFAULT;
+            }
+
             // Ensure demo data is present in dev/demo mode to avoid empty first load due to async seeding
             demoDataService.populateDemoData();
-            PageResult<Book> result = bookService.getAllBooks(cursor, limit);
+            PageResult<Book> result = bookService.getAllBooks(cursor, limit, sortCriteria);
 
             List<BookListItemDto> bookDtos = result.getItems().stream()
                 .map(this::toListItemDto)

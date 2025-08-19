@@ -1,6 +1,7 @@
 package org.motpassants.application.service;
 
 import org.motpassants.domain.core.model.Book;
+import org.motpassants.domain.core.model.BookSortCriteria;
 import org.motpassants.domain.core.model.PageResult;
 import org.motpassants.domain.core.model.BookSearchCriteria;
 import org.motpassants.domain.port.in.BookUseCase;
@@ -31,7 +32,7 @@ public class BookService implements BookUseCase {
     }
     
     @Override
-    public PageResult<Book> getAllBooks(String cursor, int limit) {
+    public PageResult<Book> getAllBooks(String cursor, int limit, BookSortCriteria sortCriteria) {
         // Validate pagination parameters
         if (limit <= 0) {
             limit = 20; // Default page size
@@ -40,7 +41,12 @@ public class BookService implements BookUseCase {
             limit = 100; // Max page size
         }
         
-        return bookRepository.findAll(cursor, limit);
+        // Validate sort criteria
+        if (sortCriteria == null) {
+            sortCriteria = BookSortCriteria.DEFAULT;
+        }
+        
+        return bookRepository.findAll(cursor, limit, sortCriteria);
     }
 
     @Override

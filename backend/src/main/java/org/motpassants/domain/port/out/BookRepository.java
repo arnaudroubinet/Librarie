@@ -3,6 +3,7 @@ package org.motpassants.domain.port.out;
 import org.motpassants.domain.core.model.Book;
 import org.motpassants.domain.core.model.PageResult;
 import org.motpassants.domain.core.model.BookSearchCriteria;
+import org.motpassants.domain.core.model.BookSortCriteria;
 
 import java.util.List;
 import java.util.Optional;
@@ -16,13 +17,26 @@ import java.util.UUID;
 public interface BookRepository {
 
     /**
-     * Find all books with pagination.
+     * Find all books with pagination and sorting.
+     * 
+     * @param cursor pagination cursor
+     * @param limit number of items per page
+     * @param sortCriteria sorting criteria (field and direction)
+     * @return paginated books
+     */
+    PageResult<Book> findAll(String cursor, int limit, BookSortCriteria sortCriteria);
+
+    /**
+     * Find all books with pagination (uses default sorting).
+     * Maintains backward compatibility with existing code.
      * 
      * @param cursor pagination cursor
      * @param limit number of items per page
      * @return paginated books
      */
-    PageResult<Book> findAll(String cursor, int limit);
+    default PageResult<Book> findAll(String cursor, int limit) {
+        return findAll(cursor, limit, BookSortCriteria.DEFAULT);
+    }
 
     /**
      * Find books that belong to a given series, using the same cursor-based pagination
