@@ -116,7 +116,11 @@ public class DemoDataJdbcAdapter implements DemoDataPort {
             LocalDate birthDate = parseIsoDate(birth);
             LocalDate deathDate = parseIsoDate(death);
     UUID id = parseUuid(csvId);
-    if (id == null) { log.warn("Skipping author without valid UUID: " + name); continue; }
+    if (id == null) {
+        // Fallback: derive deterministic UUID from CSV id or name
+        String basis = (csvId != null && !csvId.isBlank()) ? ("author:" + csvId) : ("author-name:" + name);
+        id = java.util.UUID.nameUUIDFromBytes(basis.getBytes(StandardCharsets.UTF_8));
+    }
     String bioJson = (bio == null || bio.isBlank()) ? null : toJson(Map.of("en", bio));
     Map<String, Object> metaMap = new HashMap<>();
     if (csvId != null && !csvId.isBlank()) metaMap.put("sourceId", csvId);
@@ -181,7 +185,11 @@ public class DemoDataJdbcAdapter implements DemoDataPort {
     UUID seriesId = findSeriesByName(name);
         if (seriesId == null) {
     seriesId = parseUuid(csvId);
-    if (seriesId == null) { log.warn("Skipping series without valid UUID: " + name); continue; }
+    if (seriesId == null) {
+        // Fallback: derive deterministic UUID from CSV id or name
+        String basis = (csvId != null && !csvId.isBlank()) ? ("series:" + csvId) : ("series-name:" + name);
+        seriesId = java.util.UUID.nameUUIDFromBytes(basis.getBytes(StandardCharsets.UTF_8));
+    }
     boolean hasPic = cover != null && !cover.isBlank();
     Map<String, Object> metaMap = new HashMap<>();
     if (csvId != null && !csvId.isBlank()) metaMap.put("sourceId", csvId);
@@ -241,7 +249,7 @@ public class DemoDataJdbcAdapter implements DemoDataPort {
             String cover = get(cols, idx.get("cover_url"));
             String synopsis = get(cols, idx.get("synopsis"));
             String isbn = get(cols, idx.get("isbn"));
-        // String language = get(cols, idx.get("language")); // language_code left NULL to avoid FK issues
+    String language = get(cols, idx.get("language"));
             String seriesUuid = get(cols, idx.get("series_uuid"));
             String seriesName = get(cols, idx.get("series_name"));
             String seriesIndexStr = get(cols, idx.get("series_index"));
@@ -250,18 +258,22 @@ public class DemoDataJdbcAdapter implements DemoDataPort {
             String relPath = "/demo/books/" + sanitizeFileName(csvId != null && !csvId.isBlank() ? csvId : title) + ".epub";
         if (findBookByPath(relPath) != null) continue;
     UUID id = parseUuid(csvId);
-    if (id == null) { log.warn("Skipping book without valid UUID: " + title); continue; }
+    if (id == null) {
+        // Fallback: derive deterministic UUID from CSV id or title
+        String basis = (csvId != null && !csvId.isBlank()) ? ("book:" + csvId) : ("book-title:" + title);
+        id = java.util.UUID.nameUUIDFromBytes(basis.getBytes(StandardCharsets.UTF_8));
+    }
         String titleSort = title;
         String description = blankToNull(synopsis);
             Integer pubYear = parseYear(year);
         LocalDate pubDate = pubYear == null ? null : LocalDate.of(pubYear, 1, 1);
         long fileSize = (long) (500_000 + Math.random() * 2_000_000);
         String fileHash = generateRandomHash();
-        boolean hasCover = true;
+        boolean hasCover = cover != null && !cover.isBlank();
             ensureDemoBookFileExists(relPath);
             if (!txActive) { utx.begin(); txActive = true; }
             try (var conn = dataSource.getConnection();
-             var ps = conn.prepareStatement("INSERT INTO books (id, title, title_sort, isbn, path, file_size, file_hash, has_cover, created_at, updated_at, publication_date, metadata) VALUES (?,?,?,?,?,?,?,?, NOW(), NOW(), ?, CAST(? AS JSONB))")) {
+             var ps = conn.prepareStatement("INSERT INTO books (id, title, title_sort, isbn, path, file_size, file_hash, has_cover, created_at, updated_at, publication_date, language_code, metadata) VALUES (?,?,?,?,?,?,?,?, NOW(), NOW(), ?, ?, CAST(? AS JSONB))")) {
             ps.setObject(1, id);
             ps.setString(2, title);
             ps.setString(3, titleSort);
@@ -271,7 +283,20 @@ public class DemoDataJdbcAdapter implements DemoDataPort {
             ps.setString(7, fileHash);
             ps.setBoolean(8, hasCover);
             if (pubDate != null) ps.setObject(9, pubDate); else ps.setNull(9, java.sql.Types.DATE);
-            ps.setString(10, description == null ? null : toJson(Map.of("synopsis", description)));
+            if (language != null && !language.isBlank()) ps.setString(10, language.trim()); else ps.setNull(10, java.sql.Types.VARCHAR);
+            // Build metadata with optional enrichments
+            Map<String, Object> meta = new java.util.LinkedHashMap<>();
+            if (description != null && !description.isBlank()) meta.put("synopsis", description);
+            // Enrich demo book Inheritance with rich details
+            if ("b-0002-3000-0000-0000000400063".equals(csvId) || "Inheritance".equalsIgnoreCase(title)) {
+                meta.put("pages", 704);
+                meta.put("binding", "Hardcover");
+                meta.put("dimensions", "6.5 x 2.2 x 9.5 in");
+                meta.put("weight", "2.2 lb");
+                meta.put("publisher", "Knopf");
+                meta.put("subjects", java.util.List.of("Fantasy", "Dragons", "Epic Fantasy", "Young Adult"));
+            }
+            ps.setString(11, meta.isEmpty() ? null : toJson(meta));
             ps.executeUpdate();
             } catch (Exception e) {
                 log.error("Book insert failed at line " + (i + 1) + " for '" + title + "' (id=" + csvId + ")", e);
@@ -293,6 +318,15 @@ public class DemoDataJdbcAdapter implements DemoDataPort {
             linkBookToSeries(id, targetSeriesId, sIdx);
                 }
             } catch (Exception e) { log.warn("Book-series link failed at line " + (i + 1) + " for book '" + title + "' : " + e.getMessage()); }
+            // Add demo formats for the enriched book
+            try {
+                if ("b-0002-3000-0000-0000000400063".equals(csvId) || "Inheritance".equalsIgnoreCase(title)) {
+                    upsertFormat(id, "EPUB", relPath, fileSize);
+                    String pdfPath = relPath.replaceAll("\\.epub$", ".pdf");
+                    ensureDemoBookFileExists(pdfPath);
+                    upsertFormat(id, "PDF", pdfPath, Math.max(600_000L, fileSize + 250_000L));
+                }
+            } catch (Exception e) { log.warn("Failed to add demo formats for book '" + title + "': " + e.getMessage()); }
             inserted++;
             if (inserted % 10 == 0) { log.warn("Inserted " + inserted + " books so far"); }
             batch++;
@@ -463,5 +497,17 @@ public class DemoDataJdbcAdapter implements DemoDataPort {
                 Files.write(safeTarget, minimalEpub, StandardOpenOption.CREATE_NEW);
             }
         } catch (Exception ignored) {}
+    }
+
+    private void upsertFormat(UUID bookId, String formatType, String relativePath, long size) {
+        if (bookId == null || formatType == null || formatType.isBlank() || relativePath == null || relativePath.isBlank()) return;
+        String sql = "INSERT INTO formats (book_id, format_type, file_path, file_size) VALUES (?,?,?,?)";
+        try (var conn = dataSource.getConnection(); var ps = conn.prepareStatement(sql)) {
+            ps.setObject(1, bookId);
+            ps.setString(2, formatType);
+            ps.setString(3, relativePath);
+            ps.setLong(4, size > 0 ? size : 100_000L);
+            ps.executeUpdate();
+        } catch (Exception ignored) { }
     }
 }

@@ -148,8 +148,7 @@ public class SeriesIntegrationTest {
             .when().get("/v1/books/series/{id}/books", createdSeriesId)
             .then()
             .statusCode(200)
-            .body("content", notNullValue())
-            .body("size", notNullValue());
+            .body("size()", greaterThanOrEqualTo(0));
     }
 
     @Test

@@ -1,7 +1,6 @@
 package org.motpassants.infrastructure.adapter.out.persistence;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.type.MapType;
 import io.agroal.api.AgroalDataSource;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -28,7 +27,7 @@ public class BookRepositoryAdapter implements BookRepository {
         // Cursor-based pagination ordered by newest first (created_at DESC, id DESC)
         // Cursor format: base64("<epochMicros>|<uuid>")
         // Backward-compatible: also accepts legacy epochMillis cursors.
-    String baseSql = "SELECT id, title, title_sort, isbn, path, file_size, file_hash, has_cover, created_at, updated_at, publication_date, language_code, publisher_id, metadata, search_vector " +
+    String baseSql = "SELECT id, title, title_sort, has_cover, created_at, updated_at, publication_date, language_code " +
         "FROM books ";
 
         String orderClause = " ORDER BY created_at DESC, id DESC";
@@ -90,11 +89,8 @@ public class BookRepositoryAdapter implements BookRepository {
 
                 try (ResultSet rs = ps.executeQuery()) {
                     while (rs.next()) {
-                        Book book = mapRowToBook(rs);
-                        // Enrich minimal associated data required by frontend list
-                        hydratePublisher(conn, book);
-                        hydrateFormats(conn, book);
-                        hydrateFirstSeries(conn, book);
+                        Book book = mapRowToBookLight(rs);
+                        // For lightweight listings, avoid extra per-row joins to keep it fast
                         items.add(book);
                     }
                 }
@@ -411,8 +407,8 @@ public class BookRepositoryAdapter implements BookRepository {
 
     @Override
     public List<Book> findByTitleOrAuthorContaining(String query) {
-    String sql = "SELECT id, title, title_sort, isbn, path, file_size, file_hash, has_cover, created_at, updated_at, publication_date, language_code, publisher_id, metadata, search_vector " +
-                     "FROM books WHERE LOWER(title) LIKE ? OR LOWER(path) LIKE ? OR LOWER(isbn) LIKE ? ORDER BY created_at";
+    String sql = "SELECT id, title, title_sort, has_cover, created_at, updated_at, publication_date, language_code " +
+             "FROM books WHERE LOWER(title) LIKE ? OR LOWER(path) LIKE ? OR LOWER(isbn) LIKE ? ORDER BY created_at";
         List<Book> items = new ArrayList<>();
         String like = "%" + query.toLowerCase() + "%";
         try (Connection conn = dataSource.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -420,7 +416,7 @@ public class BookRepositoryAdapter implements BookRepository {
             ps.setString(2, like);
             ps.setString(3, like);
             try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) items.add(mapRowToBook(rs));
+                while (rs.next()) items.add(mapRowToBookLight(rs));
             }
         } catch (SQLException e) {
             throw new RuntimeException("DB error searching books", e);
@@ -435,7 +431,7 @@ public class BookRepositoryAdapter implements BookRepository {
             return findByTitleOrAuthorContaining(criteria.getTitle().trim());
         }
         // Fallback to all
-        return findAll(null, 0).getItems();
+    return findAll(null, 0).getItems();
     }
 
     @Override
@@ -461,24 +457,26 @@ public class BookRepositoryAdapter implements BookRepository {
         b.setId((UUID) rs.getObject("id"));
         b.setTitle(rs.getString("title"));
         b.setTitleSort(rs.getString("title_sort"));
-        b.setIsbn(rs.getString("isbn"));
-        b.setPath(rs.getString("path"));
-        long fs = rs.getLong("file_size"); if (!rs.wasNull()) b.setFileSize(fs);
-        b.setFileHash(rs.getString("file_hash"));
     boolean hc = rs.getBoolean("has_cover"); if (!rs.wasNull()) b.setHasCover(hc);
         Timestamp created = rs.getTimestamp("created_at"); if (created != null) b.setCreatedAt(created.toInstant().atOffset(java.time.ZoneOffset.UTC));
         Timestamp updated = rs.getTimestamp("updated_at"); if (updated != null) b.setUpdatedAt(updated.toInstant().atOffset(java.time.ZoneOffset.UTC));
     java.sql.Date pub = rs.getDate("publication_date"); if (pub != null) b.setPublicationDate(pub.toLocalDate());
         b.setLanguage(rs.getString("language_code"));
-        String metadataJson = rs.getString("metadata");
-        if (metadataJson != null && !metadataJson.isBlank()) {
-            try {
-                MapType type = objectMapper.getTypeFactory().constructMapType(Map.class, String.class, Object.class);
-                Map<String, Object> meta = objectMapper.readValue(metadataJson, type);
-                b.setMetadata(meta);
-            } catch (Exception ignore) { /* leave null */ }
-        }
-        b.setSearchVector(rs.getString("search_vector"));
+        // Light mapper intentionally skips heavy fields (isbn, path, file fields, metadata, search vector)
+        return b;
+    }
+
+    // Light-weight row mapper for list/search endpoints
+    private Book mapRowToBookLight(ResultSet rs) throws SQLException {
+        Book b = new Book();
+        b.setId((UUID) rs.getObject("id"));
+        b.setTitle(rs.getString("title"));
+        b.setTitleSort(rs.getString("title_sort"));
+        boolean hc = rs.getBoolean("has_cover"); if (!rs.wasNull()) b.setHasCover(hc);
+        Timestamp created = rs.getTimestamp("created_at"); if (created != null) b.setCreatedAt(created.toInstant().atOffset(java.time.ZoneOffset.UTC));
+        Timestamp updated = rs.getTimestamp("updated_at"); if (updated != null) b.setUpdatedAt(updated.toInstant().atOffset(java.time.ZoneOffset.UTC));
+        java.sql.Date pub = rs.getDate("publication_date"); if (pub != null) b.setPublicationDate(pub.toLocalDate());
+        b.setLanguage(rs.getString("language_code"));
         return b;
     }
 
@@ -562,4 +560,35 @@ public class BookRepositoryAdapter implements BookRepository {
         }
     }
 
+    @Override
+    public java.util.Map<String, java.util.List<org.motpassants.domain.core.model.Author>> findContributorsByBook(java.util.UUID bookId) {
+        if (bookId == null) return java.util.Map.of();
+        String sql = "SELECT a.id, a.name, a.sort_name, owa.role " +
+                "FROM book_original_works bow " +
+                "JOIN original_work_authors owa ON bow.original_work_id = owa.original_work_id " +
+                "JOIN authors a ON a.id = owa.author_id " +
+                "WHERE bow.book_id = ? " +
+                "ORDER BY CASE LOWER(owa.role) WHEN 'author' THEN 0 ELSE 1 END, a.sort_name";
+        java.util.Map<String, java.util.List<org.motpassants.domain.core.model.Author>> map = new java.util.LinkedHashMap<>();
+        try (Connection conn = dataSource.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setObject(1, bookId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    String role = rs.getString("role");
+                    java.util.UUID id = (java.util.UUID) rs.getObject("id");
+                    String name = rs.getString("name");
+                    String sortName = rs.getString("sort_name");
+                    org.motpassants.domain.core.model.Author a = org.motpassants.domain.core.model.Author.builder()
+                            .id(id)
+                            .name(name)
+                            .sortName(sortName)
+                            .build();
+                    map.computeIfAbsent(role != null ? role.toLowerCase() : "author", k -> new java.util.ArrayList<>()).add(a);
+                }
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("DB error fetching contributors for book", e);
+        }
+        return map;
+    }
 }

@@ -131,4 +131,11 @@ public interface BookRepository {
      * If the link already exists, the index will be updated.
      */
     void linkBookToSeries(UUID bookId, UUID seriesId, Double seriesIndex);
+
+    /**
+     * Fetch contributors (authors, translators, etc.) attached to the book through its original works.
+     * The returned map is keyed by contribution role (e.g., "author", "translator"),
+     * and values are ordered lists of Author domain objects with minimal fields populated (id, name, sortName).
+     */
+    java.util.Map<String, java.util.List<org.motpassants.domain.core.model.Author>> findContributorsByBook(UUID bookId);
 }

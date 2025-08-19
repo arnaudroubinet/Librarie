@@ -4,11 +4,11 @@ export interface Series {
   sortName?: string;
   description?: string;
   imagePath?: string;
+  hasPicture?: boolean;
   metadata?: Record<string, any>;
   createdAt?: string;
   updatedAt?: string;
   bookCount: number;
-  fallbackImagePath?: string;
 }
 
 export interface SeriesPageResponse {

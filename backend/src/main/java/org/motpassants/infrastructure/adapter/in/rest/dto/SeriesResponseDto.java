@@ -20,7 +20,6 @@ public class SeriesResponseDto {
     private Map<String, Object> metadata;
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
-    private String fallbackImagePath;
     
     // Default constructor
     public SeriesResponseDto() {}
@@ -40,7 +39,6 @@ public class SeriesResponseDto {
         public Builder metadata(Map<String, Object> metadata) { dto.metadata = metadata; return this; }
         public Builder createdAt(OffsetDateTime createdAt) { dto.createdAt = createdAt; return this; }
         public Builder updatedAt(OffsetDateTime updatedAt) { dto.updatedAt = updatedAt; return this; }
-        public Builder fallbackImagePath(String fallbackImagePath) { dto.fallbackImagePath = fallbackImagePath; return this; }
         public SeriesResponseDto build() { return dto; }
     }
     
@@ -123,14 +121,6 @@ public class SeriesResponseDto {
     
     public void setUpdatedAt(OffsetDateTime updatedAt) {
         this.updatedAt = updatedAt;
-    }
-    
-    public String getFallbackImagePath() {
-        return fallbackImagePath;
-    }
-    
-    public void setFallbackImagePath(String fallbackImagePath) {
-        this.fallbackImagePath = fallbackImagePath;
     }
     
     public Boolean getHasPicture() { return hasPicture; }

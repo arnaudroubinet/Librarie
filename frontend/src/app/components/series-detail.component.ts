@@ -13,7 +13,7 @@ import { MatRippleModule } from '@angular/material/core';
 import { SeriesService } from '../services/series.service';
 import { AuthorService } from '../services/author.service';
 import { Series } from '../models/series.model';
-import { Book, CursorPageResponse } from '../models/book.model';
+import { Book } from '../models/book.model';
 import { Author } from '../models/author.model';
 import { environment } from '../../environments/environment';
 import { forkJoin, of } from 'rxjs';
@@ -282,9 +282,9 @@ export class SeriesDetailComponent implements OnInit {
     this.loading.set(true);
     this.seriesService.getSeriesById(id).subscribe({
       next: (series) => {
-        this.series.set(series);
-        this.loading.set(false);
-        this.loadSeriesBooks(series.name);
+  this.series.set(series);
+  this.loading.set(false);
+  this.loadSeriesBooks(series.id);
       },
       error: (error) => {
         console.error('Error loading series details:', error);
@@ -296,18 +296,26 @@ export class SeriesDetailComponent implements OnInit {
     });
   }
 
-  loadSeriesBooks(seriesName: string) {
+  loadSeriesBooks(seriesId: string) {
     this.booksLoading.set(true);
-    this.seriesService.getSeriesBooks(seriesName).subscribe({
-      next: (response: CursorPageResponse<Book>) => {
-        this.books.set(response.content || []);
+    this.seriesService.getSeriesBooksById(seriesId).subscribe({
+      next: (items: any[]) => {
+        // Backend returns minimal fields; map them into Book interface shape we need
+        const mapped: Book[] = (items || []).map(it => ({
+          id: it.id,
+          title: it.title,
+          hasCover: it.hasCover,
+          seriesIndex: it.seriesIndex,
+          publicationDate: it.publicationDate
+        }));
+        this.books.set(mapped);
         this.booksLoading.set(false);
   // After books are loaded, aggregate contributors and fetch author details
   const agg = this.getAllContributors();
   this.contributors.set(agg);
   this.loadContributorAuthors(agg);
       },
-      error: (error) => {
+  error: (error) => {
         console.error('Error loading series books:', error);
         this.snackBar.open('Failed to load books in series.', 'Close', {
           duration: 3000
@@ -326,8 +334,8 @@ export class SeriesDetailComponent implements OnInit {
   }
 
   getEffectiveImagePath(series: Series): string | null {
-    const base = series.imagePath || series.fallbackImagePath || null;
-    if (!base) return null;
+  const base = (series.hasPicture ? 'has' : null) || series.imagePath || null;
+  if (!base) return null;
     // Prefer backend endpoint to leverage caching when an image exists
     return `${environment.apiUrl}/v1/books/series/${series.id}/picture`;
   }

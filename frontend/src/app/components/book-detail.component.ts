@@ -156,6 +156,13 @@ import { environment } from '../../environments/environment';
                   </div>
                 }
 
+                @if (book()!.publicationYear) {
+                  <div class="detail-item">
+                    <span class="detail-label">Publication Year</span>
+                    <span class="detail-value">{{ book()!.publicationYear }}</span>
+                  </div>
+                }
+
                 @if (book()!.fileSize) {
                   <div class="detail-item">
                     <span class="detail-label">File Size</span>
@@ -250,7 +257,7 @@ export class BookDetailComponent implements OnInit {
 
   loadBookDetails(id: string) {
     this.loading.set(true);
-    this.bookService.getBookById(id).subscribe({
+  this.bookService.getBookDetails(id).subscribe({
       next: (book) => {
         this.book.set(book);
   // Using contributorsDetailed and seriesId from backend; no extra lookups needed

@@ -61,6 +61,12 @@ public class BookService implements BookUseCase {
         return bookRepository.findById(id);
     }
 
+    /** Get contributors grouped by role for a book. */
+    public java.util.Map<String, java.util.List<org.motpassants.domain.core.model.Author>> getContributors(UUID bookId) {
+        if (bookId == null) return java.util.Map.of();
+        return bookRepository.findContributorsByBook(bookId);
+    }
+
     /**
      * Helper for series image fallback: fetch a few books of a series ordered by series index.
      */

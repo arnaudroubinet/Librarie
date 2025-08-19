@@ -5,6 +5,8 @@ import org.motpassants.domain.core.model.Series;
 import org.motpassants.domain.port.in.SeriesUseCase;
 import org.motpassants.infrastructure.adapter.in.rest.dto.SeriesRequestDto;
 import org.motpassants.infrastructure.adapter.in.rest.dto.SeriesResponseDto;
+import org.motpassants.infrastructure.adapter.in.rest.dto.SeriesListItemDto;
+import org.motpassants.infrastructure.adapter.in.rest.dto.SeriesDetailsDto;
 import org.motpassants.infrastructure.adapter.in.rest.dto.PageResponseDto;
 
 import org.eclipse.microprofile.openapi.annotations.Operation;
@@ -73,9 +75,9 @@ public class SeriesController {
         // Prefer cursor-based when cursor or limit is provided explicitly
         if ((cursor != null && !cursor.isBlank()) || limit != null) {
         int pageSize = (limit != null) ? limit : size;
-        org.motpassants.domain.core.model.PageResult<Series> result = seriesUseCase.getAllSeries(cursor, pageSize);
-        List<SeriesResponseDto> items = result.getItems().stream().map(this::toDto).collect(Collectors.toList());
-        PageResponseDto<SeriesResponseDto> response = new PageResponseDto<>(
+    org.motpassants.domain.core.model.PageResult<Series> result = seriesUseCase.getAllSeries(cursor, pageSize);
+    List<SeriesListItemDto> items = result.getItems().stream().map(this::toListItemDto).collect(Collectors.toList());
+    PageResponseDto<SeriesListItemDto> response = new PageResponseDto<>(
             items,
             result.getNextCursor(),
             result.getPreviousCursor(),
@@ -89,9 +91,9 @@ public class SeriesController {
 
         // Fallback legacy offset-based
         int pageSize = (limit != null) ? limit : size;
-        Page<Series> pageResult = seriesUseCase.getAllSeries(page, pageSize);
-        List<SeriesResponseDto> seriesDtos = pageResult.getContent().stream().map(this::toDto).collect(Collectors.toList());
-        PageResponseDto<SeriesResponseDto> response = new PageResponseDto<>(
+    Page<Series> pageResult = seriesUseCase.getAllSeries(page, pageSize);
+    List<SeriesListItemDto> seriesDtos = pageResult.getContent().stream().map(this::toListItemDto).collect(Collectors.toList());
+    PageResponseDto<SeriesListItemDto> response = new PageResponseDto<>(
             seriesDtos,
             null,
             null,
@@ -115,7 +117,7 @@ public class SeriesController {
     @Operation(summary = "Get series by ID", description = "Retrieve a specific series by its UUID")
     @APIResponses(value = {
         @APIResponse(responseCode = "200", description = "Series found",
-            content = @Content(schema = @Schema(implementation = SeriesResponseDto.class))),
+            content = @Content(schema = @Schema(implementation = SeriesDetailsDto.class))),
         @APIResponse(responseCode = "404", description = "Series not found")
     })
     public Response getSeriesById(
@@ -127,7 +129,7 @@ public class SeriesController {
             Optional<Series> seriesOpt = seriesUseCase.getSeriesById(seriesId);
             
             if (seriesOpt.isPresent()) {
-                return Response.ok(toDto(seriesOpt.get())).build();
+                return Response.ok(toDetailsDto(seriesOpt.get())).build();
             } else {
                 return Response.status(Response.Status.NOT_FOUND)
                     .entity("Series not found")
@@ -148,7 +150,7 @@ public class SeriesController {
     @Operation(summary = "Create a new series", description = "Create a new series with the provided details")
     @APIResponses(value = {
         @APIResponse(responseCode = "201", description = "Series created successfully",
-            content = @Content(schema = @Schema(implementation = SeriesResponseDto.class))),
+            content = @Content(schema = @Schema(implementation = SeriesDetailsDto.class))),
         @APIResponse(responseCode = "400", description = "Invalid input"),
         @APIResponse(responseCode = "409", description = "Series already exists")
     })
@@ -215,7 +217,7 @@ public class SeriesController {
             );
             
             if (updatedSeries.isPresent()) {
-                return Response.ok(toDto(updatedSeries.get())).build();
+                return Response.ok(toDetailsDto(updatedSeries.get())).build();
             } else {
                 return Response.status(Response.Status.NOT_FOUND)
                     .entity("Series not found")
@@ -294,8 +296,8 @@ public class SeriesController {
             }
             
             List<Series> series = seriesUseCase.searchSeries(query);
-            List<SeriesResponseDto> seriesDtos = series.stream()
-                .map(this::toDto)
+            List<SeriesListItemDto> seriesDtos = series.stream()
+                .map(this::toListItemDto)
                 .collect(Collectors.toList());
             
             // Apply pagination if limit/size is specified
@@ -305,7 +307,7 @@ public class SeriesController {
             }
             
             // Create paginated response to match test expectations
-            PageResponseDto<SeriesResponseDto> response = new PageResponseDto<SeriesResponseDto>(
+            PageResponseDto<SeriesListItemDto> response = new PageResponseDto<SeriesListItemDto>(
                 seriesDtos,
                 null, // nextCursor
                 null, // previousCursor
@@ -516,46 +518,74 @@ public class SeriesController {
     
     @GET
     @Path("/{id}/books")
-    @Operation(summary = "Get books in series", description = "Get all books in a specific series")
+    @Operation(summary = "Get all books in series (no pagination)", description = "Returns all books for a given series, ordered by series index when available, with minimal fields required for the page")
     @APIResponses(value = {
         @APIResponse(responseCode = "200", description = "Books retrieved successfully"),
         @APIResponse(responseCode = "404", description = "Series not found")
     })
     public Response getSeriesBooks(
             @Parameter(description = "Series UUID", required = true)
-            @PathParam("id") String id,
-            @Parameter(description = "Cursor for next page") @QueryParam("cursor") String cursor,
-            @Parameter(description = "Max items per page", example = "20") @DefaultValue("20") @QueryParam("limit") int limit) {
-        
+            @PathParam("id") String id) {
         try {
             UUID seriesId = UUID.fromString(id);
-            
-            // Check if series exists
+
+            // Ensure series exists
             Optional<Series> seriesOpt = seriesUseCase.getSeriesById(seriesId);
             if (seriesOpt.isEmpty()) {
                 return Response.status(Response.Status.NOT_FOUND)
                     .entity("Series not found")
                     .build();
             }
-            
-            org.motpassants.domain.core.model.PageResult<org.motpassants.domain.core.model.Book> result =
-                bookService.getBooksBySeries(seriesId, cursor, limit);
 
-            java.util.List<org.motpassants.infrastructure.adapter.in.rest.dto.BookResponseDto> items = result.getItems().stream()
-                .map(this::toBookDto)
-                .collect(java.util.stream.Collectors.toList());
+            // Use ordered-by-index for UX; fetch up to 100, then if more, append rest by created_at DESC
+        java.util.List<org.motpassants.domain.core.model.Book> first = bookService.getBooksBySeriesOrderedByIndex(seriesId, 100);
+            java.util.Set<java.util.UUID> seen = new java.util.HashSet<>();
+            java.util.List<org.motpassants.infrastructure.adapter.in.rest.dto.SeriesBookItemDto> items = new java.util.ArrayList<>();
+            for (var b : first) {
+                seen.add(b.getId());
+                items.add(org.motpassants.infrastructure.adapter.in.rest.dto.SeriesBookItemDto.builder()
+                    .id(b.getId())
+                    .title(b.getTitle())
+                    .hasCover(Boolean.TRUE.equals(b.getHasCover()))
+            .seriesIndex(extractSeriesIndex(b, seriesId))
+                    .publicationDate(b.getPublicationDate())
+                    .build());
+            }
 
-            PageResponseDto<org.motpassants.infrastructure.adapter.in.rest.dto.BookResponseDto> response = new PageResponseDto<>(
-                items,
-                result.getNextCursor(),
-                result.getPreviousCursor(),
-                limit,
-                result.hasNext(),
-                result.hasPrevious(),
-                (long) result.getTotalCount()
-            );
-            return Response.ok(response).build();
-            
+            // If there might be more, fall back to cursor pages to fetch all remaining
+            String cursor = null;
+            int pageLimit = 100;
+            while (true) {
+                var page = bookService.getBooksBySeries(seriesId, cursor, pageLimit);
+                if (page.getItems() == null || page.getItems().isEmpty()) break;
+                for (var b : page.getItems()) {
+                    if (seen.add(b.getId())) {
+                        items.add(org.motpassants.infrastructure.adapter.in.rest.dto.SeriesBookItemDto.builder()
+                            .id(b.getId())
+                            .title(b.getTitle())
+                            .hasCover(Boolean.TRUE.equals(b.getHasCover()))
+                            .seriesIndex(extractSeriesIndex(b, seriesId))
+                            .publicationDate(b.getPublicationDate())
+                            .build());
+                    }
+                }
+                if (!page.hasNext()) break;
+                cursor = page.getNextCursor();
+            }
+
+            // Sort by series index asc (nulls last); then title
+            items.sort((a, b) -> {
+                Double ai = a.getSeriesIndex();
+                Double bi = b.getSeriesIndex();
+                if (ai == null && bi == null) return a.getTitle().compareToIgnoreCase(b.getTitle());
+                if (ai == null) return 1;
+                if (bi == null) return -1;
+                int cmp = Double.compare(ai, bi);
+                if (cmp != 0) return cmp;
+                return a.getTitle().compareToIgnoreCase(b.getTitle());
+            });
+
+            return Response.ok(items).build();
         } catch (IllegalArgumentException e) {
             return Response.status(Response.Status.BAD_REQUEST)
                 .entity("Invalid series ID format")
@@ -565,6 +595,18 @@ public class SeriesController {
                 .entity("Internal server error: " + e.getMessage())
                 .build();
         }
+    }
+
+    private static Double extractSeriesIndex(org.motpassants.domain.core.model.Book book, java.util.UUID seriesId) {
+        if (book == null || book.getSeries() == null || book.getSeries().isEmpty()) return null;
+        for (org.motpassants.domain.core.model.BookSeries bs : book.getSeries()) {
+            if (bs != null && bs.getSeries() != null && seriesId.equals(bs.getSeries().getId())) {
+                return bs.getSeriesIndex();
+            }
+        }
+        // fallback: if only one relation present, return its index
+        org.motpassants.domain.core.model.BookSeries first = book.getSeries().iterator().next();
+        return first != null ? first.getSeriesIndex() : null;
     }
     
     /**
@@ -586,49 +628,36 @@ public class SeriesController {
             .metadata(series.getMetadata())
             .createdAt(series.getCreatedAt())
             .updatedAt(series.getUpdatedAt())
-            .fallbackImagePath(series.getEffectiveImagePath())
             .hasPicture(series.getHasPicture())
             .build();
     }
 
-    private org.motpassants.infrastructure.adapter.in.rest.dto.BookResponseDto toBookDto(org.motpassants.domain.core.model.Book book) {
-        // Reuse mapping from BookController to ensure consistency
-        org.motpassants.infrastructure.adapter.in.rest.dto.BookResponseDto.Builder builder = org.motpassants.infrastructure.adapter.in.rest.dto.BookResponseDto.builder()
-            .id(book.getId())
-            .title(book.getTitle())
-            .titleSort(book.getTitleSort())
-            .isbn(book.getIsbn())
-            .description(book.getDescription())
-            .pageCount(book.getPageCount())
-            .publicationYear(book.getPublicationYear())
-            .language(book.getLanguage())
-            .path(book.getPath())
-            .fileSize(book.getFileSize())
-            .fileHash(book.getFileHash())
-            .hasCover(book.getHasCover())
-            .publicationDate(book.getPublicationDate())
-            .metadata(book.getMetadata())
-            .createdAt(book.getCreatedAt())
-            .updatedAt(book.getUpdatedAt());
+    // New minimal mapper for list pages
+    private SeriesListItemDto toListItemDto(Series series) {
+        if (series == null) return null;
+        return SeriesListItemDto.builder()
+            .id(series.getId())
+            .name(series.getName())
+            .bookCount(series.getTotalBooks())
+            .hasPicture(series.getHasPicture())
+            .build();
+    }
 
-        if (book.getPublisher() != null) {
-            builder.publisher(book.getPublisher().getName());
-        }
-        if (book.getSeries() != null && !book.getSeries().isEmpty()) {
-            var first = book.getSeries().stream().findFirst().orElse(null);
-            if (first != null && first.getSeries() != null) {
-                builder.series(first.getSeries().getName())
-                       .seriesId(first.getSeries().getId())
-                       .seriesIndex(first.getSeriesIndex());
-            }
-        }
-        if (book.getFormats() != null && !book.getFormats().isEmpty()) {
-            builder.formats(book.getFormats().stream()
-                .map(f -> f.getFormatType())
-                .filter(java.util.Objects::nonNull)
-                .distinct()
-                .collect(java.util.stream.Collectors.toList()));
-        }
-        return builder.build();
+    // New detailed mapper for details page
+    private SeriesDetailsDto toDetailsDto(Series series) {
+        if (series == null) return null;
+        return SeriesDetailsDto.builder()
+            .id(series.getId())
+            .name(series.getName())
+            .sortName(series.getSortName())
+            .description(series.getDescription())
+            .imagePath(series.getImagePath())
+            .bookCount(series.getTotalBooks())
+            .isCompleted(series.getIsCompleted())
+            .hasPicture(series.getHasPicture())
+            .metadata(series.getMetadata())
+            .createdAt(series.getCreatedAt())
+            .updatedAt(series.getUpdatedAt())
+            .build();
     }
 }

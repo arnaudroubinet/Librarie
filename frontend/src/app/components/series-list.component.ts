@@ -216,8 +216,9 @@ export class SeriesListComponent implements OnInit {
   getShortDescription(description: string): string { return description.length > 100 ? description.substring(0, 100) + '...' : description; }
 
   getEffectiveImagePath(series: Series): string | null {
-    const base = series.imagePath || series.fallbackImagePath || null;
-    if (!base) return null;
+  // Backend manages cover fallback; only check the hasPicture flag or direct imagePath
+  const base = (series.hasPicture ? 'has' : null) || series.imagePath || null;
+  if (!base) return null;
     // Prefer backend endpoint to leverage caching when an image exists
     return `${environment.apiUrl}/v1/books/series/${series.id}/picture`;
   }

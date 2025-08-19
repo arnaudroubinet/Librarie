@@ -27,7 +27,7 @@ export class SeriesService {
       return of(cached.data as SeriesPageResponse);
     }
     // Return API response as-is (no demo image mapping)
-    return this.http.get<SeriesPageResponse>(this.baseUrl, { params }).pipe(
+  return this.http.get<SeriesPageResponse>(this.baseUrl, { params }).pipe(
       tap(res => this.cache.set(key, { timestamp: Date.now(), data: res }))
     );
   }
@@ -36,42 +36,14 @@ export class SeriesService {
     return this.http.get<Series>(`${this.baseUrl}/${id}`);
   }
 
-  getSeriesBooks(seriesName: string, cursor?: string, limit: number = 20): Observable<any> {
-    // Since the criteria search isn't working, let's get all books and filter client-side
-    // This is a temporary workaround - in production you'd want to fix the backend search
-    const key = `getSeriesBooks|name=${seriesName}|cursor=${cursor || ''}|limit=${limit}`;
+  getSeriesBooksById(seriesId: string): Observable<any[]> {
+    const key = `getSeriesBooksById|id=${seriesId}`;
     const cached = this.cache.get(key);
     if (cached && Date.now() - cached.timestamp < this.ttlMs) {
-      return of(cached.data);
+      return of(cached.data as any[]);
     }
-
-    return this.http.get<any>(`${environment.apiUrl}/v1/books?limit=100`).pipe(
-      map((response: any) => {
-        const filteredBooks = response.content.filter((book: any) => 
-          book.series && book.series === seriesName
-        );
-        
-        // Sort by series index
-        filteredBooks.sort((a: any, b: any) => {
-          const aIndex = a.seriesIndex || 0;
-          const bIndex = b.seriesIndex || 0;
-          return aIndex - bIndex;
-        });
-        
-  const data = {
-          content: filteredBooks,
-          nextCursor: null,
-          previousCursor: null,
-          limit: limit,
-          hasNext: false,
-          hasPrevious: false,
-          totalCount: filteredBooks.length
-  };
-
-  // cache the computed response
-  this.cache.set(key, { timestamp: Date.now(), data });
-  return data;
-      })
+    return this.http.get<any[]>(`${this.baseUrl}/${seriesId}/books`).pipe(
+      tap(res => this.cache.set(key, { timestamp: Date.now(), data: res }))
     );
   }
 

@@ -3,6 +3,7 @@ export interface Book {
   title: string;
   titleSort?: string;
   isbn?: string;
+  description?: string;
   path?: string;
   fileSize?: number;
   fileHash?: string;
@@ -14,6 +15,8 @@ export interface Book {
   metadata?: Record<string, any>;
   language?: string;
   publisher?: string;
+  pageCount?: number;
+  publicationYear?: number;
   // Contributors by role (names only, backward compatible)
   contributors?: Record<string, string[]>;
   // Detailed contributors by role (id and name)
@@ -21,7 +24,6 @@ export interface Book {
   series?: string;
   seriesId?: string; // New: backend-provided UUID for series
   seriesIndex?: number;
-  description?: string;
   formats?: string[];
 }
 

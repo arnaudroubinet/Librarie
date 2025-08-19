@@ -35,6 +35,11 @@ export class BookService {
     return this.http.get<Book>(`${this.baseUrl}/${id}`);
   }
 
+  // Fetch rich book details from the dedicated endpoint
+  getBookDetails(id: string): Observable<Book> {
+    return this.http.get<Book>(`${this.baseUrl}/${id}/details`);
+  }
+
   createBook(book: BookRequest): Observable<Book> {
     return this.http.post<Book>(this.baseUrl, book);
   }

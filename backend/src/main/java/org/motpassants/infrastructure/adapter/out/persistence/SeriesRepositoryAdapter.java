@@ -23,13 +23,14 @@ public class SeriesRepositoryAdapter implements SeriesRepositoryPort {
 
     @Override
     public List<Series> findAll(int offset, int limit) {
-    String sql = "SELECT id, name, sort_name, description, book_count, has_picture, metadata, created_at, updated_at FROM series ORDER BY name OFFSET ? LIMIT ?";
+    // Lightweight projection for series list page: only fetch columns needed by UI and pagination
+    String sql = "SELECT id, name, book_count, has_picture, created_at FROM series ORDER BY name OFFSET ? LIMIT ?";
         List<Series> list = new ArrayList<>();
         try (Connection conn = dataSource.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, Math.max(0, offset));
             ps.setInt(2, Math.max(1, limit));
             try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) list.add(map(rs));
+        while (rs.next()) list.add(mapLite(rs));
             }
         } catch (SQLException e) {
             throw new RuntimeException("DB error listing series", e);
@@ -39,7 +40,8 @@ public class SeriesRepositoryAdapter implements SeriesRepositoryPort {
 
     @Override
     public org.motpassants.domain.core.model.PageResult<Series> findAll(String cursor, int limit) {
-        String baseSql = "SELECT id, name, sort_name, description, book_count, has_picture, metadata, created_at, updated_at FROM series ";
+    // Lightweight projection for series list page (cursor-based): minimize selected columns
+    String baseSql = "SELECT id, name, book_count, has_picture, created_at FROM series ";
         String orderClause = " ORDER BY created_at DESC, id DESC";
 
         java.sql.Timestamp cursorTimestamp = null;
@@ -72,13 +74,13 @@ public class SeriesRepositoryAdapter implements SeriesRepositoryPort {
         }
         sql.append(orderClause).append(" LIMIT ").append(Math.max(1, limit + 1));
 
-        List<Series> items = new ArrayList<>();
+    List<Series> items = new ArrayList<>();
         boolean hasNext = false;
         String nextCursor = null;
         int totalCount = 0;
 
         try (Connection conn = dataSource.getConnection()) {
-            try (PreparedStatement ps = conn.prepareStatement(sql.toString())) {
+        try (PreparedStatement ps = conn.prepareStatement(sql.toString())) {
                 int idx = 1;
                 if (cursorTimestamp != null && cursorUuid != null) {
                     ps.setTimestamp(idx++, cursorTimestamp);
@@ -86,7 +88,7 @@ public class SeriesRepositoryAdapter implements SeriesRepositoryPort {
                     ps.setObject(idx++, cursorUuid);
                 }
                 try (ResultSet rs = ps.executeQuery()) {
-                    while (rs.next()) items.add(map(rs));
+            while (rs.next()) items.add(mapLite(rs));
                 }
             }
 
@@ -277,6 +279,25 @@ public class SeriesRepositoryAdapter implements SeriesRepositoryPort {
         s.setMetadata(meta);
         s.setCreatedAt(created != null ? created.toInstant().atOffset(java.time.ZoneOffset.UTC) : null);
         s.setUpdatedAt(updated != null ? updated.toInstant().atOffset(java.time.ZoneOffset.UTC) : null);
+        return s;
+    }
+
+    // Lightweight mapper matching the lightweight projection above
+    private Series mapLite(ResultSet rs) throws SQLException {
+        UUID id = (UUID) rs.getObject("id");
+        String name = rs.getString("name");
+        int bookCount = rs.getInt("book_count");
+        Boolean hasPicture = null; boolean hp = rs.getBoolean("has_picture"); if (!rs.wasNull()) hasPicture = hp;
+        Timestamp created = rs.getTimestamp("created_at");
+
+        Series s = new Series();
+        s.setId(id);
+        s.setName(name);
+        // Do not set sortName/description/metadata to avoid extra payload/CPU
+        s.setHasPicture(hasPicture);
+        s.setBookCount(bookCount);
+        s.setCreatedAt(created != null ? created.toInstant().atOffset(java.time.ZoneOffset.UTC) : null);
+        // updatedAt not selected in lightweight query; leave null
         return s;
     }
 

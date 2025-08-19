@@ -177,7 +177,7 @@ import { forkJoin } from 'rxjs';
                       @if (s.id) {
                         <a class="series-card" [routerLink]="['/series', s.id]">
                           <div class="cover-wrap">
-                            @if (s.imagePath || s.fallbackImagePath) {
+                            @if (s.imagePath) {
                               <img class="book-cover" [src]="getSeriesImageUrl(s)" [alt]="s.name + ' cover'" />
                             } @else if (s.coverFromBookId) {
                               <img class="book-cover" [src]="apiUrl + '/v1/books/' + s.coverFromBookId + '/cover'" [alt]="s.name + ' cover'" />
@@ -262,7 +262,7 @@ export class AuthorDetailComponent implements OnInit {
   author = signal<Author | null>(null);
   loading = signal(true);
   authorBooks = signal<Book[]>([]);
-  authorSeries = signal<Array<{ key: string; id?: string; name: string; count: number; imagePath?: string; fallbackImagePath?: string; coverFromBookId?: string }>>([]);
+  authorSeries = signal<Array<{ key: string; id?: string; name: string; count: number; imagePath?: string; coverFromBookId?: string }>>([]);
 
   constructor(
     private route: ActivatedRoute,
@@ -348,7 +348,7 @@ export class AuthorDetailComponent implements OnInit {
         this.authorSeries.update(arr => arr.map(s => {
           if (s.id && byId.has(s.id)) {
             const ser = byId.get(s.id)!;
-            return { ...s, imagePath: (ser as any).imagePath, fallbackImagePath: (ser as any).fallbackImagePath };
+            return { ...s, imagePath: (ser as any).imagePath };
           }
           return s;
         }));
@@ -415,8 +415,8 @@ export class AuthorDetailComponent implements OnInit {
   }
 
   getSeriesImageUrl(s: any): string | null {
-    const base: string | undefined = s?.imagePath || s?.fallbackImagePath || undefined;
-    if (!base) return null;
+  const base: string | undefined = s?.imagePath || undefined;
+  if (!base) return null;
     if (/^https?:\/\//i.test(base)) return base;
     return `${this.apiUrl}${base}`;
   }

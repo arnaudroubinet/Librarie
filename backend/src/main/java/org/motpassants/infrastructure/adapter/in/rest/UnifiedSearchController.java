@@ -254,7 +254,6 @@ public class UnifiedSearchController {
                 .metadata(series.getMetadata())
                 .createdAt(series.getCreatedAt())
                 .updatedAt(series.getUpdatedAt())
-                .fallbackImagePath(series.getEffectiveImagePath())
                 .build();
     }
 }

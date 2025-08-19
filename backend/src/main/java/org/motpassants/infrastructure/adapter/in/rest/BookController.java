@@ -7,6 +7,8 @@ import org.motpassants.domain.core.model.BookSearchCriteria;
 import org.motpassants.domain.core.model.PageResult;
 import org.motpassants.infrastructure.adapter.in.rest.dto.BookRequestDto;
 import org.motpassants.infrastructure.adapter.in.rest.dto.BookResponseDto;
+import org.motpassants.infrastructure.adapter.in.rest.dto.BookListItemDto;
+import org.motpassants.infrastructure.adapter.in.rest.dto.BookDetailsDto;
 import org.motpassants.infrastructure.adapter.in.rest.dto.PageResponseDto;
 
 import org.eclipse.microprofile.openapi.annotations.Operation;
@@ -54,7 +56,7 @@ public class BookController {
     }
 
     @GET
-    @Operation(summary = "Get all books", description = "Retrieve all books with pagination")
+    @Operation(summary = "Get all books", description = "Retrieve all books with pagination (lightweight items)")
     @APIResponses({
         @APIResponse(responseCode = "200", description = "Books retrieved successfully",
                     content = @Content(schema = @Schema(implementation = PageResponseDto.class))),
@@ -68,12 +70,12 @@ public class BookController {
             // Ensure demo data is present in dev/demo mode to avoid empty first load due to async seeding
             demoDataService.populateDemoData();
             PageResult<Book> result = bookService.getAllBooks(cursor, limit);
-            
-            List<BookResponseDto> bookDtos = result.getItems().stream()
-                .map(this::toResponseDto)
+
+            List<BookListItemDto> bookDtos = result.getItems().stream()
+                .map(this::toListItemDto)
                 .collect(Collectors.toList());
-            
-            PageResponseDto<BookResponseDto> response = new PageResponseDto<BookResponseDto>(
+
+            PageResponseDto<BookListItemDto> response = new PageResponseDto<BookListItemDto>(
                 bookDtos,
                 result.getNextCursor(),
                 result.getPreviousCursor(),
@@ -200,8 +202,36 @@ public class BookController {
     }
 
     @GET
+    @Path("/{id}/details")
+    @Operation(summary = "Get book details by ID", description = "Retrieve rich book details by its UUID")
+    @APIResponses({
+        @APIResponse(responseCode = "200", description = "Book details found",
+                    content = @Content(schema = @Schema(implementation = BookDetailsDto.class))),
+        @APIResponse(responseCode = "404", description = "Book not found"),
+        @APIResponse(responseCode = "400", description = "Invalid UUID format")
+    })
+    public Response getBookDetailsById(
+            @Parameter(description = "Book UUID") @PathParam("id") String id) {
+        try {
+            UUID bookId = UUID.fromString(id);
+            Optional<Book> book = bookService.getBookById(bookId);
+            if (book.isPresent()) {
+                return Response.ok(toDetailsDto(book.get())).build();
+            } else {
+                return Response.status(Response.Status.NOT_FOUND)
+                        .entity(Map.of("error", "Book not found"))
+                        .build();
+            }
+        } catch (IllegalArgumentException e) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of("error", "Invalid UUID format"))
+                    .build();
+        }
+    }
+
+    @GET
     @Path("/search")
-    @Operation(summary = "Search books", description = "Search books by query string")
+    @Operation(summary = "Search books", description = "Search books by query string (lightweight items)")
     @APIResponses({
         @APIResponse(responseCode = "200", description = "Search completed successfully"),
         @APIResponse(responseCode = "400", description = "Invalid search parameters")
@@ -218,11 +248,11 @@ public class BookController {
         }
         
         List<Book> books = bookService.searchBooks(effective);
-        List<BookResponseDto> bookDtos = books.stream()
-            .map(this::toResponseDto)
+        List<BookListItemDto> bookDtos = books.stream()
+            .map(this::toListItemDto)
             .collect(Collectors.toList());
-            
-        PageResponseDto<BookResponseDto> response = new PageResponseDto<BookResponseDto>(
+
+        PageResponseDto<BookListItemDto> response = new PageResponseDto<BookListItemDto>(
             bookDtos,
             null, // nextCursor
             null, // previousCursor  
@@ -236,7 +266,7 @@ public class BookController {
 
     @POST
     @Path("/criteria")
-    @Operation(summary = "Search books by criteria", description = "Search books using detailed criteria")
+    @Operation(summary = "Search books by criteria", description = "Search books using detailed criteria (lightweight items)")
     @APIResponses({
         @APIResponse(responseCode = "200", description = "Search completed successfully"),
         @APIResponse(responseCode = "400", description = "Invalid search criteria")
@@ -244,11 +274,11 @@ public class BookController {
     public Response searchBooksByCriteria(BookSearchCriteria criteria) {
         try {
             List<Book> books = bookService.searchBooksByCriteria(criteria);
-            List<BookResponseDto> bookDtos = books.stream()
-                .map(this::toResponseDto)
+            List<BookListItemDto> bookDtos = books.stream()
+                .map(this::toListItemDto)
                 .collect(Collectors.toList());
-                
-            PageResponseDto<BookResponseDto> response = new PageResponseDto<BookResponseDto>(
+
+            PageResponseDto<BookListItemDto> response = new PageResponseDto<BookListItemDto>(
                 bookDtos,
                 null, // nextCursor
                 null, // previousCursor
@@ -402,7 +432,7 @@ public class BookController {
      * Convert domain entity to response DTO.
      */
     private BookResponseDto toResponseDto(Book book) {
-        BookResponseDto.Builder builder = BookResponseDto.builder()
+    BookResponseDto.Builder builder = BookResponseDto.builder()
             .id(book.getId())
             .title(book.getTitle())
             .titleSort(book.getTitleSort())
@@ -420,9 +450,10 @@ public class BookController {
             .createdAt(book.getCreatedAt())
             .updatedAt(book.getUpdatedAt());
 
-        if (book.getPublisher() != null) {
-            builder.publisher(book.getPublisher().getName());
-        }
+    String publisherName = (book.getPublisher() != null && book.getPublisher().getName() != null)
+        ? book.getPublisher().getName()
+        : null;
+    if (publisherName != null && !"null".equalsIgnoreCase(publisherName)) builder.publisher(publisherName);
 
     if (book.getSeries() != null && !book.getSeries().isEmpty()) {
             var first = book.getSeries().stream().findFirst().orElse(null);
@@ -443,6 +474,82 @@ public class BookController {
 
         return builder.build();
     }
+
+    private BookDetailsDto toDetailsDto(Book book) {
+    BookDetailsDto.Builder builder = BookDetailsDto.builder()
+            .id(book.getId())
+            .title(book.getTitle())
+            .titleSort(book.getTitleSort())
+            .isbn(book.getIsbn())
+            .description(book.getDescription())
+            .pageCount(book.getPageCount())
+            .publicationYear(book.getPublicationYear())
+            .language(book.getLanguage())
+            .path(book.getPath())
+            .fileSize(book.getFileSize())
+            .fileHash(book.getFileHash())
+            .hasCover(book.getHasCover())
+            .publicationDate(book.getPublicationDate())
+            .metadata(book.getMetadata())
+            .createdAt(book.getCreatedAt())
+            .updatedAt(book.getUpdatedAt());
+
+    String publisherName = (book.getPublisher() != null && book.getPublisher().getName() != null)
+        ? book.getPublisher().getName()
+        : null;
+    if (publisherName != null && !"null".equalsIgnoreCase(publisherName)) builder.publisher(publisherName);
+
+        if (book.getSeries() != null && !book.getSeries().isEmpty()) {
+            var first = book.getSeries().stream().findFirst().orElse(null);
+            if (first != null && first.getSeries() != null) {
+                builder.series(first.getSeries().getName())
+                       .seriesId(first.getSeries().getId())
+                       .seriesIndex(first.getSeriesIndex());
+            }
+        }
+
+        if (book.getFormats() != null && !book.getFormats().isEmpty()) {
+            builder.formats(book.getFormats().stream()
+                .map(f -> f.getFormatType())
+                .filter(Objects::nonNull)
+                .distinct()
+                .collect(Collectors.toList()));
+        }
+        // Contributors grouped by role
+        try {
+            java.util.Map<String, java.util.List<org.motpassants.domain.core.model.Author>> contribs = bookService.getContributors(book.getId());
+            if (contribs != null && !contribs.isEmpty()) {
+                java.util.Map<String, java.util.List<java.util.Map<String, String>>> api = new java.util.LinkedHashMap<>();
+                for (var e : contribs.entrySet()) {
+                    java.util.List<java.util.Map<String, String>> list = new java.util.ArrayList<>();
+                    for (var a : e.getValue()) {
+                        if (a != null && a.getId() != null && a.getName() != null) {
+                            list.add(java.util.Map.of(
+                                "id", a.getId().toString(),
+                                "name", a.getName()
+                            ));
+                        }
+                    }
+                    if (!list.isEmpty()) api.put(e.getKey(), list);
+                }
+                if (!api.isEmpty()) builder.contributorsDetailed(api);
+            }
+        } catch (Exception ignored) { }
+        return builder.build();
+    }
+
+    private BookListItemDto toListItemDto(Book book) {
+        return BookListItemDto.builder()
+            .id(book.getId())
+            .title(book.getTitle())
+            .titleSort(book.getTitleSort())
+            .hasCover(book.getHasCover())
+            .publicationDate(book.getPublicationDate())
+            .createdAt(book.getCreatedAt())
+            .build();
+    }
+
+    // Removed metadata-derived fallbacks: description/pages/publicationYear and publisher now reflect only core fields.
     
     /**
      * Convert request DTO to domain entity.
