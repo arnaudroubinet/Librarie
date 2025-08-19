@@ -52,24 +52,20 @@ public class BookRepositoryAdapter implements BookRepository {
                 String[] parts = decoded.split("\\|");
                 if (parts.length == 3) {
                     // Parse sort value based on field type
-                    switch (sortCriteria.getField()) {
-                        case UPDATED_AT:
-                        case PUBLICATION_DATE:
-                            // Parse timestamp
-                            long epochNumber = Long.parseLong(parts[0]);
-                            if (epochNumber >= 1_000_000_000_000_000L) {
-                                long seconds = epochNumber / 1_000_000L;
-                                long microsRemainder = epochNumber % 1_000_000L;
-                                long nanos = microsRemainder * 1_000L;
-                                cursorSortValue = java.sql.Timestamp.from(java.time.Instant.ofEpochSecond(seconds, nanos));
-                            } else {
-                                cursorSortValue = new java.sql.Timestamp(epochNumber);
-                            }
-                            break;
-                        case TITLE_SORT:
-                            // Parse string value (URL-decoded)
-                            cursorSortValue = java.net.URLDecoder.decode(parts[0], "UTF-8");
-                            break;
+                    if (sortCriteria.getField().isTimestampField()) {
+                        // Parse timestamp for date/time fields
+                        long epochNumber = Long.parseLong(parts[0]);
+                        if (epochNumber >= 1_000_000_000_000_000L) {
+                            long seconds = epochNumber / 1_000_000L;
+                            long microsRemainder = epochNumber % 1_000_000L;
+                            long nanos = microsRemainder * 1_000L;
+                            cursorSortValue = java.sql.Timestamp.from(java.time.Instant.ofEpochSecond(seconds, nanos));
+                        } else {
+                            cursorSortValue = new java.sql.Timestamp(epochNumber);
+                        }
+                    } else {
+                        // Parse string value (URL-decoded) for text fields
+                        cursorSortValue = java.net.URLDecoder.decode(parts[0], "UTF-8");
                     }
                     
                     // Parse created_at tiebreaker timestamp
@@ -155,25 +151,26 @@ public class BookRepositoryAdapter implements BookRepository {
                 long sortValueEpoch = 0L;
                 String sortValueStr = "";
                 
-                switch (sortCriteria.getField()) {
-                    case UPDATED_AT:
+                if (sortCriteria.getField().isTimestampField()) {
+                    if (sortCriteria.getField().getColumnName().equals("updated_at")) {
                         java.time.OffsetDateTime updatedAt = lastOfPage.getUpdatedAt();
                         if (updatedAt != null) {
                             long seconds = updatedAt.toInstant().getEpochSecond();
                             long nanos = updatedAt.toInstant().getNano();
                             sortValueEpoch = seconds * 1_000_000L + (nanos / 1_000L);
                         }
-                        break;
-                    case PUBLICATION_DATE:
+                    } else if (sortCriteria.getField().getColumnName().equals("publication_date")) {
                         java.time.LocalDate pubDate = lastOfPage.getPublicationDate();
                         if (pubDate != null) {
                             long seconds = pubDate.atStartOfDay(java.time.ZoneOffset.UTC).toInstant().getEpochSecond();
                             sortValueEpoch = seconds * 1_000_000L;
                         }
-                        break;
-                    case TITLE_SORT:
+                    }
+                } else {
+                    // Handle string fields
+                    if (sortCriteria.getField().getColumnName().equals("title_sort")) {
                         sortValueStr = lastOfPage.getTitleSort() != null ? lastOfPage.getTitleSort() : "";
-                        break;
+                    }
                 }
                 
                 // Get created_at for tiebreaker
@@ -187,7 +184,7 @@ public class BookRepositoryAdapter implements BookRepository {
                 
                 UUID id = lastOfPage.getId();
                 String raw;
-                if (sortCriteria.getField() == org.motpassants.domain.core.model.SortField.TITLE_SORT) {
+                if (!sortCriteria.getField().isTimestampField()) {
                     // URL-encode string values
                     try {
                         sortValueStr = java.net.URLEncoder.encode(sortValueStr, "UTF-8");

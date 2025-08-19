@@ -1,4 +1,8 @@
-package org.motpassants.domain.core.model;
+package org.motpassants.domain.service;
+
+import org.motpassants.domain.core.model.BookSortCriteria;
+import org.motpassants.domain.core.model.SortField;
+import org.motpassants.domain.core.model.SortDirection;
 
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
@@ -13,6 +17,13 @@ class BookSortCriteriaTest {
         assertEquals("updated_at", SortField.UPDATED_AT.getColumnName());
         assertEquals("title_sort", SortField.TITLE_SORT.getColumnName());
         assertEquals("publication_date", SortField.PUBLICATION_DATE.getColumnName());
+    }
+
+    @Test
+    void testSortFieldTimestampProperties() {
+        assertTrue(SortField.UPDATED_AT.isTimestampField());
+        assertTrue(SortField.PUBLICATION_DATE.isTimestampField());
+        assertFalse(SortField.TITLE_SORT.isTimestampField());
     }
 
     @Test

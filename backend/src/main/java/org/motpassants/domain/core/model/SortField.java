@@ -25,6 +25,14 @@ public enum SortField {
     }
 
     /**
+     * Determines if this field represents a timestamp type for cursor parsing.
+     * @return true if this field should be parsed as a timestamp, false if as a string
+     */
+    public boolean isTimestampField() {
+        return this == UPDATED_AT || this == PUBLICATION_DATE;
+    }
+
+    /**
      * Parse a string value into a SortField enum.
      * @param value the string value to parse
      * @return the corresponding SortField
