@@ -1,4 +1,4 @@
-import { Component, OnInit, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
+import { Component, OnInit, CUSTOM_ELEMENTS_SCHEMA, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
@@ -7,10 +7,13 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatSelectModule } from '@angular/material/select';
+import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatRippleModule } from '@angular/material/core';
 import { MatBadgeModule } from '@angular/material/badge';
 import { AuthorService } from '../services/author.service';
 import { Author } from '../models/author.model';
+import { SortField, SortDirection, SortOption } from '../models/book.model';
 import { InfiniteScrollService, AlphabeticalSeparator } from '../services/infinite-scroll.service';
 import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive';
 import { environment } from '../../environments/environment';
@@ -30,6 +33,8 @@ import { environment } from '../../environments/environment';
     MatSnackBarModule,
     MatRippleModule,
     MatBadgeModule,
+  MatFormFieldModule,
+  MatSelectModule,
     InfiniteScrollDirective
   ],
   template: `
@@ -44,8 +49,17 @@ import { environment } from '../../environments/environment';
             </button>
           </h1>
           <p class="library-subtitle">Discover and explore your favorite authors</p>
+          <div class="sort-controls">
+            <div class="sort-field">
+              <mat-select [value]="selectedSortOption()" (selectionChange)="onSortChange($event.value)" [displayWith]="displaySort" disableRipple>
+                @for (opt of sortOptions; track opt.label) {
+                  <mat-option [value]="opt">{{ opt.label }}</mat-option>
+                }
+              </mat-select>
+            </div>
+          </div>
         </div>
-        
+
       </div>
       
       @if (scrollState.loading() && scrollState.items().length === 0) {
@@ -150,22 +164,32 @@ import { environment } from '../../environments/environment';
 export class AuthorListComponent implements OnInit {
   scrollState;
   readonly apiUrl = environment.apiUrl;
+  currentSort: { field: string; direction: string } = { field: 'SORT_NAME', direction: 'ASC' };
+
+  // Sort options for the author list (align with backend AuthorSortCriteria)
+  sortOptions: SortOption[] = [
+    { label: 'Name A-Z', field: SortField.SORT_NAME, direction: SortDirection.ASC },
+    { label: 'Name Z-A', field: SortField.SORT_NAME, direction: SortDirection.DESC }
+  ];
+
+  // Signals to mirror book list behavior
+  selectedSortOption = signal<SortOption>(this.sortOptions[0]);
 
   constructor(
     private authorService: AuthorService,
     private snackBar: MatSnackBar,
     protected infiniteScrollService: InfiniteScrollService
   ) {
-    // Initialize infinite scroll state with alphabetical separators
+    // Initialize infinite scroll state with alphabetical separators and sort params
     this.scrollState = this.infiniteScrollService.createInfiniteScrollState(
-      (cursor, limit) => this.authorService.getAllAuthors(cursor, limit),
+      (cursor, limit) => this.authorService.getAllAuthors(cursor, limit, this.currentSort.field, this.currentSort.direction),
       {
         limit: 20,
-    enableAlphabeticalSeparators: true,
-    sortProperty: 'sortName',
-    limitProvider: () => this.calculatePageSize()
+        enableAlphabeticalSeparators: true,
+        sortProperty: 'sortName',
+        limitProvider: () => this.calculatePageSize()
       }
-    );
+  );
   }
 
   ngOnInit() {
@@ -249,5 +273,21 @@ export class AuthorListComponent implements OnInit {
     this.authorService.clearCache();
     this.scrollState.reset();
     this.snackBar.open('Authors refreshed', 'Close', { duration: 1500 });
+  }
+
+  
+
+  // New overloaded handler used by mat-select when passing SortOption
+  onSortChange(sortOption: SortOption) {
+    if (!sortOption) return;
+    this.currentSort = { field: sortOption.field as unknown as string, direction: sortOption.direction as unknown as string };
+    this.selectedSortOption.set(sortOption);
+    this.authorService.clearCache();
+    this.scrollState.reset();
+    this.snackBar.open(`Sorted by ${sortOption.label}`, 'Close', { duration: 2000 });
+  }
+
+  displaySort(option?: SortOption): string {
+    return option ? option.label : '';
   }
 }

@@ -1,6 +1,7 @@
 package org.motpassants.domain.port.in;
 
 import org.motpassants.domain.core.model.Author;
+import org.motpassants.domain.core.model.AuthorSortCriteria;
 import org.motpassants.domain.core.model.PageResult;
 
 import java.time.LocalDate;
@@ -42,7 +43,18 @@ public interface AuthorUseCase {
     /**
      * Get all authors with pagination.
      */
-    PageResult<Author> getAllAuthors(String cursor, int limit);
+    /**
+     * Get all authors with pagination.
+     * Default delegates to the sort-aware overload using the default sort criteria.
+     */
+    default PageResult<Author> getAllAuthors(String cursor, int limit) {
+        return getAllAuthors(cursor, limit, AuthorSortCriteria.DEFAULT);
+    }
+
+    /**
+     * Get all authors with pagination and custom sort criteria.
+     */
+    PageResult<Author> getAllAuthors(String cursor, int limit, AuthorSortCriteria sortCriteria);
     
     /**
      * Search authors by name with pagination.
