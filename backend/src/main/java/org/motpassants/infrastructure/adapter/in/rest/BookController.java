@@ -72,22 +72,8 @@ public class BookController {
             @Parameter(description = "Sort direction (ASC, DESC)") @QueryParam("sortDirection") @DefaultValue("DESC") String sortDirection) {
         
         try {
-            // Parse and validate sorting parameters
-            BookSortCriteria sortCriteria;
-            if (sortField != null && !sortField.trim().isEmpty()) {
-                try {
-                    SortField field = SortField.fromString(sortField);
-                    SortDirection direction = SortDirection.fromString(sortDirection);
-                    sortCriteria = new BookSortCriteria(field, direction);
-                } catch (IllegalArgumentException e) {
-                    return Response.status(Response.Status.BAD_REQUEST)
-                            .entity(Map.of("error", "Invalid sort parameters: " + e.getMessage()))
-                            .build();
-                }
-            } else {
-                // Use default sorting if no sort field specified
-                sortCriteria = BookSortCriteria.DEFAULT;
-            }
+            // Parse and validate sorting parameters using service business logic
+            BookSortCriteria sortCriteria = bookService.parseAndValidateSortCriteria(sortField, sortDirection);
 
             // Ensure demo data is present in dev/demo mode to avoid empty first load due to async seeding
             demoDataService.populateDemoData();
@@ -127,7 +113,7 @@ public class BookController {
             @Parameter(description = "Book UUID") @PathParam("id") String id) {
         
         try {
-            UUID bookId = UUID.fromString(id);
+            UUID bookId = bookService.validateAndParseId(id);
             Optional<Book> book = bookService.getBookById(bookId);
             
             if (book.isPresent()) {
@@ -139,7 +125,7 @@ public class BookController {
             }
         } catch (IllegalArgumentException e) {
             return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(Map.of("error", "Invalid UUID format"))
+                    .entity(Map.of("error", e.getMessage()))
                     .build();
         }
     }
@@ -187,7 +173,7 @@ public class BookController {
             BookRequestDto bookRequest) {
         
         try {
-            UUID bookId = UUID.fromString(id);
+            UUID bookId = bookService.validateAndParseId(id);
             
             Book book = toEntity(bookRequest);
             book.setId(bookId);
@@ -213,7 +199,7 @@ public class BookController {
             @Parameter(description = "Book UUID") @PathParam("id") String id) {
         
         try {
-            UUID bookId = UUID.fromString(id);
+            UUID bookId = bookService.validateAndParseId(id);
             bookService.deleteBook(bookId);
             return Response.noContent().build();
         } catch (IllegalArgumentException e) {
@@ -235,7 +221,7 @@ public class BookController {
     public Response getBookDetailsById(
             @Parameter(description = "Book UUID") @PathParam("id") String id) {
         try {
-            UUID bookId = UUID.fromString(id);
+            UUID bookId = bookService.validateAndParseId(id);
             Optional<Book> book = bookService.getBookById(bookId);
             if (book.isPresent()) {
                 return Response.ok(toDetailsDto(book.get())).build();
@@ -246,7 +232,7 @@ public class BookController {
             }
         } catch (IllegalArgumentException e) {
             return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(Map.of("error", "Invalid UUID format"))
+                    .entity(Map.of("error", e.getMessage()))
                     .build();
         }
     }
@@ -263,27 +249,29 @@ public class BookController {
             @Parameter(description = "Search query (alias)") @QueryParam("query") String query) {
         // Support both 'q' and 'query' params (frontend uses 'q')
         String effective = (q != null && !q.isBlank()) ? q : query;
-        if (effective == null || effective.trim().isEmpty()) {
+        
+        try {
+            bookService.validateSearchQuery(effective);
+            List<Book> books = bookService.searchBooks(effective);
+            List<BookListItemDto> bookDtos = books.stream()
+                .map(this::toListItemDto)
+                .collect(Collectors.toList());
+
+            PageResponseDto<BookListItemDto> response = new PageResponseDto<BookListItemDto>(
+                bookDtos,
+                null, // nextCursor
+                null, // previousCursor  
+                bookDtos.size(), // limit
+                false, // hasNext
+                false, // hasPrevious
+                (long) books.size() // totalElements
+            );
+            return Response.ok(response).build();
+        } catch (IllegalArgumentException e) {
             return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(Map.of("error", "Search query cannot be empty"))
+                    .entity(Map.of("error", e.getMessage()))
                     .build();
         }
-        
-        List<Book> books = bookService.searchBooks(effective);
-        List<BookListItemDto> bookDtos = books.stream()
-            .map(this::toListItemDto)
-            .collect(Collectors.toList());
-
-        PageResponseDto<BookListItemDto> response = new PageResponseDto<BookListItemDto>(
-            bookDtos,
-            null, // nextCursor
-            null, // previousCursor  
-            bookDtos.size(), // limit
-            false, // hasNext
-            false, // hasPrevious
-            (long) books.size() // totalElements
-        );
-        return Response.ok(response).build();
     }
 
     @POST
@@ -343,7 +331,7 @@ public class BookController {
             Map<String, Object> completionData) {
         
         try {
-            UUID bookId = UUID.fromString(id);
+            UUID bookId = bookService.validateAndParseId(id);
             
             Optional<Book> existingBook = bookService.getBookById(bookId);
             if (existingBook.isEmpty()) {
@@ -403,7 +391,7 @@ public class BookController {
     })
     public Response getBookCover(@PathParam("id") String id) {
         try {
-            UUID bookId = UUID.fromString(id);
+            UUID bookId = bookService.validateAndParseId(id);
             Optional<Book> bookOpt = bookService.getBookById(bookId);
             if (bookOpt.isEmpty()) {
                 return Response.status(Response.Status.NOT_FOUND).entity("Book not found").build();

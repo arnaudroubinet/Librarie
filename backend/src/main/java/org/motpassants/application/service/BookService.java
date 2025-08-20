@@ -4,6 +4,8 @@ import org.motpassants.domain.core.model.Book;
 import org.motpassants.domain.core.model.BookSortCriteria;
 import org.motpassants.domain.core.model.PageResult;
 import org.motpassants.domain.core.model.BookSearchCriteria;
+import org.motpassants.domain.core.model.SortField;
+import org.motpassants.domain.core.model.SortDirection;
 import org.motpassants.domain.port.in.BookUseCase;
 import org.motpassants.domain.port.out.BookRepository;
 
@@ -181,5 +183,41 @@ public class BookService implements BookUseCase {
     @Override
     public long getTotalBooksCount() {
         return bookRepository.count();
+    }
+    
+    /**
+     * Parse and validate sort criteria from string parameters.
+     * Business logic for handling sorting parameters.
+     */
+    public BookSortCriteria parseAndValidateSortCriteria(String sortField, String sortDirection) {
+        if (sortField != null && !sortField.trim().isEmpty()) {
+            SortField field = SortField.fromString(sortField);
+            SortDirection direction = SortDirection.fromString(sortDirection);
+            return new BookSortCriteria(field, direction);
+        } else {
+            return BookSortCriteria.DEFAULT;
+        }
+    }
+    
+    /**
+     * Validate search query parameter.
+     * Business logic for search query validation.
+     */
+    public void validateSearchQuery(String query) {
+        if (query == null || query.trim().isEmpty()) {
+            throw new IllegalArgumentException("Search query cannot be empty");
+        }
+    }
+    
+    /**
+     * Validate UUID parameter.
+     * Business logic for UUID validation.
+     */
+    public UUID validateAndParseId(String id) {
+        try {
+            return UUID.fromString(id);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Invalid UUID format");
+        }
     }
 }
