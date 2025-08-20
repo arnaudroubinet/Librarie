@@ -313,5 +313,49 @@ class HexagonalArchitectureTest {
 
             rule.check(classes);
         }
+
+        @Test
+        @DisplayName("DTOs should only be used in REST layer")
+        void dtosShouldOnlyBeUsedInRestLayer() {
+            ArchRule rule = noClasses().that()
+                    .resideOutsideOfPackage("..infrastructure.adapter.in.rest..")
+                    .should().dependOnClassesThat()
+                    .resideInAPackage("..infrastructure.adapter.in.rest.dto..")
+                    .allowEmptyShould(true)
+                    .because("DTOs should only be used in REST controllers for data transfer");
+
+            rule.check(classes);
+        }
+
+        @Test
+        @DisplayName("Application services should not depend on REST concerns")
+        void applicationServicesShouldNotDependOnRestConcerns() {
+            ArchRule rule = noClasses().that()
+                    .resideInAPackage("..application..")
+                    .should().dependOnClassesThat()
+                    .resideInAnyPackage(
+                            "jakarta.ws.rs..",
+                            "..rest..",
+                            "..dto.."
+                    )
+                    .allowEmptyShould(true)
+                    .because("Application services should be independent of REST/HTTP concerns");
+
+            rule.check(classes);
+        }
+
+        @Test
+        @DisplayName("Domain services should be package-private where possible")
+        void domainServicesShouldBePackagePrivateWherePossible() {
+            // This rule ensures domain services are not unnecessarily exposed outside their package
+            ArchRule rule = classes().that()
+                    .resideInAPackage("..domain.core.service..")
+                    .and().areNotInterfaces()
+                    .should().notBePublic()
+                    .allowEmptyShould(true)
+                    .because("Domain services should be package-private unless they need to be accessed from other layers");
+
+            rule.check(classes);
+        }
     }
 }
