@@ -214,6 +214,9 @@ public class BookService implements BookUseCase {
      * Business logic for UUID validation.
      */
     public UUID validateAndParseId(String id) {
+        if (id == null || id.trim().isEmpty()) {
+            throw new IllegalArgumentException("Invalid UUID format");
+        }
         try {
             return UUID.fromString(id);
         } catch (IllegalArgumentException e) {
