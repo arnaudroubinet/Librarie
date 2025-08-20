@@ -347,13 +347,13 @@ public class BookController {
             }
             
             Object progressObj = completionData.get("progress");
-            if (!(progressObj instanceof Number)) {
+            if (!(progressObj instanceof Number progressNumber)) {
                 return Response.status(Response.Status.BAD_REQUEST)
                     .entity("Progress must be a number")
                     .build();
             }
             
-            double progress = ((Number) progressObj).doubleValue();
+            double progress = progressNumber.doubleValue();
             if (progress < 0 || progress > 100) {
                 return Response.status(Response.Status.BAD_REQUEST)
                     .entity("Progress must be between 0 and 100")

@@ -387,7 +387,7 @@ public class SeriesController {
             // 3) Otherwise check metadata for a remote URL (support both keys: seriesImageUrl and imageUrl)
             if (remoteUrl == null && series.getMetadata() != null) {
                 Object urlObj = series.getMetadata().get("seriesImageUrl");
-                if (!(urlObj instanceof String) || ((String) urlObj).isBlank()) {
+                if (!(urlObj instanceof String urlString) || urlString.isBlank()) {
                     urlObj = series.getMetadata().get("imageUrl");
                 }
                 if (urlObj instanceof String s) {
@@ -395,9 +395,9 @@ public class SeriesController {
                     if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
                         remoteUrl = trimmed;
                         // track which key we used
-                        if (series.getMetadata().get("seriesImageUrl") instanceof String && ((String) series.getMetadata().get("seriesImageUrl")).trim().equals(trimmed)) {
+                        if (series.getMetadata().get("seriesImageUrl") instanceof String seriesUrl && seriesUrl.trim().equals(trimmed)) {
                             remoteUrlMetadataKey = "seriesImageUrl";
-                        } else if (series.getMetadata().get("imageUrl") instanceof String && ((String) series.getMetadata().get("imageUrl")).trim().equals(trimmed)) {
+                        } else if (series.getMetadata().get("imageUrl") instanceof String imageUrl && imageUrl.trim().equals(trimmed)) {
                             remoteUrlMetadataKey = "imageUrl";
                         }
                     }
