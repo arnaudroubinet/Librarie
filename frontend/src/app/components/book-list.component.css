@@ -1,33 +1,165 @@
-/* compact component CSS */
-.header-actions{display:flex;gap:16px;align-items:center}
-.loading-section{display:flex;justify-content:center;align-items:center;min-height:60vh;text-align:center}
-.loading-content h3{margin:24px 0 8px 0;font-size:1.5rem;font-weight:400}
-.loading-content p{margin:0;opacity:.7;font-size:1rem}
-.empty-library{display:flex;justify-content:center;align-items:center;min-height:60vh;text-align:center}
-.empty-content{max-width:500px;padding:48px 24px}
-.empty-icon{font-size:6rem;color:#555;margin-bottom:24px}
-.empty-content h2{font-size:2rem;font-weight:300;margin:0 0 16px 0;color:#fff}
-.empty-content p{font-size:1.1rem;line-height:1.6;opacity:.8;margin:0 0 32px 0}
-.library-content{padding:0}
-.books-grid{grid-template-columns:repeat(auto-fill,240px);gap:24px;padding:32px;margin:0 auto}
-.book-cover{position:relative;width:100%;height:100%;overflow:hidden}
-.cover-image{width:100%;height:100%;object-fit:cover}
-.cover-placeholder{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px}
-.book-title-text{font-size:1rem;line-height:1.2;word-break:break-word}
-.book-overlay{position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .3s ease;z-index:2}
-.book-card:hover .book-overlay{opacity:1}
-.book-actions{display:flex;gap:16px}
-.action-btn{width:80px;height:80px}
-.book-info{position:absolute;left:0;right:0;bottom:0;padding:8px 10px;text-align:left;background:linear-gradient(180deg,rgba(0,0,0,0) 0%,rgba(0,0,0,.65) 40%,rgba(0,0,0,.85) 100%);z-index:1}
-.book-title{font-size:1.1rem;font-weight:600;margin:0 0 4px 0;color:#fff;line-height:1.2;height:2.4em;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;line-clamp:2;-webkit-box-orient:vertical}
-.book-author{font-size:.9rem;margin:0 0 2px 0;opacity:.85;color:#b3e5fc}
-.book-series{font-size:.85rem;margin:0 0 2px 0;opacity:.75;color:#81d4fa;font-style:italic}
-.book-date{font-size:.8rem;margin:0;opacity:.7;color:#4fc3f7}
-.load-more-container{display:flex;flex-direction:column;align-items:center;padding:40px 20px;gap:16px}
-.load-more-container p{margin:0;opacity:.7}
-.load-more-error{display:flex;flex-direction:column;align-items:center;padding:40px 20px;gap:16px}
-.load-more-error p{margin:0;color:#f44336}
-.end-of-list{display:flex;justify-content:center;padding:40px 20px;opacity:.6}
-.end-of-list p{margin:0;font-style:italic}
-@media (max-width:768px){.books-grid{grid-template-columns:repeat(auto-fill,240px);justify-content:center;gap:24px;padding:24px}.book-actions{opacity:1;position:static;margin-top:8px;justify-content:center}.action-btn{width:64px;height:64px;min-width:64px}}
-@media (max-width:480px){.books-grid{grid-template-columns:repeat(auto-fill,240px);justify-content:center;gap:16px;padding:16px}.library-title{font-size:1.75rem}.fab-search{width:64px;height:64px;min-width:64px}}
+/* Minimal, maintainable styles for book-list component */
+.header-actions { display:flex; gap:12px; align-items:center; }
+.loading-section { display:flex; justify-content:center; align-items:center; min-height:60vh; text-align:center; }
+
+/* Make the select visually inline with the subtitle text. We use high-specificity selectors
+	 to override Material defaults for the closed control only. */
+.sort-field { display:inline-flex; align-items:center; margin-left:8px; }
+
+/* Grouped overrides for the sort/select trigger (closed and open) to keep the
+   control visually inline and transparent. We keep high specificity to
+   override Material defaults only inside our library layout. */
+::ng-deep .motspassants-library .header-content .sort-field > mat-select,
+::ng-deep .motspassants-library .header-content .sort-field .mat-select-trigger,
+::ng-deep .motspassants-library .header-content .sort-field .mat-select-value,
+::ng-deep .motspassants-library .header-content .sort-field .mat-mdc-select-value,
+::ng-deep .motspassants-library .header-content .sort-field .mat-select-value-text,
+::ng-deep .motspassants-library .header-content .sort-field .mat-mdc-select-value-text {
+	background: transparent !important;
+	border: none !important;
+	padding: 0 !important;
+	margin: 0 !important;
+	color: var(--muted-fg) !important;
+	font-size: 0.95rem !important;
+	line-height: 1 !important;
+	height: auto !important;
+}
+
+/* Use the same arrow/graphic for closed and open triggers and force consistent
+   positioning + color. Also ensure inline SVG arrows inherit currentColor. */
+::ng-deep .motspassants-library .header-content .sort-field .mat-select-arrow,
+::ng-deep .motspassants-library .header-content .sort-field .mat-mdc-select-arrow,
+::ng-deep .motspassants-library .header-content .sort-field .mat-select.mat-select-open .mat-select-arrow,
+::ng-deep .motspassants-library .header-content .sort-field .mat-mdc-select.mat-mdc-select-open .mat-mdc-select-arrow,
+::ng-deep .motspassants-library .header-content .sort-field .mat-select-trigger.mat-select-open .mat-select-arrow,
+::ng-deep .motspassants-library .header-content .sort-field .mat-mdc-select-trigger.mat-mdc-select-open .mat-mdc-select-arrow {
+	color: var(--muted-fg) !important;
+	font-size: 12px !important;
+	left: 8px !important;
+	right: auto !important;
+	opacity: 0.9 !important;
+	transform: none !important;
+}
+::ng-deep .motspassants-library .header-content .sort-field .mat-select-arrow svg,
+::ng-deep .motspassants-library .header-content .sort-field .mat-mdc-select-arrow svg {
+	fill: currentColor !important;
+}
+
+/* Ensure option primary text (the `.mdc-list-item__primary-text` used by MDC)
+   and list items are white both inside the overlay and inside the panel when
+   it's rendered. This covers both MDC and legacy selectors and the overlay
+   which is outside the component tree. */
+::ng-deep .motspassants-library .header-content .sort-field .mat-mdc-select-panel .mdc-list-item__primary-text,
+::ng-deep .motspassants-library .header-content .sort-field .mat-select-panel .mdc-list-item__primary-text,
+::ng-deep .mat-mdc-select-panel .mdc-list-item__primary-text,
+::ng-deep .mat-select-panel .mdc-list-item__primary-text,
+::ng-deep .mat-mdc-select-panel .mat-mdc-list .mat-mdc-list-item,
+::ng-deep .mat-select-panel .mat-mdc-list .mat-mdc-list-item {
+	color: #fff !important;
+	opacity: 1 !important;
+}
+
+/* Reserve space for the validation icon so intrinsic panel width accounts for it.
+   Adjust this value if your validation icon is wider; we use a CSS variable so
+   it can be overridden elsewhere if necessary. */
+:root { --select-validation-icon-space: 36px; }
+
+::ng-deep .motspassants-library .header-content .sort-field .mat-mdc-select-panel,
+::ng-deep .motspassants-library .header-content .sort-field .mat-select-panel,
+::ng-deep .cdk-overlay-pane .mat-mdc-select-panel,
+::ng-deep .cdk-overlay-pane .mat-select-panel {
+	padding-right: var(--select-validation-icon-space) !important;
+	box-sizing: content-box !important; /* keep padding outside intrinsic content width */
+}
+
+/* Also add equivalent right padding to list items so their measured width
+   includes the icon space when computing the panel's intrinsic size. */
+::ng-deep .mat-mdc-select-panel .mat-mdc-list .mat-mdc-list-item,
+::ng-deep .mat-select-panel .mat-mdc-list .mat-mdc-list-item {
+	padding-right: var(--select-validation-icon-space) !important;
+}
+
+/* And make sure the trigger shows the text without being overlapped by the icon. */
+::ng-deep .motspassants-library .header-content .sort-field .mat-select-trigger,
+::ng-deep .motspassants-library .header-content .sort-field .mat-mdc-select-trigger {
+	padding-right: calc(var(--select-validation-icon-space) + 8px) !important;
+
+}
+
+/* Size the select panel to the intrinsic width of its content so the panel
+   is always wide enough to show the largest word without wrapping. We set
+   width:auto and min-width:max-content (or fit-content) and force list items
+   to not wrap. This targets both MDC and legacy panels which are rendered
+   into overlay containers outside the component tree. */
+::ng-deep .motspassants-library .header-content .sort-field .mat-mdc-select-panel,
+::ng-deep .motspassants-library .header-content .sort-field .mat-select-panel,
+::ng-deep .cdk-overlay-pane .mat-mdc-select-panel,
+::ng-deep .cdk-overlay-pane .mat-select-panel {
+	width: auto !important;
+	display: inline-block !important;
+	min-width: -webkit-min-content !important; /* legacy WebKit */
+	min-width: -moz-min-content !important; /* legacy Firefox */
+	min-width: min-content !important;
+	min-width: max-content !important; /* fallback where supported */
+}
+
+/* Prevent wrapping in option text so the panel width grows to the longest
+   unbroken word. Use nowrap on the primary-text spans and option content. */
+::ng-deep .motspassants-library .header-content .sort-field .mat-mdc-select-panel .mdc-list-item__primary-text,
+::ng-deep .motspassants-library .header-content .sort-field .mat-select-panel .mdc-list-item__primary-text,
+::ng-deep .motspassants-library .header-content .sort-field .mat-mdc-select-panel .mat-mdc-list .mat-mdc-list-item,
+::ng-deep .motspassants-library .header-content .sort-field .mat-select-panel .mat-mdc-list .mat-mdc-list-item {
+	white-space: nowrap !important;
+}
+
+/* Trigger text when the menu is open should also be white. */
+::ng-deep .motspassants-library .header-content .sort-field .mat-select.mat-select-open .mat-select-value-text,
+::ng-deep .motspassants-library .header-content .sort-field .mat-select-trigger.mat-select-open .mat-select-value-text,
+::ng-deep .motspassants-library .header-content .sort-field .mat-mdc-select.mat-mdc-select-open .mat-mdc-select-value-text,
+::ng-deep .motspassants-library .header-content .sort-field .mat-mdc-select-trigger.mat-mdc-select-open .mat-mdc-select-value-text {
+	color: #fff !important;
+}
+
+/* Remove any lingering outline/box from form-field wrappers */
+::ng-deep .motspassants-library .header-content .sort-field .mat-form-field-infix,
+::ng-deep .motspassants-library .header-content .sort-field .mat-form-field-wrapper,
+::ng-deep .motspassants-library .header-content .sort-field .mat-form-field-outline { 
+	display: none !important;
+	padding: 0 !important;
+	margin: 0 !important;
+}
+
+/* Keep option list readable when open */
+::ng-deep .mat-mdc-select-panel .mat-mdc-list .mat-mdc-list-item { font-size:0.95rem; }
+
+/* Reuse rest of existing styles (kept unchanged) */
+.loading-content h3{ margin:24px 0 8px 0; font-size:1.5rem; font-weight:400 }
+.loading-content p{ margin:0; opacity:.7; font-size:1rem }
+.empty-library{ display:flex; justify-content:center; align-items:center; min-height:60vh; text-align:center }
+.empty-content{ max-width:500px; padding:48px 24px }
+.empty-icon{ font-size:6rem; color:#555; margin-bottom:24px }
+.empty-content h2{ font-size:2rem; font-weight:300; margin:0 0 16px 0; color:#fff }
+.empty-content p{ font-size:1.1rem; line-height:1.6; opacity:.8; margin:0 0 32px 0 }
+.library-content{ padding:0 }
+.books-grid{ grid-template-columns:repeat(auto-fill,240px); gap:24px; padding:32px; margin:0 auto }
+.book-cover{ position:relative; width:100%; height:100%; overflow:hidden }
+.cover-image{ width:100%; height:100%; object-fit:cover }
+.cover-placeholder{ display:flex; flex-direction:column; align-items:center; justify-content:center; padding:16px }
+.book-title-text{ font-size:1rem; line-height:1.2; word-break:break-word }
+.book-overlay{ position:absolute; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,.7); display:flex; align-items:center; justify-content:center; opacity:0; transition:opacity .3s ease; z-index:2 }
+.book-card:hover .book-overlay{ opacity:1 }
+.book-actions{ display:flex; gap:16px }
+.action-btn{ width:80px; height:80px }
+.book-info{ position:absolute; left:0; right:0; bottom:0; padding:8px 10px; text-align:left; background:linear-gradient(180deg,rgba(0,0,0,0) 0%,rgba(0,0,0,.65) 40%,rgba(0,0,0,.85) 100%); z-index:1 }
+.book-title{ font-size:1.1rem; font-weight:600; margin:0 0 4px 0; color:#fff; line-height:1.2; height:2.4em; overflow:hidden; display:-webkit-box; -webkit-line-clamp:2; line-clamp:2; -webkit-box-orient:vertical }
+.book-author{ font-size:.9rem; margin:0 0 2px 0; opacity:.85; color:#b3e5fc }
+.book-series{ font-size:.85rem; margin:0 0 2px 0; opacity:.75; color:#81d4fa; font-style:italic }
+.book-date{ font-size:.8rem; margin:0; opacity:.7; color:#4fc3f7 }
+.load-more-container{ display:flex; flex-direction:column; align-items:center; padding:40px 20px; gap:16px }
+.load-more-container p{ margin:0; opacity:.7 }
+.load-more-error{ display:flex; flex-direction:column; align-items:center; padding:40px 20px; gap:16px }
+.load-more-error p{ margin:0; color:#f44336 }
+.end-of-list{ display:flex; justify-content:center; padding:40px 20px; opacity:.6 }
+.end-of-list p{ margin:0; font-style:italic }
+@media (max-width:768px){ .books-grid{ grid-template-columns:repeat(auto-fill,240px); justify-content:center; gap:24px; padding:24px } .book-actions{ opacity:1; position:static; margin-top:8px; justify-content:center } .action-btn{ width:64px; height:64px; min-width:64px } }
+@media (max-width:480px){ .books-grid{ grid-template-columns:repeat(auto-fill,240px); justify-content:center; gap:16px; padding:16px } .library-title{ font-size:1.75rem } .fab-search{ width:64px; height:64px; min-width:64px } }

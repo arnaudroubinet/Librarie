@@ -155,10 +155,14 @@ body, .motspassants-container { background: var(--app-bg); color: var(--content-
   padding-left: 12px; /* compact left padding */
 }
 
-/* Ensure every text node inside the select panel is white (covers mat-option internals) */
-.mat-mdc-select-panel, .mat-mdc-select-panel * {
+/* Avoid forcing white on every child; keep readable defaults and allow component-level muted tones */
+.mat-mdc-select-panel {
+  color: #ffffff !important; /* default panel text color */
+}
+.mat-mdc-select-panel .mat-mdc-list .mat-mdc-list-item {
   color: #ffffff !important;
 }
+/* Allow component CSS to set muted tones for specific items like 'recently-updated' */
 
 /* Style the selected option to mirror the left menu selection: white left bar + white text */
 

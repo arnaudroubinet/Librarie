@@ -1,16 +1,13 @@
 import { Component, OnInit, CUSTOM_ELEMENTS_SCHEMA, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
-import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatChipsModule } from '@angular/material/chips';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatRippleModule } from '@angular/material/core';
-import { MatBadgeModule } from '@angular/material/badge';
 import { MatSelectModule } from '@angular/material/select';
-import { MatFormFieldModule } from '@angular/material/form-field';
+// MatFormFieldModule removed to use plain inline container for the select
 import { BookService } from '../services/book.service';
 import { Book, SortField, SortDirection, BookSortCriteria, SortOption } from '../models/book.model';
 import { environment } from '../../environments/environment';
@@ -24,16 +21,12 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
   imports: [
     CommonModule,
     RouterModule,
-    MatCardModule,
     MatButtonModule,
     MatIconModule,
     MatProgressSpinnerModule,
-    MatChipsModule,
     MatSnackBarModule,
     MatRippleModule,
-    MatBadgeModule,
-    MatSelectModule,
-    MatFormFieldModule,
+  MatSelectModule,
     InfiniteScrollDirective
   ],
   template: `
@@ -49,7 +42,16 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
           </h1>
           <p class="library-subtitle">Discover and explore your digital book collection</p>
         
-          <!-- sort menu removed per request -->
+          <!-- Sort control: matches look-and-feel used across the app. -->
+          <div class="header-actions">
+            <div class="sort-field">
+              <mat-select [value]="selectedSortOption()" (selectionChange)="onSortChange($event.value)" [displayWith]="displaySort" disableRipple>
+                @for (opt of sortOptions; track opt.label) {
+                  <mat-option [value]="opt">{{ opt.label }}</mat-option>
+                }
+              </mat-select>
+            </div>
+          </div>
         </div>
       </div>
       
@@ -376,6 +378,11 @@ export class BookListComponent implements OnInit {
     if (match) {
       this.onSortChange(match);
     }
+  }
+
+  // Show human readable label when an object is selected in mat-select
+  displaySort(option?: SortOption): string {
+    return option ? option.label : '';
   }
 
 
