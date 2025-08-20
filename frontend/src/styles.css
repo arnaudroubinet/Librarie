@@ -31,8 +31,9 @@ a:hover, a:focus { color: #ffffff; text-decoration: underline; }
   --content-fg: #ffffff;
   --muted-fg: #888;
   --border-color: rgba(255, 255, 255, 0.1);
-  --panel-bg: rgba(255, 255, 255, 0.05);
-  --panel-bg-soft: rgba(255, 255, 255, 0.03);
+  /* Solid panel backgrounds (no transparency) */
+  --panel-bg: #1f1f1f; /* same as app background to remove transparency */
+  --panel-bg-soft: #151515; /* slightly darker for soft panels */
   --accent-grad-start: #4fc3f7;
   --accent-grad-end: #29b6f6;
 }
@@ -128,3 +129,101 @@ body, .motspassants-container { background: var(--app-bg); color: var(--content-
 .cta-button:hover,
 .fab-search:hover,
 .btn-primary:hover { transform: translateY(-2px) !important; box-shadow: 0 12px 40px rgba(79, 195, 247, 0.4) !important; }
+
+/* Ensure mat-select overlay panel matches the closed control's panel background */
+/* Global rule because the panel is attached to the overlay container outside component scope */
+.mat-mdc-select-panel {
+  /* Cleaner panel: match app background, subtle frame, minimal shadow */
+  background: var(--app-bg) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255,255,255,0.06) !important;
+  border-radius: 6px !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.45) !important;
+  padding: 4px 0 !important;
+}
+
+/* Make all option text white and readable */
+.mat-mdc-select-panel .mat-mdc-list .mat-mdc-list-item {
+  color: #ffffff !important;
+  background: transparent !important; /* keep inner area clean */
+  padding: 6px 12px !important;
+  position: relative;
+  font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-left: 12px; /* compact left padding */
+}
+
+/* Ensure every text node inside the select panel is white (covers mat-option internals) */
+.mat-mdc-select-panel, .mat-mdc-select-panel * {
+  color: #ffffff !important;
+}
+
+/* Style the selected option to mirror the left menu selection: white left bar + white text */
+
+/* Selected option: show a subtle checkmark on the right (GitHub-like) */
+
+/* Selected option: left checkmark, bold white text */
+.mat-mdc-select-panel .mat-mdc-list .mat-mdc-list-item.mat-mdc-list-item--selected,
+.mat-mdc-select-panel .mat-mdc-list .mat-mdc-list-item[aria-selected="true"] {
+  color: #ffffff !important;
+  font-weight: 600 !important;
+}
+
+/* Show a subtle checkmark on the right for selected items */
+.mat-mdc-select-panel .mat-mdc-list .mat-mdc-list-item.mat-mdc-list-item--selected::after,
+.mat-mdc-select-panel .mat-mdc-list .mat-mdc-list-item[aria-selected="true"]::after {
+  content: '\2713';
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--content-fg) !important;
+  font-size: 0.95rem;
+}
+
+/* Hover state similar to GitHub: gentle lightening */
+.mat-mdc-select-panel .mat-mdc-list .mat-mdc-list-item:hover {
+  background: rgba(255,255,255,0.03) !important;
+}
+
+/* Divider look between groups (simulate GitHub sections) */
+.mat-mdc-select-panel .mat-mdc-list .divider {
+  height: 1px;
+  background: rgba(255,255,255,0.03);
+  margin: 6px 0;
+}
+
+/* Section titles if used inside the panel */
+.mat-mdc-select-panel .mat-mdc-list .section-title {
+  padding: 8px 16px;
+  color: rgba(255,255,255,0.6);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+/* Reduce panel padding for a tighter, integrated look */
+.mat-mdc-select-panel .mat-mdc-list { padding: 4px 0 !important; }
+
+/* Style 'Recently Updated' option/value to match page description muted color */
+.mat-mdc-select.recently-updated .mat-mdc-select-value,
+.mat-mdc-select.recently-updated .mat-mdc-select-value * {
+  color: var(--muted-fg) !important;
+}
+
+.mat-mdc-select-panel .mat-mdc-list .mat-mdc-list-item.recently-updated {
+  color: var(--muted-fg) !important;
+  font-weight: 500 !important;
+}
+
+/* Consolidated base styles for book grids and cards used across components */
+.books-grid{display:grid;gap:24px;justify-content:center}
+.book-card{background:rgba(255,255,255,0.05);border-radius:12px;overflow:hidden;transition:all .3s ease;cursor:pointer;position:relative;border:1px solid rgba(255,255,255,.1)}
+.book-card:hover{transform:translateY(-4px);box-shadow:0 12px 24px rgba(0,0,0,.35);border-color:rgba(79,195,247,.5)}
+.book-cover{position:relative;overflow:hidden}
+.cover-image{width:100%;height:100%;object-fit:cover;transition:transform .3s ease}
+.cover-placeholder{display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#2a2a2a 0%,#1a1a1a 100%);color:#cfcfcf}
+.book-info{padding:12px}
+.book-title{font-weight:600;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.action-btn{background:rgba(255,255,255,.2)!important;color:#fff!important;transition:all .3s ease!important}

@@ -48,18 +48,8 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
             </button>
           </h1>
           <p class="library-subtitle">Discover and explore your digital book collection</p>
-        </div>
         
-        <!-- Sorting Controls -->
-        <div class="sorting-controls">
-          <mat-form-field appearance="outline" class="sort-field">
-            <mat-label>Sort by</mat-label>
-            <mat-select [value]="selectedSortOption()" (selectionChange)="onSortChange($event.value)">
-              @for (option of sortOptions; track option.field + '_' + option.direction) {
-                <mat-option [value]="option">{{ option.label }}</mat-option>
-              }
-            </mat-select>
-          </mat-form-field>
+          <!-- sort menu removed per request -->
         </div>
       </div>
       
@@ -378,6 +368,16 @@ export class BookListComponent implements OnInit {
     
     this.snackBar.open(`Sorted by ${sortOption.label}`, 'Close', { duration: 2000 });
   }
+
+  onNativeSortChange(event: any) {
+    const val = event.target.value as string;
+    const [field, dir] = val.split('_');
+    const match = this.sortOptions.find(o => o.field === field && String(o.direction) === dir);
+    if (match) {
+      this.onSortChange(match);
+    }
+  }
+
 
   private getSortOptionFromCriteria(criteria: BookSortCriteria): SortOption {
     if (!this.sortOptions || this.sortOptions.length === 0) {
