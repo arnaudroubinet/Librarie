@@ -1,16 +1,9 @@
 import { Component, OnInit, CUSTOM_ELEMENTS_SCHEMA, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
-import { MatCardModule } from '@angular/material/card';
-import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatChipsModule } from '@angular/material/chips';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { MatSelectModule } from '@angular/material/select';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatRippleModule } from '@angular/material/core';
-import { MatBadgeModule } from '@angular/material/badge';
+import { MatSnackBar } from '@angular/material/snack-bar';
+import { MATERIAL_MODULES } from '../shared/materials';
+import { getInitials, getShortBio, formatDates } from '../utils/author-utils';
 import { AuthorService } from '../services/author.service';
 import { Author } from '../models/author.model';
 import { SortField, SortDirection, SortOption } from '../models/book.model';
@@ -25,16 +18,7 @@ import { environment } from '../../environments/environment';
   imports: [
     CommonModule,
     RouterModule,
-    MatCardModule,
-    MatButtonModule,
-    MatIconModule,
-    MatProgressSpinnerModule,
-    MatChipsModule,
-    MatSnackBarModule,
-    MatRippleModule,
-    MatBadgeModule,
-  MatFormFieldModule,
-  MatSelectModule,
+    ...MATERIAL_MODULES,
     InfiniteScrollDirective
   ],
   template: `
@@ -203,7 +187,13 @@ export class AuthorListComponent implements OnInit {
 
 
   trackByFn(index: number, item: Author | AlphabeticalSeparator): string {
-    return this.infiniteScrollService.isSeparator(item) ? item.id : item.id;
+    // Return a stable key for separators and authors.
+    if (this.infiniteScrollService.isSeparator(item)) {
+      // AlphabeticalSeparator likely has a `letter` property; prefix to avoid collisions.
+      return `separator-${(item as AlphabeticalSeparator).letter}`;
+    }
+    // For authors, prefer id but fall back to an index-based key if missing.
+    return (item as Author).id ?? `author-${index}`;
   }
 
   onImageError(event: any) {
@@ -233,31 +223,9 @@ export class AuthorListComponent implements OnInit {
     return Math.max(10, pageSize);
   }
 
-  getInitials(name: string): string {
-    return name
-      .split(' ')
-      .map(part => part.charAt(0))
-      .join('')
-      .toUpperCase()
-      .substring(0, 2);
-  }
-
-  getShortBio(bio: string): string {
-    if (!bio) return '';
-    const maxLength = 120;
-    return bio.length > maxLength ? bio.substring(0, maxLength) + '...' : bio;
-  }
-
-  formatDates(birthDate?: string, deathDate?: string): string {
-    const birth = birthDate ? new Date(birthDate).getFullYear() : '?';
-    const death = deathDate ? new Date(deathDate).getFullYear() : '';
-    
-    if (death) {
-      return `${birth} - ${death}`;
-    } else {
-      return `Born ${birth}`;
-    }
-  }
+  getInitials = getInitials;
+  getShortBio = getShortBio;
+  formatDates = formatDates;
 
   openAuthorDetails(event: Event, authorId: string) {
     event.stopPropagation();

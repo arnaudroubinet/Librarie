@@ -1,15 +1,9 @@
 import { Component, OnInit, CUSTOM_ELEMENTS_SCHEMA, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
-import { MatCardModule } from '@angular/material/card';
-import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatChipsModule } from '@angular/material/chips';
-import { MatSelectModule } from '@angular/material/select';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { MatRippleModule } from '@angular/material/core';
-import { MatBadgeModule } from '@angular/material/badge';
+import { MatSnackBar } from '@angular/material/snack-bar';
+import { MATERIAL_MODULES } from '../shared/materials';
+import { getShortTitle as utilGetShortTitle } from '../utils/author-utils';
 import { SeriesService } from '../services/series.service';
 import { BookSortCriteria, SortField, SortDirection, SortOption } from '../models/book.model';
 import { environment } from '../../environments/environment';
@@ -24,15 +18,7 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
   imports: [
     CommonModule,
     RouterModule,
-    MatCardModule,
-    MatButtonModule,
-    MatIconModule,
-    MatProgressSpinnerModule,
-  MatChipsModule,
-    MatSnackBarModule,
-    MatRippleModule,
-    MatBadgeModule,
-  MatSelectModule,
+    ...MATERIAL_MODULES,
     InfiniteScrollDirective
   ],
   template: `
@@ -234,7 +220,7 @@ export class SeriesListComponent implements OnInit {
     }
   }
 
-  getShortTitle(title: string): string { return title.length > 25 ? title.substring(0, 25) + '...' : title; }
+  getShortTitle = utilGetShortTitle;
 
   getShortDescription(description: string): string { return description.length > 100 ? description.substring(0, 100) + '...' : description; }
 

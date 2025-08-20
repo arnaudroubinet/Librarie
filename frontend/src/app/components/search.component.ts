@@ -2,19 +2,9 @@ import { Component, OnDestroy, signal, CUSTOM_ELEMENTS_SCHEMA } from '@angular/c
 import { CommonModule, Location } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { MatCardModule } from '@angular/material/card';
-import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
-import { MatInputModule } from '@angular/material/input';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatChipsModule } from '@angular/material/chips';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { MatSelectModule } from '@angular/material/select';
-import { MatExpansionModule } from '@angular/material/expansion';
-import { MatDatepickerModule } from '@angular/material/datepicker';
-import { MatNativeDateModule } from '@angular/material/core';
-import { MatRippleModule } from '@angular/material/core';
+import { MatSnackBar } from '@angular/material/snack-bar';
+import { MATERIAL_MODULES } from '../shared/materials';
+import { getShortTitle as utilGetShortTitle, formatDate as utilFormatDate } from '../utils/author-utils';
 import { BookService } from '../services/book.service';
 import { SearchService } from '../services/search.service';
 import { Book, CursorPageResponse, BookSearchCriteria } from '../models/book.model';
@@ -27,23 +17,11 @@ import { environment } from '../../environments/environment';
   standalone: true,
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   imports: [
-    CommonModule,
-    FormsModule,
-    ReactiveFormsModule,
-    RouterModule,
-    MatCardModule,
-    MatButtonModule,
-    MatIconModule,
-    MatInputModule,
-    MatFormFieldModule,
-    MatProgressSpinnerModule,
-    MatChipsModule,
-    MatSnackBarModule,
-    MatSelectModule,
-    MatExpansionModule,
-    MatDatepickerModule,
-    MatNativeDateModule,
-    MatRippleModule
+  CommonModule,
+  FormsModule,
+  ReactiveFormsModule,
+  RouterModule,
+  ...MATERIAL_MODULES
   ],
   template: `
   <div class="motspassants-library motspassants-search">
@@ -769,13 +747,8 @@ export class SearchComponent implements OnDestroy {
     this.performQuickSearch();
   }
 
-  getYear(dateString: string): string {
-    return new Date(dateString).getFullYear().toString();
-  }
-
-  getShortTitle(title: string): string {
-    return title.length > 30 ? title.substring(0, 30) + '...' : title;
-  }
+  getYear(dateString: string): string { return new Date(dateString).getFullYear().toString(); }
+  getShortTitle = utilGetShortTitle;
 
   onImageError(event: any) {
     event.target.style.display = 'none';

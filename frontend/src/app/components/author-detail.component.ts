@@ -1,13 +1,9 @@
 import { Component, OnInit, signal, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
-import { MatCardModule } from '@angular/material/card';
-import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatChipsModule } from '@angular/material/chips';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { MatDividerModule } from '@angular/material/divider';
+import { MatSnackBar } from '@angular/material/snack-bar';
+import { MATERIAL_MODULES } from '../shared/materials';
+import { getInitials as utilGetInitials, formatDates as utilFormatDates, formatDate as utilFormatDate, getShortTitle as utilGetShortTitle } from '../utils/author-utils';
 import { AuthorService } from '../services/author.service';
 import { Author } from '../models/author.model';
 import { BookService } from '../services/book.service';
@@ -22,14 +18,8 @@ import { forkJoin } from 'rxjs';
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   imports: [
     CommonModule,
-  RouterModule,
-    MatCardModule,
-    MatButtonModule,
-    MatIconModule,
-    MatProgressSpinnerModule,
-    MatChipsModule,
-    MatSnackBarModule,
-    MatDividerModule
+    RouterModule,
+    ...MATERIAL_MODULES
   ],
   template: `
   <div class="author-detail-container motspassants-library">
@@ -373,42 +363,17 @@ export class AuthorDetailComponent implements OnInit {
     event.target.style.display = 'none';
   }
 
-  getInitials(name: string): string {
-    return name
-      .split(' ')
-      .map(part => part.charAt(0))
-      .join('')
-      .toUpperCase()
-      .substring(0, 2);
-  }
+  getInitials = utilGetInitials;
 
-  formatDate(dateString: string): string {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-  }
+  formatDate = (d: string) => utilFormatDate(d, 'en-US');
 
-  formatDates(birthDate?: string, deathDate?: string): string {
-    const birth = birthDate ? new Date(birthDate).getFullYear() : '?';
-    const death = deathDate ? new Date(deathDate).getFullYear() : '';
-    
-    if (death) {
-      return `${birth} - ${death}`;
-    } else {
-      return `Born ${birth}`;
-    }
-  }
+  formatDates = utilFormatDates;
 
   openWebsite(url: string) {
     window.open(url, '_blank');
   }
 
-  getShortTitle(title: string): string {
-    return title && title.length > 30 ? title.substring(0, 30) + '...' : title;
-  }
+  getShortTitle = utilGetShortTitle;
 
   isArray(value: any): boolean {
     return Array.isArray(value);
