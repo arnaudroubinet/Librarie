@@ -652,6 +652,7 @@ public class SeriesController {
         return SeriesListItemDto.builder()
             .id(series.getId())
             .name(series.getName())
+            .sortName(series.getSortName())
             .bookCount(series.getTotalBooks())
             .hasPicture(series.getHasPicture())
             .build();
