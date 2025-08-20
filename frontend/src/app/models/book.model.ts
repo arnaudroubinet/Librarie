@@ -108,6 +108,7 @@ export interface SupportedFormatsResponse {
 export enum SortField {
   UPDATED_AT = 'UPDATED_AT',
   TITLE_SORT = 'TITLE_SORT', 
+  SORT_NAME = 'SORT_NAME',
   PUBLICATION_DATE = 'PUBLICATION_DATE'
 }
 

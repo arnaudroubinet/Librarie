@@ -23,14 +23,13 @@ public class SeriesRepositoryAdapter implements SeriesRepositoryPort {
 
     @Override
     public List<Series> findAll(int offset, int limit) {
-    // Lightweight projection for series list page: only fetch columns needed by UI and pagination
-    String sql = "SELECT id, name, book_count, has_picture, created_at FROM series ORDER BY name OFFSET ? LIMIT ?";
+        String sql = "SELECT id, name, book_count, has_picture, created_at FROM series ORDER BY name OFFSET ? LIMIT ?";
         List<Series> list = new ArrayList<>();
         try (Connection conn = dataSource.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, Math.max(0, offset));
             ps.setInt(2, Math.max(1, limit));
             try (ResultSet rs = ps.executeQuery()) {
-        while (rs.next()) list.add(mapLite(rs));
+                while (rs.next()) list.add(mapLite(rs));
             }
         } catch (SQLException e) {
             throw new RuntimeException("DB error listing series", e);
@@ -40,8 +39,7 @@ public class SeriesRepositoryAdapter implements SeriesRepositoryPort {
 
     @Override
     public org.motpassants.domain.core.model.PageResult<Series> findAll(String cursor, int limit) {
-    // Lightweight projection for series list page (cursor-based): minimize selected columns
-    String baseSql = "SELECT id, name, book_count, has_picture, created_at FROM series ";
+        String baseSql = "SELECT id, name, book_count, has_picture, created_at, sort_name FROM series ";
         String orderClause = " ORDER BY created_at DESC, id DESC";
 
         java.sql.Timestamp cursorTimestamp = null;
@@ -52,13 +50,13 @@ public class SeriesRepositoryAdapter implements SeriesRepositoryPort {
                 String[] parts = decoded.split("\\|");
                 if (parts.length == 2) {
                     long epochNumber = Long.parseLong(parts[0]);
-                    if (epochNumber >= 1_000_000_000_000_000L) { // micros
+                    if (epochNumber >= 1_000_000_000_000_000L) {
                         long seconds = epochNumber / 1_000_000L;
                         long microsRemainder = epochNumber % 1_000_000L;
                         long nanos = microsRemainder * 1_000L;
                         cursorTimestamp = java.sql.Timestamp.from(java.time.Instant.ofEpochSecond(seconds, nanos));
                     } else {
-                        cursorTimestamp = new java.sql.Timestamp(epochNumber); // legacy millis
+                        cursorTimestamp = new java.sql.Timestamp(epochNumber);
                     }
                     cursorUuid = java.util.UUID.fromString(parts[1]);
                 }
@@ -74,13 +72,13 @@ public class SeriesRepositoryAdapter implements SeriesRepositoryPort {
         }
         sql.append(orderClause).append(" LIMIT ").append(Math.max(1, limit + 1));
 
-    List<Series> items = new ArrayList<>();
+        List<Series> items = new ArrayList<>();
         boolean hasNext = false;
         String nextCursor = null;
         int totalCount = 0;
 
         try (Connection conn = dataSource.getConnection()) {
-        try (PreparedStatement ps = conn.prepareStatement(sql.toString())) {
+            try (PreparedStatement ps = conn.prepareStatement(sql.toString())) {
                 int idx = 1;
                 if (cursorTimestamp != null && cursorUuid != null) {
                     ps.setTimestamp(idx++, cursorTimestamp);
@@ -88,11 +86,10 @@ public class SeriesRepositoryAdapter implements SeriesRepositoryPort {
                     ps.setObject(idx++, cursorUuid);
                 }
                 try (ResultSet rs = ps.executeQuery()) {
-            while (rs.next()) items.add(mapLite(rs));
+                    while (rs.next()) items.add(mapLite(rs));
                 }
             }
 
-            // Count total for UI
             try (PreparedStatement cps = conn.prepareStatement("SELECT COUNT(*) FROM series")) {
                 try (ResultSet rs = cps.executeQuery()) {
                     if (rs.next()) totalCount = rs.getInt(1);
@@ -127,6 +124,213 @@ public class SeriesRepositoryAdapter implements SeriesRepositoryPort {
     }
 
     @Override
+    public org.motpassants.domain.core.model.PageResult<Series> findAll(String cursor, int limit, org.motpassants.domain.core.model.SeriesSortCriteria sortCriteria) {
+        // Normalize sort criteria
+        if (sortCriteria == null) sortCriteria = org.motpassants.domain.core.model.SeriesSortCriteria.DEFAULT;
+
+        // Handle timestamp fields (e.g., UPDATED_AT)
+        if (sortCriteria.getField().isTimestampField()) {
+            String sortColumn = sortCriteria.getField().getColumnName();
+            String baseSql = "SELECT id, name, sort_name, description, book_count, has_picture, metadata, created_at, updated_at FROM series ";
+            String orderClause = " ORDER BY " + sortColumn + " " + sortCriteria.getDirection().getSqlKeyword() + ", created_at DESC, id DESC";
+
+            // Parse cursor: expected format for timestamp sort: base64("<epochMicros>|<createdAtMicros>|<uuid>")
+            java.sql.Timestamp cursorSortTs = null;
+            java.sql.Timestamp cursorCreatedTs = null;
+            UUID cursorUuid = null;
+            if (cursor != null && !cursor.isBlank()) {
+                try {
+                    String decoded = new String(java.util.Base64.getUrlDecoder().decode(cursor));
+                    String[] parts = decoded.split("\\|");
+                    if (parts.length == 3) {
+                        long sortEpoch = Long.parseLong(parts[0]);
+                        if (sortEpoch >= 1_000_000_000_000_000L) {
+                            long seconds = sortEpoch / 1_000_000L;
+                            long microsRemainder = sortEpoch % 1_000_000L;
+                            long nanos = microsRemainder * 1_000L;
+                            cursorSortTs = java.sql.Timestamp.from(java.time.Instant.ofEpochSecond(seconds, nanos));
+                        } else {
+                            cursorSortTs = new java.sql.Timestamp(sortEpoch);
+                        }
+
+                        long createdEpoch = Long.parseLong(parts[1]);
+                        if (createdEpoch >= 1_000_000_000_000_000L) {
+                            long seconds = createdEpoch / 1_000_000L;
+                            long microsRemainder = createdEpoch % 1_000_000L;
+                            long nanos = microsRemainder * 1_000L;
+                            cursorCreatedTs = java.sql.Timestamp.from(java.time.Instant.ofEpochSecond(seconds, nanos));
+                        } else {
+                            cursorCreatedTs = new java.sql.Timestamp(createdEpoch);
+                        }
+
+                        cursorUuid = java.util.UUID.fromString(parts[2]);
+                    }
+                } catch (Exception ignore) {
+                    cursorSortTs = null; cursorCreatedTs = null; cursorUuid = null;
+                }
+            }
+
+            StringBuilder sql = new StringBuilder(baseSql);
+            if (cursorSortTs != null && cursorCreatedTs != null && cursorUuid != null) {
+                boolean isDesc = sortCriteria.getDirection().getSqlKeyword().equals("DESC");
+                if (isDesc) {
+                    sql.append("WHERE (").append(sortColumn).append(" < ? OR (").append(sortColumn).append(" = ? AND created_at < ?) OR (").append(sortColumn).append(" = ? AND created_at = ? AND id < ?))");
+                } else {
+                    sql.append("WHERE (").append(sortColumn).append(" > ? OR (").append(sortColumn).append(" = ? AND created_at < ?) OR (").append(sortColumn).append(" = ? AND created_at = ? AND id < ?))");
+                }
+            }
+            sql.append(orderClause).append(" LIMIT ").append(Math.max(1, limit + 1));
+
+            List<Series> items = new ArrayList<>();
+            boolean hasNext = false;
+            String nextCursor = null;
+            int totalCount = 0;
+
+            try (Connection conn = dataSource.getConnection()) {
+                try (PreparedStatement ps = conn.prepareStatement(sql.toString())) {
+                    int idx = 1;
+                    if (cursorSortTs != null && cursorCreatedTs != null && cursorUuid != null) {
+                        // Bind: sortTimestamp x3, created_at x2, uuid x1 (use setTimestamp for timestamp binds)
+                        ps.setTimestamp(idx++, cursorSortTs);
+                        ps.setTimestamp(idx++, cursorSortTs);
+                        ps.setTimestamp(idx++, cursorCreatedTs);
+                        ps.setTimestamp(idx++, cursorSortTs);
+                        ps.setTimestamp(idx++, cursorCreatedTs);
+                        ps.setObject(idx++, cursorUuid);
+                    }
+                    try (ResultSet rs = ps.executeQuery()) {
+                        while (rs.next()) items.add(map(rs)); // need updated_at from full mapper
+                    }
+                }
+                try (PreparedStatement cps = conn.prepareStatement("SELECT COUNT(*) FROM series")) {
+                    try (ResultSet rs = cps.executeQuery()) { if (rs.next()) totalCount = rs.getInt(1); }
+                }
+            } catch (SQLException e) { throw new RuntimeException("DB error listing series (sorted by timestamp)", e); }
+
+            if (items.size() > limit) {
+                hasNext = true;
+                Series lastOfPage = items.get(limit - 1);
+                items = new ArrayList<>(items.subList(0, limit));
+
+                // Build next cursor from last item
+                java.time.OffsetDateTime sortOdt = null;
+                if (sortColumn.equals("updated_at")) sortOdt = lastOfPage.getUpdatedAt();
+                long sortMicros = 0L;
+                if (sortOdt != null) {
+                    long seconds = sortOdt.toInstant().getEpochSecond();
+                    long nanos = sortOdt.toInstant().getNano();
+                    sortMicros = seconds * 1_000_000L + (nanos / 1_000L);
+                }
+
+                java.time.OffsetDateTime createdAt = lastOfPage.getCreatedAt();
+                long createdMicros = 0L;
+                if (createdAt != null) {
+                    long seconds = createdAt.toInstant().getEpochSecond();
+                    long nanos = createdAt.toInstant().getNano();
+                    createdMicros = seconds * 1_000_000L + (nanos / 1_000L);
+                }
+                UUID id = lastOfPage.getId();
+
+                String raw = sortMicros + "|" + createdMicros + "|" + id;
+                nextCursor = java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(raw.getBytes());
+            }
+            return new org.motpassants.domain.core.model.PageResult<>(items, nextCursor, null, hasNext, false, totalCount);
+        }
+
+        // Handle string sort field (SORT_NAME)
+        if (sortCriteria.getField() == org.motpassants.domain.core.model.SortField.SORT_NAME) {
+            // Use the full projection because we call map(rs) which expects description, metadata and updated_at fields
+            String baseSql = "SELECT id, name, sort_name, description, book_count, has_picture, metadata, created_at, updated_at FROM series ";
+            String orderClause = " ORDER BY sort_name " + sortCriteria.getDirection().getSqlKeyword() + ", created_at DESC, id DESC";
+
+            String cursorSortValue = null;
+            java.sql.Timestamp cursorTimestamp = null;
+            UUID cursorUuid = null;
+            if (cursor != null && !cursor.isBlank()) {
+                try {
+                    String decoded = new String(java.util.Base64.getUrlDecoder().decode(cursor));
+                    String[] parts = decoded.split("\\|");
+                    if (parts.length == 3) {
+                        try { cursorSortValue = java.net.URLDecoder.decode(parts[0], "UTF-8"); } catch (Exception ex) { cursorSortValue = parts[0]; }
+
+                        long createdAtNumber = Long.parseLong(parts[1]);
+                        if (createdAtNumber >= 1_000_000_000_000_000L) {
+                            long seconds = createdAtNumber / 1_000_000L;
+                            long microsRemainder = createdAtNumber % 1_000_000L;
+                            long nanos = microsRemainder * 1_000L;
+                            cursorTimestamp = java.sql.Timestamp.from(java.time.Instant.ofEpochSecond(seconds, nanos));
+                        } else {
+                            cursorTimestamp = new java.sql.Timestamp(createdAtNumber);
+                        }
+                        cursorUuid = java.util.UUID.fromString(parts[2]);
+                    }
+                } catch (Exception ignore) {
+                    cursorSortValue = null; cursorTimestamp = null; cursorUuid = null;
+                }
+            }
+
+            StringBuilder sql = new StringBuilder(baseSql);
+            if (cursorSortValue != null && cursorTimestamp != null && cursorUuid != null) {
+                boolean isDesc = sortCriteria.getDirection().getSqlKeyword().equals("DESC");
+                if (isDesc) {
+                    sql.append("WHERE (sort_name < ? OR (sort_name = ? AND created_at < ?) OR (sort_name = ? AND created_at = ? AND id < ?))");
+                } else {
+                    sql.append("WHERE (sort_name > ? OR (sort_name = ? AND created_at < ?) OR (sort_name = ? AND created_at = ? AND id < ?))");
+                }
+            }
+            sql.append(orderClause).append(" LIMIT ").append(Math.max(1, limit + 1));
+
+            List<Series> items = new ArrayList<>();
+            boolean hasNext = false;
+            String nextCursor = null;
+            int totalCount = 0;
+            try (Connection conn = dataSource.getConnection()) {
+                try (PreparedStatement ps = conn.prepareStatement(sql.toString())) {
+                    int idx = 1;
+                    if (cursorSortValue != null && cursorTimestamp != null && cursorUuid != null) {
+                        ps.setString(idx++, cursorSortValue);
+                        ps.setString(idx++, cursorSortValue);
+                        ps.setTimestamp(idx++, cursorTimestamp);
+                        ps.setString(idx++, cursorSortValue);
+                        ps.setTimestamp(idx++, cursorTimestamp);
+                        ps.setObject(idx++, cursorUuid);
+                    }
+                    try (ResultSet rs = ps.executeQuery()) {
+                        while (rs.next()) items.add(map(rs));
+                    }
+                }
+                try (PreparedStatement cps = conn.prepareStatement("SELECT COUNT(*) FROM series")) {
+                    try (ResultSet rs = cps.executeQuery()) { if (rs.next()) totalCount = rs.getInt(1); }
+                }
+            } catch (SQLException e) { throw new RuntimeException("DB error listing series (sorted)", e); }
+
+            if (items.size() > limit) {
+                hasNext = true;
+                Series lastOfPage = items.get(limit - 1);
+                items = new ArrayList<>(items.subList(0, limit));
+                java.time.OffsetDateTime createdAt = lastOfPage.getCreatedAt();
+                UUID id = lastOfPage.getId();
+                long createdMicros;
+                if (createdAt != null) {
+                    long seconds = createdAt.toInstant().getEpochSecond();
+                    long nanos = createdAt.toInstant().getNano();
+                    createdMicros = seconds * 1_000_000L + (nanos / 1_000L);
+                } else {
+                    createdMicros = 0L;
+                }
+                String sortVal = lastOfPage.getSortName() != null ? lastOfPage.getSortName() : "";
+                try { sortVal = java.net.URLEncoder.encode(sortVal, "UTF-8"); } catch (Exception ignore) {}
+                String raw = sortVal + "|" + createdMicros + "|" + id;
+                nextCursor = java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(raw.getBytes());
+            }
+            return new org.motpassants.domain.core.model.PageResult<>(items, nextCursor, null, hasNext, false, totalCount);
+        }
+
+        // Fallback to created_at ordering when unknown/unsupported
+        return findAll(cursor, limit);
+    }
+
+    @Override
     public long count() {
         String sql = "SELECT COUNT(*) FROM series";
         try (Connection conn = dataSource.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -138,7 +342,7 @@ public class SeriesRepositoryAdapter implements SeriesRepositoryPort {
 
     @Override
     public Optional<Series> findById(UUID id) {
-    String sql = "SELECT id, name, sort_name, description, book_count, has_picture, metadata, created_at, updated_at FROM series WHERE id=?";
+        String sql = "SELECT id, name, sort_name, description, book_count, has_picture, metadata, created_at, updated_at FROM series WHERE id=?";
         try (Connection conn = dataSource.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setObject(1, id);
             try (ResultSet rs = ps.executeQuery()) {
@@ -152,27 +356,24 @@ public class SeriesRepositoryAdapter implements SeriesRepositoryPort {
 
     @Override
     public Series save(Series series) {
-    // Ensure ID and defaults
-    if (series.getId() == null) series.setId(UUID.randomUUID());
-    if (series.getSortName() == null || series.getSortName().isBlank()) series.setSortName(series.getName());
-    if (series.getCreatedAt() == null) series.setCreatedAt(OffsetDateTime.now());
-    series.setUpdatedAt(series.getUpdatedAt() != null ? series.getUpdatedAt() : OffsetDateTime.now());
+        if (series.getId() == null) series.setId(UUID.randomUUID());
+        if (series.getSortName() == null || series.getSortName().isBlank()) series.setSortName(series.getName());
+        if (series.getCreatedAt() == null) series.setCreatedAt(OffsetDateTime.now());
+        series.setUpdatedAt(series.getUpdatedAt() != null ? series.getUpdatedAt() : OffsetDateTime.now());
 
-    // Upsert by ID
-    if (existsById(series.getId())) return update(series);
+        if (existsById(series.getId())) return update(series);
 
-    String sql = "INSERT INTO series (id, name, sort_name, description, book_count, has_picture, metadata, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, CAST(? AS JSONB), ?, ?)";
+        String sql = "INSERT INTO series (id, name, sort_name, description, book_count, has_picture, metadata, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, CAST(? AS JSONB), ?, ?)";
         try (Connection conn = dataSource.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setObject(1, series.getId());
             ps.setString(2, series.getName());
             ps.setString(3, series.getSortName());
             ps.setString(4, series.getDescription());
             ps.setInt(5, series.getBookCount());
-    // has_picture is NOT NULL DEFAULT FALSE; never write NULL
-    ps.setBoolean(6, series.getHasPicture() != null ? series.getHasPicture() : false);
-        ps.setString(7, writeJson(series.getMetadata()));
-        ps.setObject(8, toTs(series.getCreatedAt()));
-        ps.setObject(9, toTs(series.getUpdatedAt()));
+            ps.setBoolean(6, series.getHasPicture() != null ? series.getHasPicture() : false);
+            ps.setString(7, writeJson(series.getMetadata()));
+            ps.setObject(8, toTs(series.getCreatedAt()));
+            ps.setObject(9, toTs(series.getUpdatedAt()));
             ps.executeUpdate();
             return series;
         } catch (SQLException e) {
@@ -181,17 +382,16 @@ public class SeriesRepositoryAdapter implements SeriesRepositoryPort {
     }
 
     private Series update(Series series) {
-    String sql = "UPDATE series SET name=?, sort_name=?, description=?, book_count=?, has_picture=?, metadata=CAST(? AS JSONB), updated_at=? WHERE id=?";
+        String sql = "UPDATE series SET name=?, sort_name=?, description=?, book_count=?, has_picture=?, metadata=CAST(? AS JSONB), updated_at=? WHERE id=?";
         try (Connection conn = dataSource.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, series.getName());
             ps.setString(2, series.getSortName());
             ps.setString(3, series.getDescription());
             ps.setInt(4, series.getBookCount());
-    // has_picture is NOT NULL DEFAULT FALSE; never write NULL
-    ps.setBoolean(5, series.getHasPicture() != null ? series.getHasPicture() : false);
-        ps.setString(6, writeJson(series.getMetadata()));
-        ps.setObject(7, toTs(OffsetDateTime.now()));
-        ps.setObject(8, series.getId());
+            ps.setBoolean(5, series.getHasPicture() != null ? series.getHasPicture() : false);
+            ps.setString(6, writeJson(series.getMetadata()));
+            ps.setObject(7, toTs(OffsetDateTime.now()));
+            ps.setObject(8, series.getId());
             ps.executeUpdate();
             return series;
         } catch (SQLException e) {
@@ -212,7 +412,7 @@ public class SeriesRepositoryAdapter implements SeriesRepositoryPort {
 
     @Override
     public List<Series> searchByName(String query) {
-    String sql = "SELECT id, name, sort_name, description, book_count, has_picture, metadata, created_at, updated_at FROM series WHERE LOWER(name) LIKE ? OR LOWER(sort_name) LIKE ? ORDER BY name";
+        String sql = "SELECT id, name, sort_name, description, book_count, has_picture, metadata, created_at, updated_at FROM series WHERE LOWER(name) LIKE ? OR LOWER(sort_name) LIKE ? ORDER BY name";
         List<Series> list = new ArrayList<>();
         String like = "%" + query.toLowerCase() + "%";
         try (Connection conn = dataSource.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -255,9 +455,9 @@ public class SeriesRepositoryAdapter implements SeriesRepositoryPort {
         String name = rs.getString("name");
         String sortName = rs.getString("sort_name");
         String description = rs.getString("description");
-    String imagePath = null; // image_path removed from DB; use assets/metadata instead
-    int bookCount = rs.getInt("book_count");
-    Boolean hasPicture = null; boolean hp = rs.getBoolean("has_picture"); if (!rs.wasNull()) hasPicture = hp;
+        String imagePath = null;
+        int bookCount = rs.getInt("book_count");
+        Boolean hasPicture = null; boolean hp = rs.getBoolean("has_picture"); if (!rs.wasNull()) hasPicture = hp;
         String metaJson = rs.getString("metadata");
         Map<String, Object> meta = null;
         try {
@@ -273,7 +473,7 @@ public class SeriesRepositoryAdapter implements SeriesRepositoryPort {
         s.setName(name);
         s.setSortName(sortName);
         s.setDescription(description);
-    s.setImagePath(imagePath);
+        s.setImagePath(imagePath);
         s.setHasPicture(hasPicture);
         s.setBookCount(bookCount);
         s.setMetadata(meta);
@@ -282,7 +482,6 @@ public class SeriesRepositoryAdapter implements SeriesRepositoryPort {
         return s;
     }
 
-    // Lightweight mapper matching the lightweight projection above
     private Series mapLite(ResultSet rs) throws SQLException {
         UUID id = (UUID) rs.getObject("id");
         String name = rs.getString("name");
@@ -293,11 +492,9 @@ public class SeriesRepositoryAdapter implements SeriesRepositoryPort {
         Series s = new Series();
         s.setId(id);
         s.setName(name);
-        // Do not set sortName/description/metadata to avoid extra payload/CPU
         s.setHasPicture(hasPicture);
         s.setBookCount(bookCount);
         s.setCreatedAt(created != null ? created.toInstant().atOffset(java.time.ZoneOffset.UTC) : null);
-        // updatedAt not selected in lightweight query; leave null
         return s;
     }
 

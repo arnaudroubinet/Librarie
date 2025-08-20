@@ -8,7 +8,8 @@ package org.motpassants.domain.core.model;
 public enum SortField {
     UPDATED_AT("updated_at"),
     TITLE_SORT("title_sort"),
-    PUBLICATION_DATE("publication_date");
+    PUBLICATION_DATE("publication_date"),
+    SORT_NAME("sort_name");
 
     private final String columnName;
 

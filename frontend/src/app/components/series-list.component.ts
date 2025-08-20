@@ -1,4 +1,4 @@
-import { Component, OnInit, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
+import { Component, OnInit, CUSTOM_ELEMENTS_SCHEMA, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
@@ -6,10 +6,12 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatChipsModule } from '@angular/material/chips';
+import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatRippleModule } from '@angular/material/core';
 import { MatBadgeModule } from '@angular/material/badge';
 import { SeriesService } from '../services/series.service';
+import { BookSortCriteria, SortField, SortDirection, SortOption } from '../models/book.model';
 import { environment } from '../../environments/environment';
 import { Series } from '../models/series.model';
 import { InfiniteScrollService } from '../services/infinite-scroll.service';
@@ -26,10 +28,11 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
     MatButtonModule,
     MatIconModule,
     MatProgressSpinnerModule,
-    MatChipsModule,
+  MatChipsModule,
     MatSnackBarModule,
     MatRippleModule,
     MatBadgeModule,
+  MatSelectModule,
     InfiniteScrollDirective
   ],
   template: `
@@ -44,6 +47,15 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
             </button>
           </h1>
           <p class="library-subtitle">Explore your book series collections</p>
+          <div class="header-actions">
+            <div class="sort-field">
+              <mat-select [value]="selectedSortOption()" (selectionChange)="onSortChange($event.value)" [displayWith]="displaySort" disableRipple>
+                @for (opt of sortOptions; track opt.label) {
+                  <mat-option [value]="opt">{{ opt.label }}</mat-option>
+                }
+              </mat-select>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -139,15 +151,26 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
 })
 export class SeriesListComponent implements OnInit {
   scrollState;
+  // Sort options for series listing (reuse book sort enums where appropriate)
+  sortOptions: SortOption[] = [
+    { label: 'Recently Updated', field: SortField.UPDATED_AT, direction: SortDirection.DESC },
+    { label: 'Oldest Updated', field: SortField.UPDATED_AT, direction: SortDirection.ASC },
+  { label: 'Title A-Z', field: SortField.SORT_NAME, direction: SortDirection.ASC },
+  { label: 'Title Z-A', field: SortField.SORT_NAME, direction: SortDirection.DESC }
+  ];
+
+  // Sort state
+  currentSortCriteria = signal<BookSortCriteria>({ field: SortField.UPDATED_AT, direction: SortDirection.DESC });
+  selectedSortOption = signal<SortOption>(this.sortOptions[0]);
 
   constructor(
     private seriesService: SeriesService,
     private snackBar: MatSnackBar,
     private infiniteScrollService: InfiniteScrollService
   ) {
-    // Initialize infinite scroll state
+    // Initialize infinite scroll state (support sort criteria)
     this.scrollState = this.infiniteScrollService.createInfiniteScrollState(
-      (cursor, limit) => this.seriesService.getAllSeries(cursor, limit),
+      (cursor, limit) => this.seriesService.getAllSeries(cursor, limit, this.currentSortCriteria()),
       {
         limit: 20,
         enableAlphabeticalSeparators: false,
@@ -280,4 +303,15 @@ export class SeriesListComponent implements OnInit {
     this.scrollState.reset();
     this.snackBar.open('Series refreshed', 'Close', { duration: 1500 });
   }
+
+  onSortChange(sortOption: SortOption) {
+    const newCriteria: BookSortCriteria = { field: sortOption.field, direction: sortOption.direction };
+    this.currentSortCriteria.set(newCriteria);
+    this.selectedSortOption.set(sortOption);
+    this.seriesService.clearCache();
+    this.scrollState.reset();
+    this.snackBar.open(`Sorted by ${sortOption.label}`, 'Close', { duration: 1500 });
+  }
+
+  displaySort(option?: SortOption): string { return option ? option.label : ''; }
 }

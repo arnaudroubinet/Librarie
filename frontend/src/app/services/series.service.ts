@@ -3,6 +3,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, map, of } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { Series, SeriesPageResponse } from '../models/series.model';
+import { BookSortCriteria, SortField, SortDirection } from '../models/book.model';
 import { environment } from '../../environments/environment';
 
 @Injectable({
@@ -15,13 +16,18 @@ export class SeriesService {
 
   constructor(private http: HttpClient) {}
 
-  getAllSeries(cursor?: string, limit: number = 20): Observable<SeriesPageResponse> {
+  getAllSeries(cursor?: string, limit: number = 20, sortCriteria?: BookSortCriteria): Observable<SeriesPageResponse> {
     let params = new HttpParams().set('limit', limit.toString());
     
     if (cursor) {
       params = params.set('cursor', cursor);
     }
-    const key = `getAllSeries|cursor=${cursor || ''}|limit=${limit}`;
+
+    if (sortCriteria) {
+      params = params.set('sortField', sortCriteria.field);
+      params = params.set('sortDirection', sortCriteria.direction);
+    }
+    const key = `getAllSeries|cursor=${cursor || ''}|limit=${limit}|sort=${sortCriteria ? `${sortCriteria.field}_${sortCriteria.direction}` : 'default'}`;
     const cached = this.cache.get(key);
     if (cached && Date.now() - cached.timestamp < this.ttlMs) {
       return of(cached.data as SeriesPageResponse);
