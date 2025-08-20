@@ -30,6 +30,13 @@ public interface SeriesRepositoryPort {
     org.motpassants.domain.core.model.PageResult<Series> findAll(String cursor, int limit);
     
     /**
+     * Cursor-based listing with sorting support.
+     */
+    default org.motpassants.domain.core.model.PageResult<Series> findAll(String cursor, int limit, org.motpassants.domain.core.model.SeriesSortCriteria sortCriteria) {
+        return findAll(cursor, limit);
+    }
+    
+    /**
      * Count total number of series.
      * 
      * @return Total count of series

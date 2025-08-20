@@ -6,6 +6,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.motpassants.domain.core.model.Book;
 import org.motpassants.domain.core.model.BookSearchCriteria;
+import org.motpassants.domain.core.model.BookSortCriteria;
 import org.motpassants.domain.core.model.PageResult;
 import org.motpassants.domain.port.out.BookRepository;
 
@@ -23,47 +24,88 @@ public class BookRepositoryAdapter implements BookRepository {
     ObjectMapper objectMapper;
 
     @Override
-    public PageResult<Book> findAll(String cursor, int limit) {
-        // Cursor-based pagination ordered by newest first (created_at DESC, id DESC)
-        // Cursor format: base64("<epochMicros>|<uuid>")
-        // Backward-compatible: also accepts legacy epochMillis cursors.
-    String baseSql = "SELECT id, title, title_sort, has_cover, created_at, updated_at, publication_date, language_code " +
-        "FROM books ";
+    public PageResult<Book> findAll(String cursor, int limit, BookSortCriteria sortCriteria) {
+        // Validate sort criteria
+        if (sortCriteria == null) {
+            sortCriteria = BookSortCriteria.DEFAULT;
+        }
+        
+        // Cursor-based pagination with configurable ordering
+        // Cursor format: base64("<sortValue>|<epochMicros>|<uuid>")
+        // For updated_at/publication_date: epochMicros of the sort field
+        // For title_sort: the actual string value (URL-encoded)
+        
+        String baseSql = "SELECT id, title, title_sort, has_cover, created_at, updated_at, publication_date, language_code " +
+            "FROM books ";
 
-        String orderClause = " ORDER BY created_at DESC, id DESC";
+        // Build ORDER BY clause with stable tiebreaker
+        String orderClause = " ORDER BY " + sortCriteria.toSqlOrderClause() + ", created_at DESC, id DESC";
 
-        // We'll bind exact Timestamp + UUID for stable keyset pagination
+        // Parse cursor based on sort field type
+        Object cursorSortValue = null;
         java.sql.Timestamp cursorTimestamp = null;
         UUID cursorUuid = null;
+        
         if (cursor != null && !cursor.isBlank()) {
             try {
                 String decoded = new String(java.util.Base64.getUrlDecoder().decode(cursor));
                 String[] parts = decoded.split("\\|");
-                if (parts.length == 2) {
-                    long epochNumber = Long.parseLong(parts[0]);
-                    // Detect unit: micros (>= 10^15) vs millis (<= 10^14)
-                    if (epochNumber >= 1_000_000_000_000_000L) {
-                        long seconds = epochNumber / 1_000_000L;
-                        long microsRemainder = epochNumber % 1_000_000L;
+                if (parts.length == 3) {
+                    // Parse sort value based on field type
+                    if (sortCriteria.getField().isTimestampField()) {
+                        // Parse timestamp for date/time fields
+                        long epochNumber = Long.parseLong(parts[0]);
+                        if (epochNumber >= 1_000_000_000_000_000L) {
+                            long seconds = epochNumber / 1_000_000L;
+                            long microsRemainder = epochNumber % 1_000_000L;
+                            long nanos = microsRemainder * 1_000L;
+                            cursorSortValue = java.sql.Timestamp.from(java.time.Instant.ofEpochSecond(seconds, nanos));
+                        } else {
+                            cursorSortValue = new java.sql.Timestamp(epochNumber);
+                        }
+                    } else {
+                        // Parse string value (URL-decoded) for text fields
+                        cursorSortValue = java.net.URLDecoder.decode(parts[0], "UTF-8");
+                    }
+                    
+                    // Parse created_at tiebreaker timestamp
+                    long createdAtEpoch = Long.parseLong(parts[1]);
+                    if (createdAtEpoch >= 1_000_000_000_000_000L) {
+                        long seconds = createdAtEpoch / 1_000_000L;
+                        long microsRemainder = createdAtEpoch % 1_000_000L;
                         long nanos = microsRemainder * 1_000L;
                         cursorTimestamp = java.sql.Timestamp.from(java.time.Instant.ofEpochSecond(seconds, nanos));
                     } else {
-                        // Legacy millis
-                        cursorTimestamp = new java.sql.Timestamp(epochNumber);
+                        cursorTimestamp = new java.sql.Timestamp(createdAtEpoch);
                     }
-                    cursorUuid = java.util.UUID.fromString(parts[1]);
+                    
+                    cursorUuid = java.util.UUID.fromString(parts[2]);
                 }
             } catch (Exception ignore) {
                 // If cursor is invalid, treat as no cursor
+                cursorSortValue = null;
                 cursorTimestamp = null;
                 cursorUuid = null;
             }
         }
 
         StringBuilder sql = new StringBuilder(baseSql);
-        if (cursorTimestamp != null && cursorUuid != null) {
-            // For DESC, fetch strictly older rows, or same timestamp with smaller UUID
-            sql.append("WHERE (created_at < ? OR (created_at = ? AND id < ?))");
+        if (cursorSortValue != null && cursorTimestamp != null && cursorUuid != null) {
+            // Build WHERE clause based on sort direction and field
+            String sortColumn = sortCriteria.getField().getColumnName();
+            boolean isDesc = sortCriteria.getDirection().getSqlKeyword().equals("DESC");
+            
+            if (isDesc) {
+                // For DESC ordering: fetch rows with sort value < cursor OR (sort value = cursor AND created_at < cursor) OR (sort value = cursor AND created_at = cursor AND id < cursor)
+                sql.append("WHERE (").append(sortColumn).append(" < ? OR ")
+                   .append("(").append(sortColumn).append(" = ? AND created_at < ?) OR ")
+                   .append("(").append(sortColumn).append(" = ? AND created_at = ? AND id < ?))");
+            } else {
+                // For ASC ordering: fetch rows with sort value > cursor OR (sort value = cursor AND created_at < cursor) OR (sort value = cursor AND created_at = cursor AND id < cursor)
+                sql.append("WHERE (").append(sortColumn).append(" > ? OR ")
+                   .append("(").append(sortColumn).append(" = ? AND created_at < ?) OR ")
+                   .append("(").append(sortColumn).append(" = ? AND created_at = ? AND id < ?))");
+            }
         }
         sql.append(orderClause).append(" LIMIT ").append(Math.max(1, limit + 1)); // fetch one extra to know hasNext
 
@@ -72,7 +114,7 @@ public class BookRepositoryAdapter implements BookRepository {
         String nextCursor = null;
         int totalCount = 0;
 
-    try (Connection conn = dataSource.getConnection()) {
+        try (Connection conn = dataSource.getConnection()) {
             // Count total (for convenience in UI; not required for paging correctness)
             try (PreparedStatement cps = conn.prepareStatement("SELECT COUNT(*) FROM books"); ResultSet crs = cps.executeQuery()) {
                 if (crs.next()) totalCount = crs.getInt(1);
@@ -80,9 +122,12 @@ public class BookRepositoryAdapter implements BookRepository {
 
             try (PreparedStatement ps = conn.prepareStatement(sql.toString())) {
                 int idx = 1;
-                if (cursorTimestamp != null && cursorUuid != null) {
-                    // Bind exact timestamp twice (for < and =) and the UUID as tiebreaker
+                if (cursorSortValue != null && cursorTimestamp != null && cursorUuid != null) {
+                    // Bind parameters for WHERE clause (6 total: sortValue x3, timestamp x2, uuid x1)
+                    ps.setObject(idx++, cursorSortValue);
+                    ps.setObject(idx++, cursorSortValue);
                     ps.setTimestamp(idx++, cursorTimestamp);
+                    ps.setObject(idx++, cursorSortValue);
                     ps.setTimestamp(idx++, cursorTimestamp);
                     ps.setObject(idx++, cursorUuid);
                 }
@@ -90,7 +135,6 @@ public class BookRepositoryAdapter implements BookRepository {
                 try (ResultSet rs = ps.executeQuery()) {
                     while (rs.next()) {
                         Book book = mapRowToBookLight(rs);
-                        // For lightweight listings, avoid extra per-row joins to keep it fast
                         items.add(book);
                     }
                 }
@@ -101,18 +145,56 @@ public class BookRepositoryAdapter implements BookRepository {
                 // The (limit+1)th row indicates more pages; derive next cursor from the limit-th item
                 Book lastOfPage = items.get(limit - 1);
                 items = new ArrayList<>(items.subList(0, limit));
-                // Build nextCursor from lastOfPage created_at and id
+                
+                // Build nextCursor based on sort field
+                Object sortValue = null;
+                long sortValueEpoch = 0L;
+                String sortValueStr = "";
+                
+                if (sortCriteria.getField().isTimestampField()) {
+                    if (sortCriteria.getField().getColumnName().equals("updated_at")) {
+                        java.time.OffsetDateTime updatedAt = lastOfPage.getUpdatedAt();
+                        if (updatedAt != null) {
+                            long seconds = updatedAt.toInstant().getEpochSecond();
+                            long nanos = updatedAt.toInstant().getNano();
+                            sortValueEpoch = seconds * 1_000_000L + (nanos / 1_000L);
+                        }
+                    } else if (sortCriteria.getField().getColumnName().equals("publication_date")) {
+                        java.time.LocalDate pubDate = lastOfPage.getPublicationDate();
+                        if (pubDate != null) {
+                            long seconds = pubDate.atStartOfDay(java.time.ZoneOffset.UTC).toInstant().getEpochSecond();
+                            sortValueEpoch = seconds * 1_000_000L;
+                        }
+                    }
+                } else {
+                    // Handle string fields
+                    if (sortCriteria.getField().getColumnName().equals("title_sort")) {
+                        sortValueStr = lastOfPage.getTitleSort() != null ? lastOfPage.getTitleSort() : "";
+                    }
+                }
+                
+                // Get created_at for tiebreaker
                 java.time.OffsetDateTime createdAt = lastOfPage.getCreatedAt();
-                UUID id = lastOfPage.getId();
-                long micros;
+                long createdAtMicros = 0L;
                 if (createdAt != null) {
                     long seconds = createdAt.toInstant().getEpochSecond();
                     long nanos = createdAt.toInstant().getNano();
-                    micros = seconds * 1_000_000L + (nanos / 1_000L);
-                } else {
-                    micros = 0L;
+                    createdAtMicros = seconds * 1_000_000L + (nanos / 1_000L);
                 }
-                String raw = micros + "|" + id;
+                
+                UUID id = lastOfPage.getId();
+                String raw;
+                if (!sortCriteria.getField().isTimestampField()) {
+                    // URL-encode string values
+                    try {
+                        sortValueStr = java.net.URLEncoder.encode(sortValueStr, "UTF-8");
+                    } catch (Exception e) {
+                        sortValueStr = "";
+                    }
+                    raw = sortValueStr + "|" + createdAtMicros + "|" + id;
+                } else {
+                    raw = sortValueEpoch + "|" + createdAtMicros + "|" + id;
+                }
                 nextCursor = java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(raw.getBytes());
             } else if (!items.isEmpty()) {
                 // No more pages
@@ -121,7 +203,7 @@ public class BookRepositoryAdapter implements BookRepository {
             }
 
         } catch (SQLException e) {
-            throw new RuntimeException("DB error fetching books", e);
+            throw new RuntimeException("DB error fetching books with sorting", e);
         }
 
         return new PageResult<>(items, nextCursor, null, hasNext, false, totalCount);
@@ -457,12 +539,30 @@ public class BookRepositoryAdapter implements BookRepository {
         b.setId((UUID) rs.getObject("id"));
         b.setTitle(rs.getString("title"));
         b.setTitleSort(rs.getString("title_sort"));
-    boolean hc = rs.getBoolean("has_cover"); if (!rs.wasNull()) b.setHasCover(hc);
+        b.setIsbn(rs.getString("isbn"));
+        b.setPath(rs.getString("path"));
+        Long fileSize = rs.getLong("file_size"); if (!rs.wasNull()) b.setFileSize(fileSize);
+        b.setFileHash(rs.getString("file_hash"));
+        boolean hc = rs.getBoolean("has_cover"); if (!rs.wasNull()) b.setHasCover(hc);
         Timestamp created = rs.getTimestamp("created_at"); if (created != null) b.setCreatedAt(created.toInstant().atOffset(java.time.ZoneOffset.UTC));
         Timestamp updated = rs.getTimestamp("updated_at"); if (updated != null) b.setUpdatedAt(updated.toInstant().atOffset(java.time.ZoneOffset.UTC));
-    java.sql.Date pub = rs.getDate("publication_date"); if (pub != null) b.setPublicationDate(pub.toLocalDate());
+        java.sql.Date pub = rs.getDate("publication_date"); if (pub != null) b.setPublicationDate(pub.toLocalDate());
         b.setLanguage(rs.getString("language_code"));
-        // Light mapper intentionally skips heavy fields (isbn, path, file fields, metadata, search vector)
+        
+        // Parse metadata JSON
+        String metadataJson = rs.getString("metadata");
+        if (metadataJson != null && !metadataJson.trim().isEmpty()) {
+            try {
+                @SuppressWarnings("unchecked")
+                Map<String, Object> metadata = objectMapper.readValue(metadataJson, Map.class);
+                b.setMetadata(metadata);
+            } catch (Exception e) {
+                // If metadata parsing fails, set empty map
+                b.setMetadata(new HashMap<>());
+            }
+        }
+        
+        b.setSearchVector(rs.getString("search_vector"));
         return b;
     }
 

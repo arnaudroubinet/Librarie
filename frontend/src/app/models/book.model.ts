@@ -103,3 +103,28 @@ export interface SupportedFormatsResponse {
   supportedFormats: string[];
   count: number;
 }
+
+// Sorting enums to match backend implementation
+export enum SortField {
+  UPDATED_AT = 'UPDATED_AT',
+  TITLE_SORT = 'TITLE_SORT', 
+  SORT_NAME = 'SORT_NAME',
+  PUBLICATION_DATE = 'PUBLICATION_DATE'
+}
+
+export enum SortDirection {
+  ASC = 'ASC',
+  DESC = 'DESC'
+}
+
+export interface BookSortCriteria {
+  field: SortField;
+  direction: SortDirection;
+}
+
+// Sort option for UI display
+export interface SortOption {
+  label: string;
+  field: SortField;
+  direction: SortDirection;
+}

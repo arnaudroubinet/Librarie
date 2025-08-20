@@ -1,13 +1,9 @@
 import { Component, OnInit, signal, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
-import { MatCardModule } from '@angular/material/card';
-import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatChipsModule } from '@angular/material/chips';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { MatDividerModule } from '@angular/material/divider';
+import { MatSnackBar } from '@angular/material/snack-bar';
+import { MATERIAL_MODULES } from '../shared/materials';
+import { getShortTitle as utilGetShortTitle, formatDate as utilFormatDate } from '../utils/author-utils';
 import { BookService } from '../services/book.service';
 import { Book } from '../models/book.model';
 // SeriesService and AuthorService no longer needed; series/author IDs come from backend
@@ -19,15 +15,9 @@ import { environment } from '../../environments/environment';
   standalone: true,
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   imports: [
-    CommonModule,
-    RouterModule,
-    MatCardModule,
-    MatButtonModule,
-    MatIconModule,
-    MatProgressSpinnerModule,
-    MatChipsModule,
-    MatSnackBarModule,
-    MatDividerModule
+  CommonModule,
+  RouterModule,
+  ...MATERIAL_MODULES
   ],
   template: `
   <div class="book-detail-container motspassants-library">
@@ -281,9 +271,7 @@ export class BookDetailComponent implements OnInit {
     }
   }
 
-  formatDate(dateString: string): string {
-    return new Date(dateString).toLocaleDateString();
-  }
+  formatDate = (d: string) => utilFormatDate(d);
 
   formatDateTime(dateString: string): string {
     return new Date(dateString).toLocaleString();
@@ -372,9 +360,7 @@ export class BookDetailComponent implements OnInit {
     return [];
   }
 
-  getShortTitle(title: string): string {
-    return title && title.length > 30 ? title.substring(0, 30) + '...' : title;
-  }
+  getShortTitle = utilGetShortTitle;
 
   // No author click handler needed; IDs are provided
 }

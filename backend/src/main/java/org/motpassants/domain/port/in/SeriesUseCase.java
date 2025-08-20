@@ -3,6 +3,7 @@ package org.motpassants.domain.port.in;
 import org.motpassants.domain.core.model.Page;
 import org.motpassants.domain.core.model.PageResult;
 import org.motpassants.domain.core.model.Series;
+import org.motpassants.domain.core.model.SeriesSortCriteria;
 
 import java.util.List;
 import java.util.Optional;
@@ -24,11 +25,21 @@ public interface SeriesUseCase {
     Page<Series> getAllSeries(int page, int size);
 
     /**
+     * Offset-based pagination for series with sorting support.
+     */
+    Page<Series> getAllSeries(int page, int size, SeriesSortCriteria sortCriteria);
+
+    /**
      * Cursor-based pagination for series.
      * @param cursor base64("<epochMicros>|<uuid>") or legacy millis
      * @param limit page size
      */
     PageResult<Series> getAllSeries(String cursor, int limit);
+
+    /**
+     * Cursor-based pagination for series with sorting support.
+     */
+    PageResult<Series> getAllSeries(String cursor, int limit, SeriesSortCriteria sortCriteria);
     
     /**
      * Get a series by its ID.

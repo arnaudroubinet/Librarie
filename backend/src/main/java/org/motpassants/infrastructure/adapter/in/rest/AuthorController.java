@@ -57,10 +57,15 @@ public class AuthorController {
             @Parameter(description = "Cursor for pagination")
             @QueryParam("cursor") String cursor,
             @Parameter(description = "Number of items to return (max 100)", example = "20")
-            @DefaultValue("20") @QueryParam("limit") int limit) {
+            @DefaultValue("20") @QueryParam("limit") int limit,
+            @Parameter(description = "Sort field (e.g. SORT_NAME, UPDATED_AT)")
+            @QueryParam("sortField") String sortField,
+            @Parameter(description = "Sort direction (ASC or DESC)")
+            @QueryParam("sortDirection") String sortDirection) {
         
         try {
-            PageResult<Author> pageResult = authorService.getAllAuthors(cursor, limit);
+            org.motpassants.domain.core.model.AuthorSortCriteria sortCriteria = org.motpassants.domain.core.model.AuthorSortCriteria.of(sortField, sortDirection);
+            PageResult<Author> pageResult = authorService.getAllAuthors(cursor, limit, sortCriteria);
             
             List<AuthorResponseDto> authorDtos = pageResult.getItems().stream()
                 .map(this::toResponseDto)

@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import org.motpassants.domain.core.model.SeriesSortCriteria;
 
 /**
  * Series service implementing business logic.
@@ -51,10 +52,24 @@ public class SeriesService implements SeriesUseCase {
     }
 
     @Override
+    public Page<Series> getAllSeries(int page, int size, SeriesSortCriteria sortCriteria) {
+        // For offset mode we currently ignore sort criteria and fallback to default
+        // Keep method to satisfy interface and allow future repository implementation
+        return getAllSeries(page, size);
+    }
+
+    @Override
     public PageResult<Series> getAllSeries(String cursor, int limit) {
         if (limit <= 0) limit = 20;
         if (limit > 100) limit = 100;
         return seriesRepository.findAll(cursor, limit);
+    }
+
+    @Override
+    public PageResult<Series> getAllSeries(String cursor, int limit, SeriesSortCriteria sortCriteria) {
+        if (limit <= 0) limit = 20;
+        if (limit > 100) limit = 100;
+        return seriesRepository.findAll(cursor, limit, sortCriteria);
     }
     
     @Override

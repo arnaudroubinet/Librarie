@@ -10,6 +10,7 @@ import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 
 import java.time.LocalDate;
+import org.motpassants.domain.core.model.AuthorSortCriteria;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -106,14 +107,18 @@ public class AuthorService implements AuthorUseCase {
     @Override
     @Transactional(Transactional.TxType.SUPPORTS)
     public PageResult<Author> getAllAuthors(String cursor, int limit) {
+        return getAllAuthors(cursor, limit, org.motpassants.domain.core.model.AuthorSortCriteria.DEFAULT);
+    }
+
+    @Transactional(Transactional.TxType.SUPPORTS)
+    public PageResult<Author> getAllAuthors(String cursor, int limit, org.motpassants.domain.core.model.AuthorSortCriteria sortCriteria) {
         if (limit <= 0) {
             throw new IllegalArgumentException("Limit must be positive");
         }
         if (limit > 100) {
             throw new IllegalArgumentException("Limit cannot exceed 100");
         }
-        
-        return authorRepository.findAll(cursor, limit);
+        return authorRepository.findAll(cursor, limit, sortCriteria);
     }
 
     @Override

@@ -2,6 +2,7 @@ package org.motpassants.domain.port.in;
 
 import org.motpassants.domain.core.model.Book;
 import org.motpassants.domain.core.model.BookSearchCriteria;
+import org.motpassants.domain.core.model.BookSortCriteria;
 import org.motpassants.domain.core.model.PageResult;
 
 import java.util.List;
@@ -16,13 +17,26 @@ import java.util.UUID;
 public interface BookUseCase {
     
     /**
-     * Retrieve all books with cursor-based pagination support.
+     * Retrieve all books with cursor-based pagination and sorting support.
+     * 
+     * @param cursor the pagination cursor (null for first page)
+     * @param limit the maximum number of books to return
+     * @param sortCriteria the sorting criteria (field and direction)
+     * @return cursor-paginated result containing books and navigation info
+     */
+    PageResult<Book> getAllBooks(String cursor, int limit, BookSortCriteria sortCriteria);
+
+    /**
+     * Retrieve all books with cursor-based pagination support (uses default sorting).
+     * Maintains backward compatibility with existing code.
      * 
      * @param cursor the pagination cursor (null for first page)
      * @param limit the maximum number of books to return
      * @return cursor-paginated result containing books and navigation info
      */
-    PageResult<Book> getAllBooks(String cursor, int limit);
+    default PageResult<Book> getAllBooks(String cursor, int limit) {
+        return getAllBooks(cursor, limit, BookSortCriteria.DEFAULT);
+    }
 
     /**
      * Retrieve books in a given series using cursor-based pagination.

@@ -15,13 +15,15 @@ export class AuthorService {
 
   constructor(private http: HttpClient) {}
 
-  getAllAuthors(cursor?: string, limit: number = 20): Observable<AuthorPageResponse> {
+  getAllAuthors(cursor?: string, limit: number = 20, sortField?: string, sortDirection?: string): Observable<AuthorPageResponse> {
     let params = new HttpParams().set('limit', limit.toString());
     
     if (cursor) {
       params = params.set('cursor', cursor);
     }
-    const key = `getAllAuthors|cursor=${cursor || ''}|limit=${limit}`;
+    if (sortField) params = params.set('sortField', sortField);
+    if (sortDirection) params = params.set('sortDirection', sortDirection);
+    const key = `getAllAuthors|cursor=${cursor || ''}|limit=${limit}|sf=${sortField || ''}|sd=${sortDirection || ''}`;
     const cached = this.cache.get(key);
     if (cached && Date.now() - cached.timestamp < this.ttlMs) {
       return of(cached.data as AuthorPageResponse);

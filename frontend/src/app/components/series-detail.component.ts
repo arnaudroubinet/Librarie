@@ -1,15 +1,9 @@
 import { Component, OnInit, signal, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
-import { MatCardModule } from '@angular/material/card';
-import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatChipsModule } from '@angular/material/chips';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { MatDividerModule } from '@angular/material/divider';
-import { MatGridListModule } from '@angular/material/grid-list';
-import { MatRippleModule } from '@angular/material/core';
+import { MatSnackBar } from '@angular/material/snack-bar';
+import { MATERIAL_MODULES } from '../shared/materials';
+import { getInitials as utilGetInitials, getShortBio as utilGetShortBio, formatDates as utilFormatAuthorDates, getShortTitle as utilGetShortTitle, formatDate as utilFormatDate } from '../utils/author-utils';
 import { SeriesService } from '../services/series.service';
 import { AuthorService } from '../services/author.service';
 import { Series } from '../models/series.model';
@@ -25,15 +19,7 @@ import { forkJoin, of } from 'rxjs';
   imports: [
     CommonModule,
     RouterModule,
-    MatCardModule,
-    MatButtonModule,
-    MatIconModule,
-    MatProgressSpinnerModule,
-    MatChipsModule,
-    MatSnackBarModule,
-    MatDividerModule,
-  MatGridListModule,
-  MatRippleModule
+    ...MATERIAL_MODULES
   ],
   template: `
   <div class="series-detail-container motspassants-library">
@@ -394,14 +380,7 @@ export class SeriesDetailComponent implements OnInit {
       .sort((a, b) => b.bookCount - a.bookCount || a.name.localeCompare(b.name));
   }
 
-  getInitials(name: string): string {
-    return name
-      .split(' ')
-      .map(part => part.charAt(0))
-      .join('')
-      .toUpperCase()
-      .substring(0, 2);
-  }
+  getInitials = utilGetInitials;
 
   private loadContributorAuthors(contributors: Array<{ id?: string; name?: string }>) {
     const ids = Array.from(new Set(contributors.map(c => c.id).filter((id): id is string => !!id)));
@@ -448,17 +427,9 @@ export class SeriesDetailComponent implements OnInit {
     return `${this.apiUrl}/v1/authors/${author.id}/picture`;
   }
 
-  formatAuthorDates(birthDate?: string, deathDate?: string): string {
-    const birth = birthDate ? new Date(birthDate).getFullYear() : '?';
-    const death = deathDate ? new Date(deathDate).getFullYear() : '';
-    return death ? `${birth} - ${death}` : `Born ${birth}`;
-  }
 
-  getShortBio(bio: string): string {
-    if (!bio) return '';
-    const maxLength = 120;
-    return bio.length > maxLength ? bio.substring(0, maxLength) + '...' : bio;
-  }
+  formatAuthorDates = utilFormatAuthorDates;
+  getShortBio = utilGetShortBio;
 
   onAuthorImageError(event: any, authorId?: string) {
     if (authorId) this.authorImageErrors.add(authorId);

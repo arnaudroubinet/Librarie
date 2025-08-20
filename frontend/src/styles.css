@@ -31,10 +31,13 @@ a:hover, a:focus { color: #ffffff; text-decoration: underline; }
   --content-fg: #ffffff;
   --muted-fg: #888;
   --border-color: rgba(255, 255, 255, 0.1);
-  --panel-bg: rgba(255, 255, 255, 0.05);
-  --panel-bg-soft: rgba(255, 255, 255, 0.03);
+  /* Solid panel backgrounds (no transparency) */
+  --panel-bg: #1f1f1f; /* same as app background to remove transparency */
+  --panel-bg-soft: #151515; /* slightly darker for soft panels */
   --accent-grad-start: #4fc3f7;
   --accent-grad-end: #29b6f6;
+  /* Reserve space for select validation icon used by the intrinsic panel width rules */
+  --select-validation-icon-space: 36px;
 }
 
 /* Utility classes */
@@ -128,3 +131,226 @@ body, .motspassants-container { background: var(--app-bg); color: var(--content-
 .cta-button:hover,
 .fab-search:hover,
 .btn-primary:hover { transform: translateY(-2px) !important; box-shadow: 0 12px 40px rgba(79, 195, 247, 0.4) !important; }
+
+/* Ensure mat-select overlay panel matches the closed control's panel background */
+/* Global rule because the panel is attached to the overlay container outside component scope */
+.mat-mdc-select-panel {
+  /* Cleaner panel: match app background, subtle frame, minimal shadow */
+  background: var(--app-bg) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255,255,255,0.06) !important;
+  border-radius: 6px !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.45) !important;
+  padding: 4px 0 !important;
+}
+
+/* Make all option text white and readable */
+.mat-mdc-select-panel .mat-mdc-list .mat-mdc-list-item {
+  color: #ffffff !important;
+  background: transparent !important; /* keep inner area clean */
+  padding: 6px 12px !important;
+  position: relative;
+  font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-left: 12px; /* compact left padding */
+}
+
+/* Shared sort/select styles moved from book-list component to global so they
+   apply across pages (books, series, etc). These keep the trigger visually
+   inline, force white text in overlays, reserve validation icon space and make
+   the overlay intrinsic to the largest option. */
+
+/* Inline trigger container used in headers */
+.motspassants-library .header-content .sort-field { display:inline-flex; align-items:center; margin-left:8px; }
+
+/* Grouped overrides for the sort/select trigger (closed and open) to keep the
+   control visually inline and transparent. */
+.motspassants-library .header-content .sort-field > mat-select,
+.motspassants-library .header-content .sort-field .mat-select-trigger,
+.motspassants-library .header-content .sort-field .mat-select-value,
+.motspassants-library .header-content .sort-field .mat-mdc-select-value,
+.motspassants-library .header-content .sort-field .mat-select-value-text,
+.motspassants-library .header-content .sort-field .mat-mdc-select-value-text {
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  color: var(--muted-fg) !important;
+  font-size: 0.95rem !important;
+  line-height: 1 !important;
+  height: auto !important;
+}
+
+/* Use the same arrow/graphic for closed and open triggers and force consistent
+   positioning + color. Also ensure inline SVG arrows inherit currentColor. */
+.motspassants-library .header-content .sort-field .mat-select-arrow,
+.motspassants-library .header-content .sort-field .mat-mdc-select-arrow,
+.motspassants-library .header-content .sort-field .mat-select.mat-select-open .mat-select-arrow,
+.motspassants-library .header-content .sort-field .mat-mdc-select.mat-mdc-select-open .mat-mdc-select-arrow,
+.motspassants-library .header-content .sort-field .mat-select-trigger.mat-select-open .mat-select-arrow,
+.motspassants-library .header-content .sort-field .mat-mdc-select-trigger.mat-mdc-select-open .mat-mdc-select-arrow {
+  color: var(--muted-fg) !important;
+  font-size: 12px !important;
+  left: 8px !important;
+  right: auto !important;
+  opacity: 0.9 !important;
+  transform: none !important;
+}
+.motspassants-library .header-content .sort-field .mat-select-arrow svg,
+.motspassants-library .header-content .sort-field .mat-mdc-select-arrow svg { fill: currentColor !important; }
+
+/* Ensure option primary text and list items are white inside the overlay. Also
+   include overlay pane selectors since the panel is attached to the overlay. */
+.motspassants-library .header-content .sort-field .mat-mdc-select-panel .mdc-list-item__primary-text,
+.motspassants-library .header-content .sort-field .mat-select-panel .mdc-list-item__primary-text,
+.mat-mdc-select-panel .mdc-list-item__primary-text,
+.mat-select-panel .mdc-list-item__primary-text,
+.mat-mdc-select-panel .mat-mdc-list .mat-mdc-list-item,
+.mat-select-panel .mat-mdc-list .mat-mdc-list-item {
+  color: #fff !important;
+  opacity: 1 !important;
+}
+
+/* Reserve right padding in the panel so intrinsic panel width accounts for the
+   validation/check icon. Use content-box so padding doesn't shrink the measured
+   content area. */
+.motspassants-library .header-content .sort-field .mat-mdc-select-panel,
+.motspassants-library .header-content .sort-field .mat-select-panel,
+.cdk-overlay-pane .mat-mdc-select-panel,
+.cdk-overlay-pane .mat-select-panel {
+  padding-right: var(--select-validation-icon-space) !important;
+  box-sizing: content-box !important;
+}
+
+/* Add right padding to list items so their measured width includes icon space. */
+.mat-mdc-select-panel .mat-mdc-list .mat-mdc-list-item,
+.mat-select-panel .mat-mdc-list .mat-mdc-list-item {
+  padding-right: var(--select-validation-icon-space) !important;
+}
+
+/* Make sure the trigger shows the text without being overlapped by the icon. */
+.motspassants-library .header-content .sort-field .mat-select-trigger,
+.motspassants-library .header-content .sort-field .mat-mdc-select-trigger {
+  padding-right: calc(var(--select-validation-icon-space) + 8px) !important;
+}
+
+/* Size the select panel to the intrinsic width of its content so the panel
+   is always wide enough to show the largest word without wrapping. */
+.motspassants-library .header-content .sort-field .mat-mdc-select-panel,
+.motspassants-library .header-content .sort-field .mat-select-panel,
+.cdk-overlay-pane .mat-mdc-select-panel,
+.cdk-overlay-pane .mat-select-panel {
+  width: auto !important;
+  display: inline-block !important;
+  min-width: -webkit-min-content !important;
+  min-width: -moz-min-content !important;
+  min-width: min-content !important;
+  min-width: max-content !important;
+}
+
+/* Prevent wrapping in option text so the panel width grows to the longest word. */
+.motspassants-library .header-content .sort-field .mat-mdc-select-panel .mdc-list-item__primary-text,
+.motspassants-library .header-content .sort-field .mat-select-panel .mdc-list-item__primary-text,
+.motspassants-library .header-content .sort-field .mat-mdc-select-panel .mat-mdc-list .mat-mdc-list-item,
+.motspassants-library .header-content .sort-field .mat-select-panel .mat-mdc-list .mat-mdc-list-item {
+  white-space: nowrap !important;
+}
+
+/* Trigger text when the menu is open should also be white. */
+.motspassants-library .header-content .sort-field .mat-select.mat-select-open .mat-select-value-text,
+.motspassants-library .header-content .sort-field .mat-select-trigger.mat-select-open .mat-select-value-text,
+.motspassants-library .header-content .sort-field .mat-mdc-select.mat-mdc-select-open .mat-mdc-select-value-text,
+.motspassants-library .header-content .sort-field .mat-mdc-select-trigger.mat-mdc-select-open .mat-mdc-select-value-text {
+  color: #fff !important;
+}
+
+/* Remove form-field outlines inside header triggers for a clean inline look. */
+.motspassants-library .header-content .sort-field .mat-form-field-infix,
+.motspassants-library .header-content .sort-field .mat-form-field-wrapper,
+.motspassants-library .header-content .sort-field .mat-form-field-outline {
+  display: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+/* Keep option list readable when open (font-size shared) */
+.mat-mdc-select-panel .mat-mdc-list .mat-mdc-list-item { font-size:0.95rem; }
+
+/* Avoid forcing white on every child; keep readable defaults and allow component-level muted tones */
+.mat-mdc-select-panel {
+  color: #ffffff !important; /* default panel text color */
+}
+.mat-mdc-select-panel .mat-mdc-list .mat-mdc-list-item {
+  color: #ffffff !important;
+}
+/* Allow component CSS to set muted tones for specific items like 'recently-updated' */
+
+/* Style the selected option to mirror the left menu selection: white left bar + white text */
+
+/* Selected option: show a subtle checkmark on the right (GitHub-like) */
+
+/* Selected option: left checkmark, bold white text */
+.mat-mdc-select-panel .mat-mdc-list .mat-mdc-list-item.mat-mdc-list-item--selected,
+.mat-mdc-select-panel .mat-mdc-list .mat-mdc-list-item[aria-selected="true"] {
+  color: #ffffff !important;
+  font-weight: 600 !important;
+}
+
+/* Show a subtle checkmark on the right for selected items */
+.mat-mdc-select-panel .mat-mdc-list .mat-mdc-list-item.mat-mdc-list-item--selected::after,
+.mat-mdc-select-panel .mat-mdc-list .mat-mdc-list-item[aria-selected="true"]::after {
+  content: '\2713';
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--content-fg) !important;
+  font-size: 0.95rem;
+}
+
+/* Hover state similar to GitHub: gentle lightening */
+.mat-mdc-select-panel .mat-mdc-list .mat-mdc-list-item:hover {
+  background: rgba(255,255,255,0.03) !important;
+}
+
+/* Divider look between groups (simulate GitHub sections) */
+.mat-mdc-select-panel .mat-mdc-list .divider {
+  height: 1px;
+  background: rgba(255,255,255,0.03);
+  margin: 6px 0;
+}
+
+/* Section titles if used inside the panel */
+.mat-mdc-select-panel .mat-mdc-list .section-title {
+  padding: 8px 16px;
+  color: rgba(255,255,255,0.6);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+/* Reduce panel padding for a tighter, integrated look */
+.mat-mdc-select-panel .mat-mdc-list { padding: 4px 0 !important; }
+
+/* Style 'Recently Updated' option/value to match page description muted color */
+.mat-mdc-select.recently-updated .mat-mdc-select-value,
+.mat-mdc-select.recently-updated .mat-mdc-select-value * {
+  color: var(--muted-fg) !important;
+}
+
+.mat-mdc-select-panel .mat-mdc-list .mat-mdc-list-item.recently-updated {
+  color: var(--muted-fg) !important;
+  font-weight: 500 !important;
+}
+
+/* Consolidated base styles for book grids and cards used across components */
+.books-grid{display:grid;gap:24px;justify-content:center}
+.book-card{background:rgba(255,255,255,0.05);border-radius:12px;overflow:hidden;transition:all .3s ease;cursor:pointer;position:relative;border:1px solid rgba(255,255,255,.1)}
+.book-card:hover{transform:translateY(-4px);box-shadow:0 12px 24px rgba(0,0,0,.35);border-color:rgba(79,195,247,.5)}
+.book-cover{position:relative;overflow:hidden}
+.cover-image{width:100%;height:100%;object-fit:cover;transition:transform .3s ease}
+.cover-placeholder{display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#2a2a2a 0%,#1a1a1a 100%);color:#cfcfcf}
+.book-info{padding:12px}
+.book-title{font-weight:600;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.action-btn{background:rgba(255,255,255,.2)!important;color:#fff!important;transition:all .3s ease!important}

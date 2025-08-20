@@ -52,6 +52,11 @@ public interface AuthorRepositoryPort {
      * Find all authors with cursor-based pagination.
      */
     PageResult<Author> findAll(String cursor, int limit);
+
+    /**
+     * Find all authors with cursor-based pagination and sorting support.
+     */
+    PageResult<Author> findAll(String cursor, int limit, org.motpassants.domain.core.model.AuthorSortCriteria sortCriteria);
     
     /**
      * Search authors by name with cursor-based pagination.

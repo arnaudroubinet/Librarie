@@ -25,6 +25,7 @@ import jakarta.ws.rs.core.Request;
 import jakarta.ws.rs.core.Context;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -68,14 +69,27 @@ public class SeriesController {
             @DefaultValue("20") @QueryParam("size") int size,
             @Parameter(description = "Max items per page", example = "20")
             @QueryParam("limit") Integer limit,
-            @Parameter(description = "Cursor for next page")
-            @QueryParam("cursor") String cursor) {
-        
+            @Parameter(description = "Sort field (UPDATED_AT, TITLE_SORT, PUBLICATION_DATE, SORT_NAME)") @QueryParam("sortField") String sortField,
+            @Parameter(description = "Sort direction (ASC, DESC)") @QueryParam("sortDirection") @DefaultValue("DESC") String sortDirection,
+            @Parameter(description = "Cursor for next page") @QueryParam("cursor") String cursor) {
+
         try {
+        // Parse sort params if present
+        org.motpassants.domain.core.model.SeriesSortCriteria seriesSort = null;
+        if (sortField != null && !sortField.trim().isEmpty()) {
+            try {
+                seriesSort = org.motpassants.domain.core.model.SeriesSortCriteria.of(sortField, sortDirection);
+            } catch (IllegalArgumentException e) {
+                return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of("error", "Invalid sort parameters: " + e.getMessage()))
+                    .build();
+            }
+        }
+
         // Prefer cursor-based when cursor or limit is provided explicitly
         if ((cursor != null && !cursor.isBlank()) || limit != null) {
         int pageSize = (limit != null) ? limit : size;
-    org.motpassants.domain.core.model.PageResult<Series> result = seriesUseCase.getAllSeries(cursor, pageSize);
+    org.motpassants.domain.core.model.PageResult<Series> result = (seriesSort != null) ? seriesUseCase.getAllSeries(cursor, pageSize, seriesSort) : seriesUseCase.getAllSeries(cursor, pageSize);
     List<SeriesListItemDto> items = result.getItems().stream().map(this::toListItemDto).collect(Collectors.toList());
     PageResponseDto<SeriesListItemDto> response = new PageResponseDto<>(
             items,
