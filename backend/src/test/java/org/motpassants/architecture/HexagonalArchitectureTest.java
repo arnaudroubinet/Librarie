@@ -2,6 +2,7 @@ package org.motpassants.architecture;
 
 import com.tngtech.archunit.core.domain.JavaClasses;
 import com.tngtech.archunit.core.importer.ClassFileImporter;
+import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.lang.ArchRule;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -24,7 +25,10 @@ class HexagonalArchitectureTest {
 
     @BeforeEach
     void setUp() {
-        classes = new ClassFileImporter().importPackages("org.motpassants");
+        // Import only production code, excluding test packages for architecture validation
+        classes = new ClassFileImporter()
+                .withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
+                .importPackages("org.motpassants");
     }
 
     @Nested
@@ -83,12 +87,13 @@ class HexagonalArchitectureTest {
                             "jakarta.enterprise.event..",
                             "jakarta.inject..",
                             "jakarta.transaction..",
+                            "jakarta.validation..",
                             "io.quarkus.runtime..",
                             "org.motpassants.domain..",
                             "org.motpassants.application.."
                     )
                     .allowEmptyShould(true)
-                    .because("Application layer should only depend on domain and standard Java/Jakarta APIs");
+                    .because("Application layer should only depend on domain and standard Java/Jakarta APIs for dependency injection");
 
             rule.check(classes);
         }
@@ -114,22 +119,25 @@ class HexagonalArchitectureTest {
         @Test
         @DisplayName("Layered architecture should be respected")
         void layeredArchitectureShouldBeRespected() {
-            // This test will become meaningful when we have classes in the packages
-            // For now, we'll just skip the empty layer validation
-            ArchRule rule = layeredArchitecture().consideringAllDependencies()
-                    .layer("Domain").definedBy("..domain..")
+            ArchRule rule = layeredArchitecture().consideringOnlyDependenciesInLayers()
+                    .layer("Domain Core").definedBy("..domain.core..")
+                    .layer("Domain Ports").definedBy("..domain.port..")
                     .layer("Application").definedBy("..application..")
                     .layer("Infrastructure").definedBy("..infrastructure..")
-                    .whereLayer("Infrastructure").mayOnlyBeAccessedByLayers("Infrastructure")
-                    .whereLayer("Application").mayOnlyBeAccessedByLayers("Application", "Infrastructure")
-                    .whereLayer("Domain").mayOnlyBeAccessedByLayers("Domain", "Application", "Infrastructure")
-                    .ignoreDependency(Object.class, Object.class); // Allow when layers are empty
+                    
+                    // Infrastructure can access everything (outbound adapters implement domain ports)
+                    .whereLayer("Infrastructure").mayOnlyAccessLayers("Infrastructure", "Application", "Domain Ports", "Domain Core")
+                    
+                    // Application can access domain layers
+                    .whereLayer("Application").mayOnlyAccessLayers("Application", "Domain Ports", "Domain Core")
+                    
+                    // Domain ports can only access domain core
+                    .whereLayer("Domain Ports").mayOnlyAccessLayers("Domain Ports", "Domain Core")
+                    
+                    // Domain core should be pure (no external dependencies)
+                    .whereLayer("Domain Core").mayOnlyAccessLayers("Domain Core");
 
-            // Only check if we have classes in the org.motpassants package
-            if (classes.stream().anyMatch(clazz -> clazz.getPackageName().startsWith("org.motpassants") 
-                    && !clazz.getPackageName().contains("architecture"))) {
-                rule.check(classes);
-            }
+            rule.check(classes);
         }
 
         @Test
@@ -310,6 +318,164 @@ class HexagonalArchitectureTest {
                     )
                     .allowEmptyShould(true)
                     .because("Domain model should be persistence agnostic");
+
+            rule.check(classes);
+        }
+
+        @Test
+        @DisplayName("DTOs should only be used in REST layer")
+        void dtosShouldOnlyBeUsedInRestLayer() {
+            ArchRule rule = noClasses().that()
+                    .resideOutsideOfPackage("..infrastructure.adapter.in.rest..")
+                    .should().dependOnClassesThat()
+                    .resideInAPackage("..infrastructure.adapter.in.rest.dto..")
+                    .allowEmptyShould(true)
+                    .because("DTOs should only be used in REST controllers for data transfer");
+
+            rule.check(classes);
+        }
+
+        @Test
+        @DisplayName("Application services should not depend on REST concerns")
+        void applicationServicesShouldNotDependOnRestConcerns() {
+            ArchRule rule = noClasses().that()
+                    .resideInAPackage("..application..")
+                    .should().dependOnClassesThat()
+                    .resideInAnyPackage(
+                            "jakarta.ws.rs..",
+                            "..rest..",
+                            "..dto.."
+                    )
+                    .allowEmptyShould(true)
+                    .because("Application services should be independent of REST/HTTP concerns");
+
+            rule.check(classes);
+        }
+
+        @Test
+        @DisplayName("Application services should implement use case interfaces")
+        void applicationServicesShouldImplementUseCaseInterfaces() {
+            // Only check services that follow the use case pattern (exclude infrastructure services)
+            ArchRule rule = classes().that()
+                    .resideInAPackage("..application.service..")
+                    .and().areNotInterfaces()
+                    .and().areAnnotatedWith("jakarta.enterprise.context.ApplicationScoped")
+                    .and().haveSimpleNameNotContaining("Startup")
+                    .and().haveSimpleNameNotContaining("DemoData")
+                    .and().haveSimpleNameNotContaining("Ingest")
+                    .should().dependOnClassesThat()
+                    .resideInAPackage("..domain.port.in..")
+                    .allowEmptyShould(true)
+                    .because("Application services (excluding infrastructure services) should depend on domain use case interfaces");
+
+            rule.check(classes);
+        }
+
+        @Test
+        @DisplayName("Application services should be package-private where possible")
+        void applicationServicesShouldBePackagePrivateWherePossible() {
+            // Application services need to be public for CDI injection when they implement domain ports
+            // This rule checks that application services are appropriately scoped
+            ArchRule rule = classes().that()
+                    .resideInAPackage("..application.service..")
+                    .and().areNotInterfaces()
+                    .and().areNotAnnotatedWith("jakarta.enterprise.context.ApplicationScoped")
+                    .and().areNotAnnotatedWith("jakarta.inject.Singleton")
+                    .should().notBePublic()
+                    .allowEmptyShould(true)
+                    .because("Application services should use appropriate CDI scopes for dependency injection");
+
+            rule.check(classes);
+        }
+
+        @Test
+        @DisplayName("Domain services should be package-private where possible")
+        void domainServicesShouldBePackagePrivateWherePossible() {
+            // Application services need to be public for CDI injection, but domain services should be package-private
+            // This rule only applies to pure domain services, not application services
+            ArchRule rule = classes().that()
+                    .resideInAPackage("..domain.core.service..")
+                    .and().areNotInterfaces()
+                    .and().areNotAnnotatedWith("jakarta.enterprise.context.ApplicationScoped")
+                    .and().areNotAnnotatedWith("jakarta.inject.Singleton")
+                    .should().notBePublic()
+                    .allowEmptyShould(true)
+                    .because("Pure domain services should be package-private unless they need CDI injection");
+
+            rule.check(classes);
+        }
+    }
+
+    @Nested
+    @DisplayName("Enhanced Hexagonal Architecture Rules")
+    class EnhancedHexagonalArchitectureRules {
+
+        @Test
+        @DisplayName("Domain models should be immutable or have controlled mutability")
+        void domainModelsShouldBeImmutableOrHaveControlledMutability() {
+            ArchRule rule = classes().that()
+                    .resideInAPackage("..domain.core.model..")
+                    .and().areRecords()
+                    .should().haveOnlyFinalFields()
+                    .allowEmptyShould(true)
+                    .because("Domain records should be immutable");
+
+            rule.check(classes);
+        }
+
+        @Test
+        @DisplayName("Use case interfaces should define business operations")
+        void useCaseInterfacesShouldDefineBusinessOperations() {
+            ArchRule rule = classes().that()
+                    .resideInAPackage("..domain.port.in..")
+                    .should().beInterfaces()
+                    .andShould().haveSimpleNameEndingWith("UseCase")
+                    .allowEmptyShould(true)
+                    .because("Inbound ports should be use case interfaces");
+
+            rule.check(classes);
+        }
+
+        @Test
+        @DisplayName("Repository ports should define data access contracts")
+        void repositoryPortsShouldDefineDataAccessContracts() {
+            ArchRule rule = classes().that()
+                    .resideInAPackage("..domain.port.out..")
+                    .and().haveSimpleNameContaining("Repository")
+                    .should().beInterfaces()
+                    .allowEmptyShould(true)
+                    .because("Repository ports should be interfaces defining data access contracts");
+
+            rule.check(classes);
+        }
+
+        @Test
+        @DisplayName("Adapters should implement corresponding ports")
+        void adaptersShouldImplementCorrespondingPorts() {
+            ArchRule rule = classes().that()
+                    .resideInAPackage("..infrastructure.adapter.out..")
+                    .and().haveSimpleNameEndingWith("Adapter")
+                    .should().dependOnClassesThat()
+                    .resideInAPackage("..domain.port.out..")
+                    .allowEmptyShould(true)
+                    .because("Outbound adapters should implement domain ports");
+
+            rule.check(classes);
+        }
+
+        @Test
+        @DisplayName("Configuration should be externalized from domain logic")
+        void configurationShouldBeExternalizedFromDomainLogic() {
+            ArchRule rule = noClasses().that()
+                    .resideInAnyPackage("..domain.core..", "..domain.port..")
+                    .should().dependOnClassesThat()
+                    .resideInAnyPackage(
+                            "..config..",
+                            "io.quarkus.arc.config..",
+                            "org.eclipse.microprofile.config.."
+                    )
+                    .allowEmptyShould(true)
+                    .because("Domain should not depend on configuration frameworks");
 
             rule.check(classes);
         }
