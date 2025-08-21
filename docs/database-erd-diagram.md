@@ -2,6 +2,20 @@
 
 This diagram shows the optimized database schema for the Librarie library management system, designed for PostgreSQL 16 with performance and scalability in mind.
 
+## Migration Task T4 Entity Mapping
+
+This ERD implements all entities required by Migration Plan Task T4:
+
+- **Books**: `books` table - Core book metadata and file information
+- **Formats**: `formats` table - Multiple file formats per book (EPUB, PDF, etc.)
+- **Authors**: `authors` table - Author information and metadata
+- **Tags**: `tags` table - Book categorization and tagging system
+- **Series**: `series` table - Book series management
+- **BookTag**: `book_tags` table - Many-to-many relationship between books and tags
+- **BookAuthor**: `original_work_authors` table - Many-to-many relationship between original works and authors
+- **UserExternalRef**: `users` table - OIDC-based user management with external identity integration
+- **SyncState**: `reading_progress` table - KOReader sync state for tracking reading progress across devices
+
 ```mermaid
 erDiagram
     %% Core Content Tables
@@ -89,7 +103,7 @@ erDiagram
     }
     
     LANGUAGES {
-        char code PK "ISO 639-1 language code"
+        varchar code PK "BCP 47 language code (e.g., en-US, fr-CA)"
         text name "Language display name"
         boolean rtl "Right-to-left reading direction"
     }
@@ -130,7 +144,7 @@ erDiagram
     RATINGS {
         uuid id PK "Primary key"
         uuid book_id FK "Book reference"
-        text user_subject "OIDC user identifier"
+        uuid user_id FK "User reference"
         integer rating "1-5 star rating"
         text review "Optional review text"
         timestamptz created_at "Rating creation"
@@ -141,7 +155,7 @@ erDiagram
         uuid id PK "Primary key"
         uuid book_id FK "Book reference"
         uuid format_id FK "Format being read"
-        text user_subject "OIDC user identifier"
+        uuid user_id FK "User reference"
         text device_id "Reading device identifier"
         text progress_cfi "Canonical Fragment Identifier"
         decimal progress_percent "Reading progress (0-100)"
@@ -174,12 +188,28 @@ erDiagram
     
     DOWNLOAD_HISTORY {
         uuid id PK "Primary key"
-        uuid book_id FK "Downloaded book"
         uuid format_id FK "Downloaded format"
-        text user_subject "OIDC user identifier"
-        inet ip_address "Client IP address"
+        uuid user_id FK "User reference"
+        varchar ip_address "Client IP address"
         text user_agent "Client user agent"
-        timestamptz downloaded_at "Download timestamp"
+        timestamptz created_at "Download timestamp"
+        timestamptz updated_at "Last update"
+    }
+    
+    USERS {
+        uuid id PK "Primary key"
+        text oidc_origin_name "OIDC provider name"
+        text oidc_subject "OIDC user subject"
+        text public_name "User display name"
+        timestamptz created_at "Account creation"
+        timestamptz updated_at "Last update"
+    }
+    
+    SYSTEM_CONFIG {
+        text key PK "Configuration key"
+        text value "Configuration value"
+        text description "Configuration description"
+        timestamptz updated_at "Last update"
     }
     
     %% Relationships
@@ -187,7 +217,7 @@ erDiagram
     BOOKS ||--o{ RATINGS : "rated by users"
     BOOKS }o--|| LANGUAGES : "written in language"
     BOOKS ||--o{ READING_PROGRESS : "reading sessions"
-    BOOKS ||--o{ DOWNLOAD_HISTORY : "download events"
+    BOOKS }o--|| PUBLISHERS : "published by"
 
     BOOKS ||--o{ BOOK_ORIGINAL_WORKS : "represents original works"
     ORIGINAL_WORKS ||--o{ BOOK_ORIGINAL_WORKS : "manifested in books"
@@ -208,6 +238,10 @@ erDiagram
 
     FORMATS ||--o{ READING_PROGRESS : "read in format"
     FORMATS ||--o{ DOWNLOAD_HISTORY : "downloaded format"
+    
+    USERS ||--o{ RATINGS : "user ratings"
+    USERS ||--o{ READING_PROGRESS : "user progress"
+    USERS ||--o{ DOWNLOAD_HISTORY : "user downloads"
 
     LANGUAGES ||--o{ USER_PREFERENCES : "preferred language"
 ```

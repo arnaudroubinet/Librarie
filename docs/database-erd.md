@@ -4,6 +4,20 @@
 
 This ERD represents an optimized database schema for a modern library management system targeting PostgreSQL 16. The design is inspired by Calibre's proven schema but enhanced for web-scale performance, modern authentication, and cloud-native deployments.
 
+## Migration Task T4 Entity Implementation
+
+This database schema implements all entities required by Migration Plan Task T4:
+
+- **Books**: Core book metadata with file system integration
+- **Formats**: Multiple file format support per book (EPUB, PDF, MOBI, etc.)
+- **Authors**: Author management with biographical information
+- **Tags**: Flexible book categorization system
+- **Series**: Book series management with ordering
+- **BookTag**: Many-to-many relationship table `book_tags`
+- **BookAuthor**: Implemented as `original_work_authors` for rich author-work relationships
+- **UserExternalRef**: OIDC user integration via `users` table
+- **SyncState**: KOReader sync implementation via `reading_progress` table
+
 ## Design Principles
 
 - **Performance First**: Optimized for libraries with 100k+ books
@@ -160,26 +174,44 @@ CREATE INDEX idx_formats_type ON formats(format_type);
 ### Languages
 ```sql
 CREATE TABLE languages (
-    code CHAR(2) PRIMARY KEY, -- ISO 639-1 language codes
+    code VARCHAR(35) PRIMARY KEY, -- BCP 47 language codes (e.g., en-US, fr-CA)
     name TEXT NOT NULL,
     rtl BOOLEAN DEFAULT FALSE -- Right-to-left reading direction
 );
 
--- Pre-populate with common languages
+-- Pre-populate with common languages including regional variants
 INSERT INTO languages VALUES 
-    ('en', 'English', FALSE),
-    ('fr', 'French', FALSE),
-    ('es', 'Spanish', FALSE),
-    ('de', 'German', FALSE),
-    ('ar', 'Arabic', TRUE);
+    ('en-US', 'English (United States)', FALSE),
+    ('en-GB', 'English (United Kingdom)', FALSE),
+    ('fr-FR', 'French (France)', FALSE),
+    ('fr-CA', 'French (Canada)', FALSE),
+    ('es-ES', 'Spanish (Spain)', FALSE),
+    ('de-DE', 'German (Germany)', FALSE),
+    ('ar-SA', 'Arabic (Saudi Arabia)', TRUE);
+```
+
+### Users (OIDC Integration)
+```sql
+CREATE TABLE users (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    oidc_origin_name TEXT NOT NULL,
+    oidc_subject TEXT NOT NULL,
+    public_name TEXT NOT NULL UNIQUE,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    CONSTRAINT uk_users_oidc UNIQUE (oidc_origin_name, oidc_subject)
+);
+
+CREATE INDEX idx_users_oidc ON users(oidc_origin_name, oidc_subject);
+CREATE UNIQUE INDEX idx_users_public_name ON users(public_name);
 ```
 
 ### Ratings
 ```sql
 CREATE TABLE ratings (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     book_id UUID NOT NULL REFERENCES books(id) ON DELETE CASCADE,
-    user_subject TEXT NOT NULL, -- OIDC subject identifier
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     rating INTEGER CHECK (rating >= 1 AND rating <= 5),
     review TEXT,
     created_at TIMESTAMPTZ DEFAULT NOW(),
@@ -187,8 +219,8 @@ CREATE TABLE ratings (
 );
 
 CREATE INDEX idx_ratings_book ON ratings(book_id);
-CREATE INDEX idx_ratings_user ON ratings(user_subject);
-CREATE UNIQUE INDEX idx_ratings_book_user ON ratings(book_id, user_subject);
+CREATE INDEX idx_ratings_user ON ratings(user_id);
+CREATE UNIQUE INDEX idx_ratings_book_user ON ratings(book_id, user_id);
 ```
 
 ## Relationship Tables (Many-to-Many)
@@ -265,19 +297,22 @@ CREATE INDEX idx_book_publishers_publisher ON book_publishers(publisher_id);
 ### Reading Progress (KOReader sync)
 ```sql
 CREATE TABLE reading_progress (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     book_id UUID NOT NULL REFERENCES books(id) ON DELETE CASCADE,
     format_id UUID REFERENCES formats(id) ON DELETE CASCADE,
-    user_subject TEXT NOT NULL, -- OIDC subject
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     device_id TEXT NOT NULL,
     progress_cfi TEXT, -- Canonical Fragment Identifier
     progress_percent DECIMAL(5,2) CHECK (progress_percent >= 0 AND progress_percent <= 100),
     last_read_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    created_at TIMESTAMPTZ DEFAULT NOW()
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE INDEX idx_reading_progress_user ON reading_progress(user_subject);
+CREATE INDEX idx_reading_progress_user ON reading_progress(user_id);
 CREATE INDEX idx_reading_progress_book ON reading_progress(book_id);
+CREATE INDEX idx_reading_progress_last_read ON reading_progress(last_read_at);
+CREATE UNIQUE INDEX idx_reading_progress_unique ON reading_progress(book_id, user_id, device_id);
 CREATE INDEX idx_reading_progress_last_read ON reading_progress(last_read_at);
 CREATE UNIQUE INDEX idx_reading_progress_unique ON reading_progress(book_id, user_subject, device_id);
 
@@ -304,22 +339,18 @@ CREATE INDEX idx_user_preferences_last_login ON user_preferences(last_login);
 ### Download History
 ```sql
 CREATE TABLE download_history (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    book_id UUID NOT NULL REFERENCES books(id) ON DELETE CASCADE,
-    format_id UUID REFERENCES formats(id) ON DELETE CASCADE,
-    user_subject TEXT NOT NULL,
-    ip_address INET,
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    format_id UUID NOT NULL REFERENCES formats(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    ip_address VARCHAR(45),
     user_agent TEXT,
-    downloaded_at TIMESTAMPTZ DEFAULT NOW()
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE INDEX idx_download_history_user ON download_history(user_subject);
-CREATE INDEX idx_download_history_book ON download_history(book_id);
-CREATE INDEX idx_download_history_date ON download_history(downloaded_at);
-
--- Partition by month for archival
-CREATE TABLE download_history_y2024m01 PARTITION OF download_history
-    FOR VALUES FROM ('2024-01-01') TO ('2024-02-01');
+CREATE INDEX idx_download_history_user ON download_history(user_id);
+CREATE INDEX idx_download_history_format ON download_history(format_id);
+CREATE INDEX idx_download_history_date ON download_history(created_at);
 ```
 
 ## System Tables
