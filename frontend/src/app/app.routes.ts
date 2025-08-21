@@ -11,6 +11,10 @@ export const routes: Routes = [
     loadComponent: () => import('./components/book-detail.component').then(c => c.BookDetailComponent)
   },
   { 
+    path: 'books/:id/read', 
+    loadComponent: () => import('./components/ebook-reader.component').then(c => c.EbookReaderComponent)
+  },
+  { 
     path: 'series', 
     loadComponent: () => import('./components/series-list.component').then(c => c.SeriesListComponent)
   },

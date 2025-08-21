@@ -13,6 +13,8 @@ import { MatGridListModule } from '@angular/material/grid-list';
 import { MatExpansionModule } from '@angular/material/expansion';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
+import { MatToolbarModule } from '@angular/material/toolbar';
+import { MatSliderModule } from '@angular/material/slider';
 
 // Export a single array to be reused by standalone components to keep imports concise.
 export const MATERIAL_MODULES = [
@@ -31,4 +33,6 @@ export const MATERIAL_MODULES = [
   MatExpansionModule,
   MatDatepickerModule,
   MatNativeDateModule,
+  MatToolbarModule,
+  MatSliderModule,
 ];
