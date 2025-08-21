@@ -2,10 +2,12 @@ package org.motpassants.infrastructure.adapter.in.rest;
 
 import org.motpassants.application.service.BookService;
 import org.motpassants.application.service.DemoDataService;
+import org.motpassants.application.service.ReadingProgressService;
 import org.motpassants.domain.core.model.Book;
 import org.motpassants.domain.core.model.BookSearchCriteria;
 import org.motpassants.domain.core.model.BookSortCriteria;
 import org.motpassants.domain.core.model.PageResult;
+import org.motpassants.domain.core.model.ReadingProgress;
 import org.motpassants.domain.core.model.SortField;
 import org.motpassants.domain.core.model.SortDirection;
 import org.motpassants.infrastructure.adapter.in.rest.dto.BookRequestDto;
@@ -43,6 +45,7 @@ import java.util.stream.Collectors;
 public class BookController {
 
     private final BookService bookService;
+    private final ReadingProgressService readingProgressService;
     private final org.motpassants.infrastructure.media.ImageCachingService imageCachingService;
     private final org.motpassants.infrastructure.config.LibrarieConfigProperties config;
     private final DemoDataService demoDataService;
@@ -51,8 +54,9 @@ public class BookController {
     Request httpRequest;
 
     @Inject
-    public BookController(BookService bookService, org.motpassants.infrastructure.media.ImageCachingService imageCachingService, org.motpassants.infrastructure.config.LibrarieConfigProperties config, DemoDataService demoDataService) {
+    public BookController(BookService bookService, ReadingProgressService readingProgressService, org.motpassants.infrastructure.media.ImageCachingService imageCachingService, org.motpassants.infrastructure.config.LibrarieConfigProperties config, DemoDataService demoDataService) {
         this.bookService = bookService;
+        this.readingProgressService = readingProgressService;
         this.imageCachingService = imageCachingService;
         this.config = config;
         this.demoDataService = demoDataService;
@@ -360,15 +364,163 @@ public class BookController {
                     .build();
             }
             
-            // For now, we just return a success response without actually storing the progress
-            // This maintains API compatibility with backend-copy
+            // Get additional parameters
+            Integer currentPage = null;
+            Integer totalPages = null;
+            
+            if (completionData.containsKey("currentPage") && completionData.get("currentPage") instanceof Number) {
+                currentPage = ((Number) completionData.get("currentPage")).intValue();
+            }
+            
+            if (completionData.containsKey("totalPages") && completionData.get("totalPages") instanceof Number) {
+                totalPages = ((Number) completionData.get("totalPages")).intValue();
+            }
+            
+            // For now, use a mock user ID - in real implementation, get from security context
+            UUID userId = UUID.fromString("550e8400-e29b-41d4-a716-446655440000"); // Mock user ID
+            
+            // Convert percentage to decimal (0-100 -> 0.0-1.0)
+            double progressDecimal = progress / 100.0;
+            
+            // Update reading progress
+            ReadingProgress readingProgress = readingProgressService.updateReadingProgress(
+                userId, bookId, progressDecimal, currentPage, totalPages);
+            
             Map<String, Object> response = Map.of(
                 "progress", progress,
+                "currentPage", readingProgress.getCurrentPage() != null ? readingProgress.getCurrentPage() : 0,
+                "totalPages", readingProgress.getTotalPages() != null ? readingProgress.getTotalPages() : 0,
+                "isCompleted", readingProgress.getIsCompleted() != null ? readingProgress.getIsCompleted() : false,
                 "status", "updated",
                 "message", "Reading completion updated successfully"
             );
             
             return Response.ok(response).build();
+            
+        } catch (IllegalArgumentException e) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                .entity("Invalid book ID format")
+                .build();
+        } catch (Exception e) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                .entity("Internal server error: " + e.getMessage())
+                .build();
+        }
+    }
+
+    @GET
+    @Path("/{id}/progress")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Operation(summary = "Get reading progress", description = "Get the current reading progress for a book")
+    @APIResponses(value = {
+        @APIResponse(responseCode = "200", description = "Reading progress retrieved successfully"),
+        @APIResponse(responseCode = "404", description = "Book not found or no reading progress"),
+        @APIResponse(responseCode = "400", description = "Invalid book ID")
+    })
+    public Response getReadingProgress(
+            @Parameter(description = "Book UUID", required = true)
+            @PathParam("id") String id) {
+        
+        try {
+            UUID bookId = bookService.validateAndParseId(id);
+            
+            Optional<Book> existingBook = bookService.getBookById(bookId);
+            if (existingBook.isEmpty()) {
+                return Response.status(Response.Status.NOT_FOUND)
+                    .entity("Book not found")
+                    .build();
+            }
+            
+            // For now, use a mock user ID - in real implementation, get from security context
+            UUID userId = UUID.fromString("550e8400-e29b-41d4-a716-446655440000"); // Mock user ID
+            
+            Optional<ReadingProgress> progress = readingProgressService.getReadingProgress(userId, bookId);
+            
+            if (progress.isEmpty()) {
+                return Response.status(Response.Status.NOT_FOUND)
+                    .entity("No reading progress found for this book")
+                    .build();
+            }
+            
+            ReadingProgress readingProgress = progress.get();
+            Map<String, Object> response = Map.of(
+                "progress", readingProgress.getProgress() != null ? readingProgress.getProgress() * 100 : 0.0,
+                "currentPage", readingProgress.getCurrentPage() != null ? readingProgress.getCurrentPage() : 0,
+                "totalPages", readingProgress.getTotalPages() != null ? readingProgress.getTotalPages() : 0,
+                "isCompleted", readingProgress.getIsCompleted() != null ? readingProgress.getIsCompleted() : false,
+                "lastReadAt", readingProgress.getLastReadAt()
+            );
+            
+            return Response.ok(response).build();
+            
+        } catch (IllegalArgumentException e) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                .entity("Invalid book ID format")
+                .build();
+        } catch (Exception e) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                .entity("Internal server error: " + e.getMessage())
+                .build();
+        }
+    }
+
+    @GET
+    @Path("/{id}/file")
+    @Produces("application/epub+zip")
+    @Operation(summary = "Get book file", description = "Streams the book file for reading")
+    @APIResponses(value = {
+        @APIResponse(responseCode = "200", description = "Book file returned"),
+        @APIResponse(responseCode = "404", description = "Book or file not found"),
+        @APIResponse(responseCode = "403", description = "Access denied")
+    })
+    public Response getBookFile(
+            @Parameter(description = "Book UUID", required = true)
+            @PathParam("id") String id) {
+        
+        try {
+            UUID bookId = bookService.validateAndParseId(id);
+            
+            Optional<Book> bookOpt = bookService.getBookById(bookId);
+            if (bookOpt.isEmpty()) {
+                return Response.status(Response.Status.NOT_FOUND)
+                    .entity("Book not found")
+                    .build();
+            }
+            
+            Book book = bookOpt.get();
+            
+            // For security, validate that the file is an EPUB
+            if (book.getPath() == null || !book.getPath().toLowerCase().endsWith(".epub")) {
+                return Response.status(Response.Status.BAD_REQUEST)
+                    .entity("Only EPUB files are supported for reading")
+                    .build();
+            }
+            
+            // Build the full file path (using the assets directory from config)
+            java.nio.file.Path basePath = java.nio.file.Paths.get(config.storage().baseDir());
+            java.nio.file.Path bookPath = basePath.resolve(book.getPath());
+            
+            // Security check - ensure the path is within the base directory
+            if (!bookPath.normalize().startsWith(basePath.normalize())) {
+                return Response.status(Response.Status.FORBIDDEN)
+                    .entity("Access denied")
+                    .build();
+            }
+            
+            // Check if file exists
+            if (!java.nio.file.Files.exists(bookPath)) {
+                return Response.status(Response.Status.NOT_FOUND)
+                    .entity("Book file not found")
+                    .build();
+            }
+            
+            // Stream the file
+            java.io.File file = bookPath.toFile();
+            return Response.ok(file)
+                .header("Content-Disposition", "inline; filename=\"" + book.getTitle() + ".epub\"")
+                .header("Content-Type", "application/epub+zip")
+                .header("Content-Length", file.length())
+                .build();
             
         } catch (IllegalArgumentException e) {
             return Response.status(Response.Status.BAD_REQUEST)
