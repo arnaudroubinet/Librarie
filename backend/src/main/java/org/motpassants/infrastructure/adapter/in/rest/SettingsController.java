@@ -49,24 +49,24 @@ public class SettingsController {
             // Convert domain models to DTOs
             EntityCounts entityCounts = settings.getEntityCounts();
             EntityCountsDto entityCountsDto = new EntityCountsDto(
-                entityCounts.getBooks(),
-                entityCounts.getSeries(),
-                entityCounts.getAuthors(),
-                entityCounts.getPublishers(),
-                entityCounts.getLanguages(),
-                entityCounts.getFormats(),
-                entityCounts.getTags()
+                entityCounts.books(),
+                entityCounts.series(),
+                entityCounts.authors(),
+                entityCounts.publishers(),
+                entityCounts.languages(),
+                entityCounts.formats(),
+                entityCounts.tags()
             );
             
             FeatureFlagsDto featureFlagsDto = new FeatureFlagsDto(
-                settings.getFeatureFlags().isEnableIngest(),
-                settings.getFeatureFlags().isEnableExport(),
-                settings.getFeatureFlags().isEnableSync()
+                settings.getFeatureFlags().enableIngest(),
+                settings.getFeatureFlags().enableExport(),
+                settings.getFeatureFlags().enableSync()
             );
             
             StorageConfigurationDto storageConfigurationDto = new StorageConfigurationDto(
-                settings.getStorageConfiguration().getBaseDirectory(),
-                settings.getStorageConfiguration().getAllowedFileTypes()
+                settings.getStorageConfiguration().baseDirectory(),
+                settings.getStorageConfiguration().allowedFileTypes()
             );
             
             SettingsResponseDto response = new SettingsResponseDto(

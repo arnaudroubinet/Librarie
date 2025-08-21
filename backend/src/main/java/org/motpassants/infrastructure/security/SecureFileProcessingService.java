@@ -93,10 +93,67 @@ public class SecureFileProcessingService {
                 return false;
             }
             
-            return true;
+            // Validate image format headers
+            return isValidImageFormat(fileName, filePath);
             
         } catch (IOException e) {
             LOG.error("Error validating image file: " + filePath, e);
+            return false;
+        }
+    }
+    
+    /**
+     * Validates image format by checking magic bytes/headers.
+     */
+    private boolean isValidImageFormat(String fileName, Path filePath) {
+        try {
+            byte[] header = Files.readAllBytes(filePath);
+            if (header.length < 512) {
+                header = Arrays.copyOf(header, Math.min(header.length, 512));
+            } else {
+                header = Arrays.copyOf(header, 512);
+            }
+            
+            if (header.length < 2) {
+                return false;
+            }
+            
+            // Check for executable or script content
+            String headerStr = new String(header).toLowerCase();
+            if (headerStr.contains("#!/bin/") || 
+                headerStr.contains("<script") ||
+                headerStr.contains("javascript:") ||
+                headerStr.startsWith("mz")) {
+                return false;
+            }
+            
+            // JPEG files should start with FFD8FF
+            if (fileName.endsWith(".jpg") || fileName.endsWith(".jpeg")) {
+                return header.length >= 3 && 
+                       (header[0] & 0xFF) == 0xFF && 
+                       (header[1] & 0xFF) == 0xD8 && 
+                       (header[2] & 0xFF) == 0xFF;
+            }
+            
+            // PNG files should start with 89504E47
+            if (fileName.endsWith(".png")) {
+                return header.length >= 4 && 
+                       (header[0] & 0xFF) == 0x89 && 
+                       (header[1] & 0xFF) == 0x50 && 
+                       (header[2] & 0xFF) == 0x4E && 
+                       (header[3] & 0xFF) == 0x47;
+            }
+            
+            // For other image formats, do basic validation
+            if (ALLOWED_IMAGE_EXTENSIONS.stream().anyMatch(fileName::endsWith)) {
+                // Allow if no malicious patterns detected
+                return true;
+            }
+            
+            return false;
+            
+        } catch (IOException e) {
+            LOG.error("Error reading image file for validation: " + filePath, e);
             return false;
         }
     }
@@ -133,10 +190,17 @@ public class SecureFileProcessingService {
      */
     private boolean isValidFileContent(Path filePath) {
         try {
-            // Read first few bytes to check for malicious content
+            // Read first few bytes to check for malicious content and format validation
             byte[] header = Files.readAllBytes(filePath);
             if (header.length > 1024) {
                 header = Arrays.copyOf(header, 1024);
+            }
+            
+            // Check file format based on extension
+            String fileName = filePath.getFileName().toString().toLowerCase();
+            if (!isValidFileFormat(fileName, header)) {
+                LOG.warn("Invalid file format for: " + filePath);
+                return false;
             }
             
             // Convert to string for basic checks
@@ -146,7 +210,9 @@ public class SecureFileProcessingService {
             if (headerStr.contains("<script") || 
                 headerStr.contains("javascript:") ||
                 headerStr.contains("vbscript:") ||
-                headerStr.contains("data:text/html")) {
+                headerStr.contains("data:text/html") ||
+                headerStr.contains("#!/bin/") ||
+                headerStr.startsWith("mz")) { // Windows executable header
                 LOG.warn("Potentially malicious content detected in file: " + filePath);
                 return false;
             }
@@ -157,6 +223,35 @@ public class SecureFileProcessingService {
             LOG.error("Error reading file content for validation: " + filePath, e);
             return false;
         }
+    }
+    
+    /**
+     * Validates file format by checking magic bytes/headers.
+     */
+    private boolean isValidFileFormat(String fileName, byte[] header) {
+        if (header.length < 2) {
+            return false;
+        }
+        
+        // PDF files should start with %PDF
+        if (fileName.endsWith(".pdf")) {
+            return header.length >= 4 && 
+                   (header[0] & 0xFF) == 0x25 && (header[1] & 0xFF) == 0x50 && 
+                   (header[2] & 0xFF) == 0x44 && (header[3] & 0xFF) == 0x46; // %PDF
+        }
+        
+        // EPUB files are ZIP archives, should start with PK
+        if (fileName.endsWith(".epub")) {
+            return header.length >= 2 && 
+                   (header[0] & 0xFF) == 0x50 && (header[1] & 0xFF) == 0x4B; // PK
+        }
+        
+        // For other book formats, allow them (they may be text-based)
+        if (ALLOWED_BOOK_EXTENSIONS.stream().anyMatch(fileName::endsWith)) {
+            return true;
+        }
+        
+        return false;
     }
     
     /**
