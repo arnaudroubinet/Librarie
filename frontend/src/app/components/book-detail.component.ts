@@ -88,6 +88,20 @@ import { environment } from '../../environments/environment';
                 }
               </div>
 
+              <!-- Action Buttons -->
+              <div class="action-buttons">
+                @if (isEpubBook()) {
+                  <button mat-raised-button color="primary" (click)="readBook()" class="read-button">
+                    <mat-icon>menu_book</mat-icon>
+                    Read Book
+                  </button>
+                }
+                <button mat-stroked-button (click)="downloadBook()" class="download-button">
+                  <mat-icon>download</mat-icon>
+                  Download
+                </button>
+              </div>
+
               <!-- Details List -->
               <div class="details-list">
                 @if (book()!.description) {
@@ -361,6 +375,39 @@ export class BookDetailComponent implements OnInit {
   }
 
   getShortTitle = utilGetShortTitle;
+
+  // Check if the book is an EPUB file that can be read
+  isEpubBook(): boolean {
+    const book = this.book();
+    return book?.formats?.some(format => format.toLowerCase() === 'epub') || 
+           book?.path?.toLowerCase().endsWith('.epub') || false;
+  }
+
+  // Navigate to the ebook reader
+  readBook(): void {
+    const book = this.book();
+    if (book && this.isEpubBook()) {
+      this.router.navigate(['/books', book.id, 'read']);
+    } else {
+      this.snackBar.open('This book format is not supported for reading online.', 'Close', {
+        duration: 3000
+      });
+    }
+  }
+
+  // Download the book file
+  downloadBook(): void {
+    const book = this.book();
+    if (book) {
+      const downloadUrl = `${this.apiUrl}/v1/books/${book.id}/file`;
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = `${book.title}.epub`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  }
 
   // No author click handler needed; IDs are provided
 }
