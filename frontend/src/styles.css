@@ -1,8 +1,6 @@
 /* You can add global styles to this file, and also import other style files */
-/* Readium CSS base and optional themes */
-@import '@readium/css/css/dist/ReadiumCSS-default.css';
-@import '@readium/css/css/src/modules/ReadiumCSS-night_mode.css';
-@import '@readium/css/css/src/modules/ReadiumCSS-sepia_mode.css';
+/* Deliberately avoid importing Readium CSS globally to prevent leaking styles into the ebook content.
+  Readium will manage its own styles inside the navigator iframe. */
 
 /* Angular Material theme */
 @import '@angular/material/prebuilt-themes/azure-blue.css';

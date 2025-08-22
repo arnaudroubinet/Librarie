@@ -236,12 +236,12 @@ import type { RwpmLink } from '../models/rwpm.model';
       z-index: 0;
     }
 
-    /* Readium navigator can set inline sizes on its iframe; force full bleed */
-    .reader-stage > iframe,
-    .reader-stage .navigator-root,
-    .reader-stage .navigator-root > iframe,
-    .reader-stage [data-readium-view],
-    .reader-stage [data-readium-view] > iframe {
+  /* Readium navigator can set inline sizes on its iframe; force full bleed (sizing only) */
+  .reader-stage > iframe,
+  .reader-stage .navigator-root,
+  .reader-stage .navigator-root > iframe,
+  .reader-stage [data-readium-view],
+  .reader-stage [data-readium-view] > iframe {
       position: absolute !important;
       inset: 0 !important;
       width: 100% !important;
@@ -814,12 +814,6 @@ export class EbookReaderComponent implements OnInit, OnDestroy {
     if (nav?.setTheme) {
       nav.setTheme(t);
     }
-    // Fallback: try to reflect classes inside iframe
-    if (this._fallbackIframe?.contentDocument?.body) {
-      const b = this._fallbackIframe.contentDocument.body;
-      b.classList.toggle('dark-theme', t === 'night');
-      b.classList.toggle('sepia-theme', t === 'sepia');
-    }
   }
 
   private persistSettings(bookId: string): void {
@@ -1098,8 +1092,7 @@ export class EbookReaderComponent implements OnInit, OnDestroy {
       this._fallbackIframe = iframe;
       // Reset spine index to first item
       this._currentSpineIndex = 0;
-      iframe.addEventListener('load', () => {
-        this.updateFallbackStyles();
+    iframe.addEventListener('load', () => {
         // Track scroll to update progress while using iframe fallback
         try {
           const doc = this._fallbackIframe?.contentDocument;
@@ -1132,34 +1125,13 @@ export class EbookReaderComponent implements OnInit, OnDestroy {
         // Prefetch neighbors when first page is ready
         this.prefetchNeighborSpine();
       });
-      this.updateFallbackStyles();
     } catch (e) {
       console.error('[Reader] Failed to build fallback iframe:', e);
     }
   }
 
-  // Apply key presentation styles inside fallback iframe when navigator is not used
-  private updateFallbackStyles(): void {
-    const doc = this._fallbackIframe?.contentDocument;
-    if (!doc) return;
-    try {
-      const root = doc.documentElement as HTMLElement;
-      const body = doc.body as HTMLElement;
-      const fontSizePx = `${this.fontSize}px`;
-      const family = this.isSerif() ? 'serif' : 'sans-serif';
-      root.style.fontSize = fontSizePx;
-      body.style.fontSize = fontSizePx;
-      root.style.fontFamily = family;
-      body.style.fontFamily = family;
-      (root.style as any).hyphens = this.hyphenate() ? 'auto' : 'manual';
-      (root.style as any).webkitHyphens = this.hyphenate() ? 'auto' : 'manual';
-      (body.style as any).hyphens = this.hyphenate() ? 'auto' : 'manual';
-      (body.style as any).webkitHyphens = this.hyphenate() ? 'auto' : 'manual';
-      body.style.overflowY = 'auto';
-      root.style.height = '100%';
-      body.style.minHeight = '100%';
-    } catch {}
-  }
+  // No-op: we deliberately avoid injecting styles into the fallback iframe to prevent altering ebook content.
+  private updateFallbackStyles(): void { /* intentionally empty */ }
 
   // Navigate fallback iframe to a specific spine item and position
   private navigateFallbackToSpine(index: number, position: 'top'|'bottom' = 'top'): void {
