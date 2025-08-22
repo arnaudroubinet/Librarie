@@ -171,13 +171,21 @@ import type { RwpmLink } from '../models/rwpm.model';
       color: var(--reader-text, #000000);
     }
 
+    /* Toolbar: match main theme */
+    .mat-toolbar.reader-toolbar.mat-toolbar-single-row,
     .reader-toolbar {
       flex-shrink: 0;
-      background: var(--toolbar-bg, #f5f5f5);
-      border-bottom: 1px solid var(--border-color, #e0e0e0);
-  position: relative; /* ensure own stacking context */
-  z-index: 5; /* sit above reader iframe */
-  overflow: hidden; /* clip enlarged touch-targets so they don't overlap content */
+      background: var(--app-bg) !important;
+      color: var(--content-fg) !important;
+      border-bottom: 1px solid var(--border-color) !important;
+      position: relative; /* ensure own stacking context */
+      z-index: 5; /* sit above reader iframe */
+      overflow: hidden; /* clip enlarged touch-targets so they don't overlap content */
+    }
+    .reader-toolbar iconify-icon,
+    .reader-toolbar .mat-mdc-icon-button,
+    .reader-toolbar .mat-mdc-icon-button iconify-icon {
+      color: var(--content-fg) !important;
     }
 
     .book-title {
@@ -287,16 +295,23 @@ import type { RwpmLink } from '../models/rwpm.model';
     }
     .toc-link:hover { background: rgba(0,0,0,0.05); }
 
+    /* Bottom controls: match main theme */
     .reader-controls {
       flex-shrink: 0;
       display: flex;
       align-items: center;
       padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
-      background: var(--toolbar-bg, #f5f5f5);
-      border-top: 1px solid var(--border-color, #e0e0e0);
+      background: var(--app-bg) !important;
+      color: var(--content-fg) !important;
+      border-top: 1px solid var(--border-color) !important;
       gap: 16px;
-  position: relative;
-  z-index: 5; /* keep above navigator view */
+      position: relative;
+      z-index: 5; /* keep above navigator view */
+    }
+    .reader-controls iconify-icon,
+    .reader-controls .mat-mdc-icon-button,
+    .reader-controls .mat-mdc-icon-button iconify-icon {
+      color: var(--content-fg) !important;
     }
 
     .progress-section {
@@ -335,11 +350,7 @@ import type { RwpmLink } from '../models/rwpm.model';
       border: none;
     }
 
-    .progress-text {
-      text-align: center;
-      font-size: 12px;
-      color: var(--text-secondary, #666);
-    }
+  .progress-text { text-align: center; font-size: 12px; color: var(--muted-fg); }
 
     /* Prevent clicks on oversized Angular Material touch/ripple spans from passing through */
     .reader-toolbar .mat-mdc-button-touch-target,

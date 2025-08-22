@@ -149,7 +149,8 @@
 
 .item-count { color: #cfcfcf; font-weight: 400; }
 
-/* Book grid and card visuals moved to global styles.css */
+/* Book grid/card visuals come from global consolidated rules in styles.css; only grid spacing here */
+.books-grid{ grid-template-columns:repeat(auto-fill,240px); gap:24px; padding:32px; margin:0 auto }
 
 /* Contributors Grid using author-list styles */
 .contributors-grid { display: grid; grid-template-columns: repeat(auto-fill, 240px); gap: 16px; justify-content: center; }
@@ -182,9 +183,12 @@
 }
 
 /* Responsive */
-@media (max-width: 768px) {
+@media (max-width:768px){
   .series-layout { flex-direction: column; gap: 20px; }
   .series-cover-container { flex: none; align-self: center; }
-  .books-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 16px; }
+  .books-grid{ grid-template-columns:repeat(auto-fill,240px); justify-content:center; gap:24px; padding:24px }
   .contributors-grid { grid-template-columns: repeat(auto-fill, 200px); gap: 16px; justify-content: center; }
+}
+@media (max-width:480px){ 
+  .books-grid{ grid-template-columns:repeat(auto-fill,240px); justify-content:center; gap:16px; padding:16px }
 }

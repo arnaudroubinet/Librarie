@@ -121,33 +121,46 @@ import { forkJoin, of } from 'rxjs';
               @if (books().length > 0) {
                 <div class="books-grid">
                   @for (book of books(); track book.id) {
-                    <div class="book-card" [routerLink]="['/books', book.id]">
+                    <div class="book-card" 
+                         matRipple
+                         [routerLink]="['/books', book.id]">
                       <div class="book-cover">
-                        @if (book.hasCover) {
-                          <img [src]="apiUrl + '/v1/books/' + book.id + '/cover'"
+                        @if (getEffectiveBookImagePath(book)) {
+                          <img [src]="getEffectiveBookImagePath(book)!"
                                [alt]="book.title + ' cover'"
-                               class="cover-image">
+                               class="cover-image"
+                               loading="lazy"
+                               decoding="async"
+                               fetchpriority="low"
+                               (load)="onImageLoad($event)"
+                               (error)="onImageError($event)">
                         } @else {
                           <div class="cover-placeholder">
-                            <mat-icon>book</mat-icon>
+                            <mat-icon>menu_book</mat-icon>
+                            <span class="book-title-text">{{ getShortBookTitle(book.title) }}</span>
                           </div>
                         }
+                        <div class="book-overlay">
+                          <div class="book-actions">
+                            <button mat-icon-button class="action-btn" aria-label="Bookmark" (click)="toggleFavorite($event, book)">
+                              <iconify-icon [icon]="getBookmarkIcon(book)"></iconify-icon>
+                            </button>
+                            <button mat-icon-button class="action-btn" aria-label="Share" (click)="shareBook($event, book)">
+                              <iconify-icon icon="material-symbols-light:share"></iconify-icon>
+                            </button>
+                          </div>
+                        </div>
                       </div>
                       <div class="book-info">
-                        <h3 class="book-title">{{ book.title }}</h3>
-                        @if (book.seriesIndex) {
-                          <p class="book-index">Book {{ book.seriesIndex }}</p>
+                        <h3 class="book-title" [title]="book.title">{{ getShortBookTitle(book.title) }}</h3>
+                        @if (book.contributorsDetailed || book.contributors) {
+                          <p class="book-author">{{ getShortContributors(book.contributors, book.contributorsDetailed) }}</p>
                         }
-                        @if (getBookAuthorsDetailed(book).length > 0) {
-                          <p class="book-authors">
-                            @for (a of getBookAuthorsDetailed(book); track a.id; let last = $last) {
-                              <a class="author-link" [routerLink]="['/authors', a.id]" (click)="$event.stopPropagation()">{{ a.name }}</a>
-                              @if (!last) {<span>, </span>}
-                            }
-                          </p>
+                        @if (book.seriesIndex) {
+                          <p class="book-series">#{{ book.seriesIndex }}</p>
                         }
                         @if (book.publicationDate) {
-                          <p class="book-date">{{ formatDate(book.publicationDate!) }}</p>
+                          <p class="book-date">{{ getPublicationYear(book.publicationDate!) }}</p>
                         }
                       </div>
                     </div>
@@ -286,13 +299,16 @@ export class SeriesDetailComponent implements OnInit {
     this.booksLoading.set(true);
     this.seriesService.getSeriesBooksById(seriesId).subscribe({
       next: (items: any[]) => {
-        // Backend returns minimal fields; map them into Book interface shape we need
+        // Map API response into Book interface shape used by /books page
         const mapped: Book[] = (items || []).map(it => ({
           id: it.id,
           title: it.title,
           hasCover: it.hasCover,
           seriesIndex: it.seriesIndex,
-          publicationDate: it.publicationDate
+          publicationDate: it.publicationDate,
+          contributors: it.contributors,
+          contributorsDetailed: it.contributorsDetailed,
+          series: it.series
         }));
         this.books.set(mapped);
         this.booksLoading.set(false);
@@ -434,5 +450,94 @@ export class SeriesDetailComponent implements OnInit {
   onAuthorImageError(event: any, authorId?: string) {
     if (authorId) this.authorImageErrors.add(authorId);
     event.target.style.display = 'none';
+  }
+
+  // ===== Book card helpers and actions (mirror /books page) =====
+  getShortBookTitle(title: string): string {
+    return title.length > 30 ? title.substring(0, 30) + '...' : title;
+  }
+
+  getPublicationYear(publicationDate: string): number {
+    return new Date(publicationDate).getFullYear();
+  }
+
+  getShortContributors(
+    contributors?: Record<string, string[]>,
+    contributorsDetailed?: Record<string, Array<{ id: string; name: string }>>
+  ): string {
+    let allContributors: string[] = [];
+    if (contributorsDetailed) {
+      allContributors = Object.values(contributorsDetailed).flat().map(c => c.name);
+    } else if (contributors) {
+      allContributors = Object.values(contributors).flat();
+    }
+    if (allContributors.length === 0) return '';
+    if (allContributors.length === 1) return allContributors[0];
+    return `${allContributors[0]} and ${allContributors.length - 1} more`;
+  }
+
+  onImageLoad(event: any) {
+    event.target.classList.add('loaded');
+  }
+
+  getEffectiveBookImagePath(book: Book): string | null {
+    if (book.hasCover && book.id) {
+      return `${environment.apiUrl}/v1/books/${book.id}/cover`;
+    }
+    return null;
+  }
+
+  private favorites = new Set<string>();
+
+  toggleFavorite(event: Event, book: Book) {
+    event.stopPropagation();
+    if (!book?.id) return;
+    if (this.favorites.has(book.id)) {
+      this.favorites.delete(book.id);
+      this.snackBar.open('Removed bookmark', 'Close', { duration: 1500 });
+    } else {
+      this.favorites.add(book.id);
+      this.snackBar.open('Bookmarked', 'Close', { duration: 1500 });
+    }
+  }
+
+  getBookmarkIcon(book: Book): string {
+    return this.isBookmarked(book) ? 'material-symbols:book' : 'material-symbols:book-outline';
+  }
+
+  isBookmarked(book: Book): boolean {
+    return !!book?.id && this.favorites.has(book.id);
+  }
+
+  shareBook(event: Event, book: Book) {
+    event.stopPropagation();
+    const url = `${window.location.origin}/books/${book.id}`;
+    const done = () => this.snackBar.open('Book link copied to clipboard', 'Close', { duration: 2000 });
+    const fail = () => this.snackBar.open('Failed to copy link', 'Close', { duration: 2500 });
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url).then(done).catch(() => {
+        this.legacyCopy(url) ? done() : fail();
+      });
+    } else {
+      this.legacyCopy(url) ? done() : fail();
+    }
+  }
+
+  private legacyCopy(text: string): boolean {
+    try {
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.style.position = 'fixed';
+      textarea.style.left = '-9999px';
+      document.body.appendChild(textarea);
+      textarea.focus();
+      textarea.select();
+      const success = document.execCommand('copy');
+      document.body.removeChild(textarea);
+      return success;
+    } catch {
+      return false;
+    }
   }
 }
