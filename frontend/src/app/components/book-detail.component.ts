@@ -30,7 +30,7 @@ import { environment } from '../../environments/environment';
         <div class="book-detail">
           <div class="back-button">
             <button mat-button (click)="goBack()">
-              <iconify-icon icon="lets-icons:back"></iconify-icon>
+              <iconify-icon icon="material-symbols:arrow-back-rounded"></iconify-icon>
               Back
             </button>
           </div>
@@ -44,9 +44,9 @@ import { environment } from '../../environments/environment';
                      [alt]="book()!.title + ' cover'"
                      class="book-cover">
               } @else {
-                <div class="book-cover-placeholder">
+        <div class="book-cover-placeholder">
                   <div class="placeholder-content">
-                    <mat-icon class="placeholder-icon">menu_book</mat-icon>
+          <iconify-icon class="placeholder-icon" icon="material-symbols:menu-book-rounded"></iconify-icon>
                     <div class="placeholder-text">{{ getShortTitle(book()!.title) }}</div>
                   </div>
                 </div>
@@ -63,8 +63,8 @@ import { environment } from '../../environments/environment';
               <div class="title-section">
                 <h1 class="book-title">{{ book()!.title }}</h1>
         @if (book()!.series) {
-                  <div class="book-series">
-          <iconify-icon icon="material-symbols:books-movies-and-music"></iconify-icon>
+      <div class="book-series">
+    <iconify-icon icon="material-symbols:collections-bookmark-rounded"></iconify-icon>
                     @if (book()!.seriesId) {
                       <a class="series-link" [routerLink]="['/series', book()!.seriesId]">{{ book()!.series }}</a>
                     } @else {
@@ -76,8 +76,8 @@ import { environment } from '../../environments/environment';
                   </div>
                 }
                 @if (getAuthorsDetailed().length > 0) {
-                  <div class="book-authors">
-          <iconify-icon icon="material-symbols:supervised-user-circle"></iconify-icon>
+      <div class="book-authors">
+    <iconify-icon icon="material-symbols:person-rounded"></iconify-icon>
                     <span class="authors-list">
                       @for (a of getAuthorsDetailed(); track a.id; let last = $last) {
                         <a class="author-link" [routerLink]="['/authors', a.id]">{{ a.name }}</a>
@@ -92,12 +92,12 @@ import { environment } from '../../environments/environment';
               <div class="action-buttons">
                 @if (isEpubBook()) {
                   <button mat-raised-button color="primary" (click)="readBook()" class="read-button">
-                    <mat-icon>menu_book</mat-icon>
+                    <iconify-icon icon="material-symbols:menu-book-rounded"></iconify-icon>
                     Read Book
                   </button>
                 }
                 <button mat-stroked-button (click)="downloadBook()" class="download-button">
-                  <mat-icon>download</mat-icon>
+                  <iconify-icon icon="material-symbols:download-rounded"></iconify-icon>
                   Download
                 </button>
               </div>
@@ -203,7 +203,7 @@ import { environment } from '../../environments/environment';
               @if (getOtherContributors().length > 0) {
                 <div class="contributors-section">
                   <h2 class="section-title">
-                    <mat-icon>people</mat-icon>
+                    <iconify-icon icon="material-symbols:groups-rounded"></iconify-icon>
                     Other contributors
                   </h2>
                   <div class="contributors-list">
@@ -223,7 +223,7 @@ import { environment } from '../../environments/environment';
         </div>
       } @else {
         <div class="error-state">
-          <mat-icon class="error-icon">error</mat-icon>
+          <iconify-icon class="error-icon" icon="material-symbols:error-outline-rounded"></iconify-icon>
           <h2>Book not found</h2>
           <p>The requested book could not be found.</p>
           <button mat-raised-button color="primary" (click)="goBack()">

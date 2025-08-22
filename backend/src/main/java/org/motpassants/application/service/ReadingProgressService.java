@@ -29,7 +29,7 @@ public class ReadingProgressService implements ReadingProgressUseCase {
     
     @Override
     @Transactional
-    public ReadingProgress updateReadingProgress(UUID userId, UUID bookId, Double progress, Integer currentPage, Integer totalPages) {
+    public ReadingProgress updateReadingProgress(UUID userId, UUID bookId, Double progress, Integer currentPage, Integer totalPages, String progressLocator) {
         // Validate inputs
         if (userId == null || bookId == null) {
             throw new IllegalArgumentException("User ID and Book ID cannot be null");
@@ -49,6 +49,10 @@ public class ReadingProgressService implements ReadingProgressUseCase {
         } else {
             readingProgress = ReadingProgress.create(userId, bookId);
             readingProgress.updateProgress(progress, currentPage, totalPages);
+        }
+        // store raw locator JSON if provided (Option A)
+        if (progressLocator != null && !progressLocator.isBlank()) {
+            readingProgress.setProgressLocator(progressLocator);
         }
         
         return readingProgressRepository.save(readingProgress);
@@ -85,6 +89,6 @@ public class ReadingProgressService implements ReadingProgressUseCase {
     @Override
     @Transactional
     public ReadingProgress markAsCompleted(UUID userId, UUID bookId) {
-        return updateReadingProgress(userId, bookId, 1.0, null, null);
+        return updateReadingProgress(userId, bookId, 1.0, null, null, null);
     }
 }

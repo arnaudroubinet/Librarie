@@ -11,6 +11,8 @@ public class ReadingProgress {
     private Integer currentPage;
     private Integer totalPages;
     private Boolean isCompleted;
+    // Raw Readium locator JSON (optional)
+    private String progressLocator;
     private LocalDateTime lastReadAt;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
@@ -78,6 +80,9 @@ public class ReadingProgress {
 
     public Boolean getIsCompleted() { return isCompleted; }
     public void setIsCompleted(Boolean isCompleted) { this.isCompleted = isCompleted; }
+
+    public String getProgressLocator() { return progressLocator; }
+    public void setProgressLocator(String progressLocator) { this.progressLocator = progressLocator; }
 
     public LocalDateTime getLastReadAt() { return lastReadAt; }
     public void setLastReadAt(LocalDateTime lastReadAt) { this.lastReadAt = lastReadAt; }

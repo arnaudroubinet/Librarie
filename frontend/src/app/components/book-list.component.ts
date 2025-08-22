@@ -63,21 +63,35 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
             <p>Gathering your books from the digital shelves</p>
           </div>
         </div>
-      } @else {
-        @if (scrollState.isEmpty()) {
-          <div class="empty-library">
-            <div class="empty-content">
-              <mat-icon class="empty-icon">collections_bookmark</mat-icon>
-              <h2>No books found</h2>
-              <p>Your book library is empty. Start building your digital library by scanning your book directory.</p>
-              <button mat-raised-button color="accent" routerLink="/library" class="cta-button">
-                <iconify-icon icon="material-symbols:search-rounded"></iconify-icon>
-                Scan Library
+      } @else if (scrollState.error() && scrollState.items().length === 0) {
+        <div class="empty-library">
+          <div class="empty-content">
+            <mat-icon class="empty-icon" color="warn">cloud_off</mat-icon>
+            <h2>Can’t reach the backend</h2>
+            <p>{{ scrollState.error() }}</p>
+            <div style="display:flex; gap:12px; justify-content:center;">
+              <button mat-raised-button color="primary" (click)="refresh()">
+                <iconify-icon icon="material-symbols:refresh-rounded"></iconify-icon>
+                Retry
               </button>
+              <a mat-button href="http://localhost:8080/q/dev-ui/extensions" target="_blank" rel="noopener">Open Dev UI</a>
             </div>
           </div>
-        } @else {
-          <div class="library-content">
+        </div>
+      } @else if (scrollState.isEmpty()) {
+        <div class="empty-library">
+          <div class="empty-content">
+            <mat-icon class="empty-icon">collections_bookmark</mat-icon>
+            <h2>No books found</h2>
+            <p>Your book library is empty. Start building your digital library by scanning your book directory.</p>
+            <button mat-raised-button color="accent" routerLink="/library" class="cta-button">
+              <iconify-icon icon="material-symbols:search-rounded"></iconify-icon>
+              Scan Library
+            </button>
+          </div>
+        </div>
+      } @else {
+        <div class="library-content">
             <div class="books-grid">
               @for (book of scrollState.items(); track asBook(book).id) {
                 <div class="book-card" 
@@ -156,9 +170,8 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
                 <p>You've reached the end of your book collection</p>
               </div>
             }
-          </div>
-        }
-      }
+      </div>
+    }
     </div>
   `,
   styleUrls: ['./book-list.component.css']

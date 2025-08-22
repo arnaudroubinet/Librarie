@@ -1,4 +1,5 @@
 import { Injectable, inject, signal } from '@angular/core';
+import type { Locator } from '@readium/shared';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable, BehaviorSubject } from 'rxjs';
 import { environment } from '../../environments/environment';
@@ -9,12 +10,16 @@ export interface ReadingProgressData {
   totalPages?: number;
   isCompleted: boolean;
   lastReadAt?: string;
+  // Optional Readium locator (object or JSON string)
+  locator?: Locator | string;
 }
 
 export interface ReadingProgressRequest {
   progress: number;
   currentPage?: number;
   totalPages?: number;
+  // Optional Readium locator to persist precise position
+  locator?: Locator;
 }
 
 @Injectable({
@@ -22,7 +27,7 @@ export interface ReadingProgressRequest {
 })
 export class ReadingProgressService {
   private http = inject(HttpClient);
-  private baseUrl = environment.production ? '' : 'http://localhost:8080';
+  private baseUrl = environment.apiUrl || '';
   
   // Signal for current reading progress
   private _currentProgress = signal<ReadingProgressData | null>(null);

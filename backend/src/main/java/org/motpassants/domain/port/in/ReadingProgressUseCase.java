@@ -23,7 +23,7 @@ public interface ReadingProgressUseCase {
      * @param totalPages the total number of pages
      * @return the updated reading progress
      */
-    ReadingProgress updateReadingProgress(UUID userId, UUID bookId, Double progress, Integer currentPage, Integer totalPages);
+    ReadingProgress updateReadingProgress(UUID userId, UUID bookId, Double progress, Integer currentPage, Integer totalPages, String progressLocator);
     
     /**
      * Get reading progress for a user and book.

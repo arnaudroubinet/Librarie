@@ -9,7 +9,7 @@ import { environment } from '../../environments/environment';
   providedIn: 'root'
 })
 export class SettingsService {
-  private baseUrl = environment.apiUrl || 'http://localhost:8080';
+  private baseUrl = environment.apiUrl || '';
   private static readonly CACHE_KEY = 'settingsCache:v1';
   private static readonly TTL_MS = 60 * 60 * 1000; // 1 hour
 

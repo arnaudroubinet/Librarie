@@ -26,10 +26,10 @@ public class ReadingProgressRepositoryAdapter implements ReadingProgressReposito
     }
 
     private ReadingProgress insert(ReadingProgress readingProgress) {
-        String sql = """
-                INSERT INTO reading_progress (id, book_id, user_id, device_id, progress_cfi, progress_percent, last_read_at, created_at, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """;
+    String sql = """
+        INSERT INTO reading_progress (id, book_id, user_id, device_id, progress_cfi, progress_percent, progress_locator, last_read_at, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?::jsonb, ?, ?, ?)
+        """;
 
         try (Connection conn = dataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -44,11 +44,15 @@ public class ReadingProgressRepositoryAdapter implements ReadingProgressReposito
             stmt.setString(5, buildCfi(readingProgress)); // Convert pages to CFI-like format
             stmt.setBigDecimal(6, java.math.BigDecimal.valueOf(
                 readingProgress.getProgress() != null ? readingProgress.getProgress() * 100 : 0.0));
-            stmt.setTimestamp(7, readingProgress.getLastReadAt() != null ? 
+            // Optional locator JSON string from domain
+            String locator = readingProgress.getProgressLocator();
+            stmt.setString(7, locator);
+
+            stmt.setTimestamp(8, readingProgress.getLastReadAt() != null ? 
                 Timestamp.valueOf(readingProgress.getLastReadAt()) : Timestamp.valueOf(LocalDateTime.now()));
-            stmt.setTimestamp(8, readingProgress.getCreatedAt() != null ? 
+            stmt.setTimestamp(9, readingProgress.getCreatedAt() != null ? 
                 Timestamp.valueOf(readingProgress.getCreatedAt()) : Timestamp.valueOf(LocalDateTime.now()));
-            stmt.setTimestamp(9, readingProgress.getUpdatedAt() != null ? 
+            stmt.setTimestamp(10, readingProgress.getUpdatedAt() != null ? 
                 Timestamp.valueOf(readingProgress.getUpdatedAt()) : Timestamp.valueOf(LocalDateTime.now()));
 
             stmt.executeUpdate();
@@ -60,11 +64,11 @@ public class ReadingProgressRepositoryAdapter implements ReadingProgressReposito
     }
 
     private ReadingProgress update(ReadingProgress readingProgress) {
-        String sql = """
-                UPDATE reading_progress 
-                SET progress_cfi = ?, progress_percent = ?, last_read_at = ?, updated_at = ?
-                WHERE id = ?
-                """;
+    String sql = """
+        UPDATE reading_progress 
+        SET progress_cfi = ?, progress_percent = ?, progress_locator = ?::jsonb, last_read_at = ?, updated_at = ?
+        WHERE id = ?
+        """;
 
         try (Connection conn = dataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -72,10 +76,13 @@ public class ReadingProgressRepositoryAdapter implements ReadingProgressReposito
             stmt.setString(1, buildCfi(readingProgress));
             stmt.setBigDecimal(2, java.math.BigDecimal.valueOf(
                 readingProgress.getProgress() != null ? readingProgress.getProgress() * 100 : 0.0));
-            stmt.setTimestamp(3, readingProgress.getLastReadAt() != null ? 
+            String locator = readingProgress.getProgressLocator();
+            stmt.setString(3, locator);
+
+            stmt.setTimestamp(4, readingProgress.getLastReadAt() != null ? 
                 Timestamp.valueOf(readingProgress.getLastReadAt()) : Timestamp.valueOf(LocalDateTime.now()));
-            stmt.setTimestamp(4, Timestamp.valueOf(LocalDateTime.now()));
-            stmt.setObject(5, readingProgress.getId());
+            stmt.setTimestamp(5, Timestamp.valueOf(LocalDateTime.now()));
+            stmt.setObject(6, readingProgress.getId());
 
             stmt.executeUpdate();
             return readingProgress;
@@ -88,7 +95,7 @@ public class ReadingProgressRepositoryAdapter implements ReadingProgressReposito
     @Override
     public Optional<ReadingProgress> findByUserIdAndBookId(UUID userId, UUID bookId) {
         String sql = """
-                SELECT id, book_id, user_id, device_id, progress_cfi, progress_percent, last_read_at, created_at, updated_at
+                SELECT id, book_id, user_id, device_id, progress_cfi, progress_percent, progress_locator, last_read_at, created_at, updated_at
                 FROM reading_progress 
                 WHERE user_id = ? AND book_id = ? AND device_id = 'web-reader'
                 ORDER BY updated_at DESC
@@ -116,7 +123,7 @@ public class ReadingProgressRepositoryAdapter implements ReadingProgressReposito
     @Override
     public List<ReadingProgress> findByUserId(UUID userId) {
         String sql = """
-                SELECT id, book_id, user_id, device_id, progress_cfi, progress_percent, last_read_at, created_at, updated_at
+                SELECT id, book_id, user_id, device_id, progress_cfi, progress_percent, progress_locator, last_read_at, created_at, updated_at
                 FROM reading_progress 
                 WHERE user_id = ? AND device_id = 'web-reader'
                 ORDER BY last_read_at DESC
@@ -191,6 +198,12 @@ public class ReadingProgressRepositoryAdapter implements ReadingProgressReposito
         // Parse CFI to extract page information
         String cfi = rs.getString("progress_cfi");
         parseCfi(cfi, progress);
+
+        // Attach raw locator if present (store directly on domain model)
+        String locator = rs.getString("progress_locator");
+        if (locator != null) {
+            progress.setProgressLocator(locator);
+        }
         
         progress.setIsCompleted(progress.getProgress() != null && progress.getProgress() >= 1.0);
         

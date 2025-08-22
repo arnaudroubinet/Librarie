@@ -66,7 +66,8 @@ export class InfiniteScrollService {
     const loading = computed(() => _loading());
     const hasMore = computed(() => _hasMore());
     const error = computed(() => _error());
-    const isEmpty = computed(() => _items().length === 0 && !_loading());
+  // Consider empty state only when there's no error; otherwise show dedicated error UI
+  const isEmpty = computed(() => _items().length === 0 && !_loading() && !_error());
 
     // Helper function to get the first letter of a property
     const getFirstLetter = (item: T): string => {
@@ -119,7 +120,7 @@ export class InfiniteScrollService {
       }
 
       _loading.set(true);
-      _error.set(null);
+  _error.set(null);
 
   const effectiveLimit = typeof limitProvider === 'function' ? limitProvider() : limit;
     loadDataFn(_nextCursor(), effectiveLimit).subscribe({
@@ -132,9 +133,21 @@ export class InfiniteScrollService {
           _loading.set(false);
         },
         error: (err) => {
-          _error.set('Failed to load more items. Please try again.');
+          // Friendly messaging for backend-down or proxy failures during dev
+          let msg = 'Failed to load items. Please try again.';
+          try {
+            const status = (err && err.status) || 0;
+            const url: string = (err && err.url) || '';
+            if (status === 0) {
+              msg = 'Backend is not reachable. Start the backend and retry.';
+            } else if (status >= 500 && url.includes('/v1/')) {
+              msg = 'Server error while loading data. Is the backend running?';
+            }
+          } catch {}
+          _error.set(msg);
           _loading.set(false);
-          console.error('Infinite scroll load error:', err);
+          // Log once per failure type to reduce noise
+          try { console.warn('Infinite scroll load error:', err); } catch {}
         }
       });
     };
