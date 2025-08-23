@@ -164,8 +164,11 @@ public class BatchOperationRepositoryAdapter implements BatchOperationRepository
             UUID operationId = (UUID) rs.getObject("id");
             BatchOperationType type = BatchOperationType.valueOf(rs.getString("type"));
             
-            @SuppressWarnings("unchecked")
-            List<UUID> bookIds = objectMapper.readValue(rs.getString("book_ids"), List.class);
+            // Use TypeReference for proper generic type deserialization
+            List<UUID> bookIds = objectMapper.readValue(
+                rs.getString("book_ids"), 
+                objectMapper.getTypeFactory().constructCollectionType(List.class, UUID.class)
+            );
             
             BatchEditRequest editRequest = null;
             String editRequestJson = rs.getString("edit_request");
@@ -177,9 +180,11 @@ public class BatchOperationRepositoryAdapter implements BatchOperationRepository
             OffsetDateTime createdAt = rs.getTimestamp("created_at").toInstant().atOffset(java.time.ZoneOffset.UTC);
             BatchOperationStatus status = BatchOperationStatus.valueOf(rs.getString("status"));
             
-            @SuppressWarnings("unchecked")
+            // Use TypeReference for proper generic type deserialization
             List<BatchOperationResult> results = objectMapper.readValue(
-                rs.getString("results"), List.class);
+                rs.getString("results"),
+                objectMapper.getTypeFactory().constructCollectionType(List.class, BatchOperationResult.class)
+            );
             
             String errorMessage = rs.getString("error_message");
             

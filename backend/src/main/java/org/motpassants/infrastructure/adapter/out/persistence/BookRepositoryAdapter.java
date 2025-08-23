@@ -35,7 +35,7 @@ public class BookRepositoryAdapter implements BookRepository {
         // For updated_at/publication_date: epochMicros of the sort field
         // For title_sort: the actual string value (URL-encoded)
         
-        String baseSql = "SELECT id, title, title_sort, has_cover, created_at, updated_at, publication_date, language_code " +
+        String baseSql = "SELECT id, title, title_sort, description, has_cover, created_at, updated_at, publication_date, language_code " +
             "FROM books ";
 
         // Build ORDER BY clause with stable tiebreaker
@@ -211,7 +211,7 @@ public class BookRepositoryAdapter implements BookRepository {
 
     @Override
     public Optional<Book> findById(UUID id) {
-        String sql = "SELECT id, title, title_sort, isbn, path, file_size, file_hash, has_cover, created_at, updated_at, publication_date, language_code, publisher_id, metadata, search_vector FROM books WHERE id = ?";
+        String sql = "SELECT id, title, title_sort, isbn, description, path, file_size, file_hash, has_cover, created_at, updated_at, publication_date, language_code, publisher_id, metadata, search_vector FROM books WHERE id = ?";
         try (Connection conn = dataSource.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setObject(1, id);
             try (ResultSet rs = ps.executeQuery()) {
@@ -258,7 +258,7 @@ public class BookRepositoryAdapter implements BookRepository {
         }
 
         StringBuilder sql = new StringBuilder();
-        sql.append("SELECT b.id, b.title, b.title_sort, b.isbn, b.path, b.file_size, b.file_hash, b.has_cover, b.created_at, b.updated_at, b.publication_date, b.language_code, b.publisher_id, b.metadata, b.search_vector ")
+        sql.append("SELECT b.id, b.title, b.title_sort, b.isbn, b.description, b.path, b.file_size, b.file_hash, b.has_cover, b.created_at, b.updated_at, b.publication_date, b.language_code, b.publisher_id, b.metadata, b.search_vector ")
            .append("FROM books b JOIN book_series bs ON b.id = bs.book_id ")
            .append("WHERE bs.series_id = ? ");
         if (cursorTimestamp != null && cursorUuid != null) {
@@ -327,7 +327,7 @@ public class BookRepositoryAdapter implements BookRepository {
     public java.util.List<Book> findBySeriesOrderByIndex(UUID seriesId, int limit) {
         if (seriesId == null) return java.util.List.of();
         if (limit <= 0) limit = 10;
-        String sql = "SELECT b.id, b.title, b.title_sort, b.isbn, b.path, b.file_size, b.file_hash, b.has_cover, b.created_at, b.updated_at, b.publication_date, b.language_code, b.publisher_id, b.metadata, b.search_vector " +
+        String sql = "SELECT b.id, b.title, b.title_sort, b.isbn, b.description, b.path, b.file_size, b.file_hash, b.has_cover, b.created_at, b.updated_at, b.publication_date, b.language_code, b.publisher_id, b.metadata, b.search_vector " +
                      "FROM books b JOIN book_series bs ON b.id = bs.book_id " +
                      "WHERE bs.series_id = ? " +
                      "ORDER BY bs.series_index NULLS LAST, b.created_at, b.id LIMIT " + Math.max(1, limit);
@@ -352,7 +352,7 @@ public class BookRepositoryAdapter implements BookRepository {
 
     @Override
     public Optional<Book> findByPath(String path) {
-    String sql = "SELECT id, title, title_sort, isbn, path, file_size, file_hash, has_cover, created_at, updated_at, publication_date, language_code, publisher_id, metadata, search_vector FROM books WHERE path = ?";
+    String sql = "SELECT id, title, title_sort, isbn, description, path, file_size, file_hash, has_cover, created_at, updated_at, publication_date, language_code, publisher_id, metadata, search_vector FROM books WHERE path = ?";
         try (Connection conn = dataSource.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, path);
             try (ResultSet rs = ps.executeQuery()) {
@@ -368,7 +368,7 @@ public class BookRepositoryAdapter implements BookRepository {
 
     @Override
     public Optional<Book> findByIsbn(String isbn) {
-    String sql = "SELECT id, title, title_sort, isbn, path, file_size, file_hash, has_cover, created_at, updated_at, publication_date, language_code, publisher_id, metadata, search_vector FROM books WHERE isbn = ?";
+    String sql = "SELECT id, title, title_sort, isbn, description, path, file_size, file_hash, has_cover, created_at, updated_at, publication_date, language_code, publisher_id, metadata, search_vector FROM books WHERE isbn = ?";
         try (Connection conn = dataSource.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, isbn);
             try (ResultSet rs = ps.executeQuery()) {
@@ -393,47 +393,49 @@ public class BookRepositoryAdapter implements BookRepository {
 
             if (existsById(conn, id)) {
                 // UPDATE existing row and preserve existing non-null path when incoming is null
-                String upd = "UPDATE books SET title=?, title_sort=?, isbn=?, path=COALESCE(?, path), file_size=?, file_hash=?, has_cover=?, updated_at=?, publication_date=?, language_code=?, publisher_id=?, metadata=CAST(? AS JSONB), search_vector=? WHERE id=?";
+                String upd = "UPDATE books SET title=?, title_sort=?, isbn=?, description=?, path=COALESCE(?, path), file_size=?, file_hash=?, has_cover=?, updated_at=?, publication_date=?, language_code=?, publisher_id=?, metadata=CAST(? AS JSONB), search_vector=? WHERE id=?";
                 try (PreparedStatement ps = conn.prepareStatement(upd)) {
                     ps.setString(1, book.getTitle());
                     ps.setString(2, book.getTitleSort() != null ? book.getTitleSort() : book.getTitle());
                     ps.setString(3, book.getIsbn());
-                    ps.setString(4, book.getPath());
-                    if (book.getFileSize() != null) ps.setLong(5, book.getFileSize()); else ps.setNull(5, Types.BIGINT);
-                    ps.setString(6, book.getFileHash());
-                    // has_cover is NOT NULL DEFAULT FALSE; never write NULL
-                    ps.setBoolean(7, book.getHasCover() != null ? book.getHasCover() : false);
-                    ps.setObject(8, toTimestamp(book.getUpdatedAt()));
-                    if (book.getPublicationDate() != null) ps.setDate(9, java.sql.Date.valueOf(book.getPublicationDate())); else ps.setNull(9, Types.DATE);
-                    ps.setString(10, book.getLanguage());
-                    if (book.getPublisher() != null) ps.setObject(11, book.getPublisher().getId()); else ps.setNull(11, Types.OTHER);
-                    ps.setString(12, serializeJson(book.getMetadata()));
-                    ps.setString(13, book.getSearchVector());
-                    ps.setObject(14, id);
-                    ps.executeUpdate();
-                }
-                return book;
-            } else {
-                // INSERT new row; path must be non-null (service ensures generation)
-                String ins = "INSERT INTO books (id, title, title_sort, isbn, path, file_size, file_hash, has_cover, created_at, updated_at, publication_date, language_code, publisher_id, metadata, search_vector) " +
-                             "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CAST(? AS JSONB), ?)";
-                try (PreparedStatement ps = conn.prepareStatement(ins)) {
-                    ps.setObject(1, id);
-                    ps.setString(2, book.getTitle());
-                    ps.setString(3, book.getTitleSort() != null ? book.getTitleSort() : book.getTitle());
-                    ps.setString(4, book.getIsbn());
+                    ps.setString(4, book.getDescription());
                     ps.setString(5, book.getPath());
                     if (book.getFileSize() != null) ps.setLong(6, book.getFileSize()); else ps.setNull(6, Types.BIGINT);
                     ps.setString(7, book.getFileHash());
                     // has_cover is NOT NULL DEFAULT FALSE; never write NULL
                     ps.setBoolean(8, book.getHasCover() != null ? book.getHasCover() : false);
-                    ps.setObject(9, toTimestamp(book.getCreatedAt()));
-                    ps.setObject(10, toTimestamp(book.getUpdatedAt()));
-                    if (book.getPublicationDate() != null) ps.setDate(11, java.sql.Date.valueOf(book.getPublicationDate())); else ps.setNull(11, Types.DATE);
-                    ps.setString(12, book.getLanguage());
-                    if (book.getPublisher() != null) ps.setObject(13, book.getPublisher().getId()); else ps.setNull(13, Types.OTHER);
-                    ps.setString(14, serializeJson(book.getMetadata()));
-                    ps.setString(15, book.getSearchVector());
+                    ps.setObject(9, toTimestamp(book.getUpdatedAt()));
+                    if (book.getPublicationDate() != null) ps.setDate(10, java.sql.Date.valueOf(book.getPublicationDate())); else ps.setNull(10, Types.DATE);
+                    ps.setString(11, book.getLanguage());
+                    if (book.getPublisher() != null) ps.setObject(12, book.getPublisher().getId()); else ps.setNull(12, Types.OTHER);
+                    ps.setString(13, serializeJson(book.getMetadata()));
+                    ps.setString(14, book.getSearchVector());
+                    ps.setObject(15, id);
+                    ps.executeUpdate();
+                }
+                return book;
+            } else {
+                // INSERT new row; path must be non-null (service ensures generation)
+                String ins = "INSERT INTO books (id, title, title_sort, isbn, description, path, file_size, file_hash, has_cover, created_at, updated_at, publication_date, language_code, publisher_id, metadata, search_vector) " +
+                             "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CAST(? AS JSONB), ?)";
+                try (PreparedStatement ps = conn.prepareStatement(ins)) {
+                    ps.setObject(1, id);
+                    ps.setString(2, book.getTitle());
+                    ps.setString(3, book.getTitleSort() != null ? book.getTitleSort() : book.getTitle());
+                    ps.setString(4, book.getIsbn());
+                    ps.setString(5, book.getDescription());
+                    ps.setString(6, book.getPath());
+                    if (book.getFileSize() != null) ps.setLong(7, book.getFileSize()); else ps.setNull(7, Types.BIGINT);
+                    ps.setString(8, book.getFileHash());
+                    // has_cover is NOT NULL DEFAULT FALSE; never write NULL
+                    ps.setBoolean(9, book.getHasCover() != null ? book.getHasCover() : false);
+                    ps.setObject(10, toTimestamp(book.getCreatedAt()));
+                    ps.setObject(11, toTimestamp(book.getUpdatedAt()));
+                    if (book.getPublicationDate() != null) ps.setDate(12, java.sql.Date.valueOf(book.getPublicationDate())); else ps.setNull(12, Types.DATE);
+                    ps.setString(13, book.getLanguage());
+                    if (book.getPublisher() != null) ps.setObject(14, book.getPublisher().getId()); else ps.setNull(14, Types.OTHER);
+                    ps.setString(15, serializeJson(book.getMetadata()));
+                    ps.setString(16, book.getSearchVector());
                     ps.executeUpdate();
                 }
                 return book;
@@ -502,7 +504,7 @@ public class BookRepositoryAdapter implements BookRepository {
 
     @Override
     public List<Book> findByTitleOrAuthorContaining(String query) {
-    String sql = "SELECT id, title, title_sort, has_cover, created_at, updated_at, publication_date, language_code " +
+    String sql = "SELECT id, title, title_sort, description, has_cover, created_at, updated_at, publication_date, language_code " +
              "FROM books WHERE LOWER(title) LIKE ? OR LOWER(path) LIKE ? OR LOWER(isbn) LIKE ? ORDER BY created_at";
         List<Book> items = new ArrayList<>();
         String like = "%" + query.toLowerCase() + "%";
@@ -553,6 +555,7 @@ public class BookRepositoryAdapter implements BookRepository {
         b.setTitle(rs.getString("title"));
         b.setTitleSort(rs.getString("title_sort"));
         b.setIsbn(rs.getString("isbn"));
+        b.setDescription(rs.getString("description"));
         b.setPath(rs.getString("path"));
         Long fileSize = rs.getLong("file_size"); if (!rs.wasNull()) b.setFileSize(fileSize);
         b.setFileHash(rs.getString("file_hash"));
@@ -585,6 +588,7 @@ public class BookRepositoryAdapter implements BookRepository {
         b.setId((UUID) rs.getObject("id"));
         b.setTitle(rs.getString("title"));
         b.setTitleSort(rs.getString("title_sort"));
+        b.setDescription(rs.getString("description"));
         boolean hc = rs.getBoolean("has_cover"); if (!rs.wasNull()) b.setHasCover(hc);
         Timestamp created = rs.getTimestamp("created_at"); if (created != null) b.setCreatedAt(created.toInstant().atOffset(java.time.ZoneOffset.UTC));
         Timestamp updated = rs.getTimestamp("updated_at"); if (updated != null) b.setUpdatedAt(updated.toInstant().atOffset(java.time.ZoneOffset.UTC));
