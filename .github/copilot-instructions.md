@@ -2,17 +2,52 @@
 
 ALWAYS follow these instructions and only fallback to additional search and context gathering if the information in these instructions is incomplete or found to be in error.
 
-## Golden Rules (ALWAYS follow)
-1. Always validate the code before commit
-2. Always check security rules before commit
-3. Always apply these instructions before commit
-4. Query `context7` for extra context/metadata before filesystem searches
-5. Minimize new dependencies: justify each new library (prefer Quarkus extensions already present); remove unused imports/config
+## Golden Rules (ALWAYS follow - NON-NEGOTIABLE)
+1. **MANDATORY COMPILATION**: Always execute both backend AND frontend compilations before completing ANY task - NO EXCEPTIONS
+2. **MANDATORY TEST VALIDATION**: Always run both backend AND frontend tests before completing ANY task - NO EXCEPTIONS
+3. **FAILURE HANDLING**: If ANY compilation or test fails, MUST fix the issues, rerun tests, and retry compilation until ALL processes complete successfully
+4. Always validate the code before commit
+5. Always check security rules before commit
+6. Always apply these instructions before commit
+7. Query `context7` for extra context/metadata before filesystem searches
+8. Minimize new dependencies: justify each new library (prefer Quarkus extensions already present); remove unused imports/config
 
 ## Repository Summary
 Librarie is a dual-module workspace:
 - **Backend**: Quarkus 3.25.2 REST API (Java 21, Maven) in `backend/`
 - **Frontend**: Angular 20 SPA (TypeScript, npm) in `frontend/`
+
+## MANDATORY COMPILATION AND TEST WORKFLOW
+
+**CRITICAL REQUIREMENT**: Before completing ANY task, you MUST execute this complete workflow and ensure ALL steps pass:
+
+### Step 1: Backend Build and Test (MANDATORY)
+```bash
+cd /home/runner/work/Librarie/Librarie/backend
+mvn clean install  # MUST succeed - TIMEOUT: 30 minutes
+```
+**Expected**: BUILD SUCCESS with all tests passing (includes compilation + test execution)
+**On Failure**: Fix compilation errors and/or failing tests, retry until success
+
+*Note: `mvn clean install` executes the full Maven lifecycle including compile, test, and package phases*
+
+### Step 2: Frontend Compilation (MANDATORY)
+```bash
+cd /home/runner/work/Librarie/Librarie/frontend
+npm run build  # MUST succeed - TIMEOUT: 10 minutes
+```
+**Expected**: Bundle generation complete without errors
+**On Failure**: Fix compilation errors, retry until success
+
+### Step 3: Frontend Tests (MANDATORY)
+```bash
+cd /home/runner/work/Librarie/Librarie/frontend  
+npm test -- --watch=false --browsers=ChromeHeadless  # MUST succeed - TIMEOUT: 10 minutes
+```
+**Expected**: All tests pass without failures
+**On Failure**: Fix failing tests, retry until ALL tests pass
+
+**NO TASK IS COMPLETE UNTIL ALL 3 STEPS PASS SUCCESSFULLY**
 
 ## Prerequisites and Environment
 ### Required Software
@@ -97,26 +132,51 @@ cd frontend
 npm test -- --watch=false --browsers=ChromeHeadless  # TIMEOUT: 10 minutes
 ```
 
-## Validation Scenarios (ALWAYS Required)
+## MANDATORY Validation Scenarios (BLOCKING REQUIREMENTS)
 
-After making ANY changes, you MUST validate with these scenarios:
+**CRITICAL**: These validations are MANDATORY and BLOCKING. NO task can be considered complete until ALL these scenarios pass successfully. If ANY step fails, you MUST fix the issue and retry until ALL validations pass.
 
-### 1. Build Validation
+After making ANY changes, you MUST execute and PASS all these validation scenarios:
+
+### 1. MANDATORY Build Validation (MUST PASS)
+**REQUIREMENT**: Both backend and frontend MUST compile successfully. Any failure MUST be fixed.
+
 ```bash
-# Backend build must succeed
+# Backend build and test MUST succeed - RETRY until success
 cd backend && mvn clean install  # TIMEOUT: 30 minutes
 
-# Frontend build must succeed  
+# Frontend build MUST succeed - RETRY until success
 cd frontend && npm run build     # TIMEOUT: 10 minutes
 ```
 
-### 2. Application Startup Validation
+**FAILURE HANDLING**: If either build fails:
+1. Analyze the compilation errors
+2. Fix ALL compilation issues
+3. Re-run the failed build command
+4. Repeat until BOTH builds succeed
+
+### 2. MANDATORY Test Validation (MUST PASS)
+**REQUIREMENT**: Frontend tests MUST pass completely. Any test failure MUST be fixed.
+*Note: Backend tests are included in the mvn clean install step above*
+
+```bash
+# Frontend tests MUST pass - RETRY until success  
+cd frontend && npm test -- --watch=false --browsers=ChromeHeadless  # TIMEOUT: 10 minutes
+```
+
+**FAILURE HANDLING**: If any tests fail:
+1. Analyze the test failures
+2. Fix ALL test issues (code fixes, not test modifications unless tests are incorrect)
+3. Re-run the failed test command
+4. Repeat until ALL tests pass
+
+### 3. Application Startup Validation
 - Start backend: `./mvnw quarkus:dev` (TIMEOUT: 15 minutes)
 - Start frontend: `npm start` (TIMEOUT: 5 minutes)
 - **MANDATORY**: Take screenshot of http://localhost:8080/q/dev-ui/extensions
 - **MANDATORY**: Take screenshot of http://localhost:4200/books
 
-### 3. API Endpoint Validation
+### 4. API Endpoint Validation
 ```bash
 # Test core endpoints are responding
 curl -s http://localhost:8080/q/health | head -5
@@ -124,7 +184,7 @@ curl -s http://localhost:8080/v1/books | jq '.content | length'  # Should return
 curl -s http://localhost:8080/v1/authors | jq '.content | length'  # Should return author count
 ```
 
-### 4. User Workflow Validation
+### 5. User Workflow Validation
 Navigate through the frontend application:
 - Browse books at http://localhost:4200/books (should show book covers)
 - Test navigation to Authors, Series, Search pages
@@ -181,12 +241,31 @@ Root structure:
 - Dev UI: `GET /q/dev-ui/extensions` (Quarkus development interface)
 - OpenAPI: `GET /q/openapi` (API specification)
 
-## Pull Request Requirements
+## Pull Request Requirements (BLOCKING REQUIREMENTS)
 
-### Before Every Commit
-1. **Build validation**: `cd backend && mvn clean install` (TIMEOUT: 30 minutes)
-2. **Test validation**: `cd backend && mvn test` (TIMEOUT: 90 minutes first run)
-3. **Frontend validation**: `cd frontend && npm run build` (TIMEOUT: 10 minutes)
+**CRITICAL**: ALL requirements below are MANDATORY and BLOCKING. NO pull request can be submitted until these requirements are met.
+
+### Before Every Commit (MANDATORY - NO EXCEPTIONS)
+These validations MUST be executed and MUST pass before any commit:
+
+1. **MANDATORY Backend Build and Test**: `cd backend && mvn clean install` (TIMEOUT: 30 minutes)
+   - MUST succeed with zero compilation errors and all tests passing
+   - If fails: Fix errors/failing tests, retry until success
+   
+2. **MANDATORY Frontend Build**: `cd frontend && npm run build` (TIMEOUT: 10 minutes)
+   - MUST succeed with zero compilation errors
+   - If fails: Fix errors, retry until success
+   
+3. **MANDATORY Frontend Tests**: `cd frontend && npm test -- --watch=false --browsers=ChromeHeadless` (TIMEOUT: 10 minutes)
+   - ALL tests MUST pass
+   - If fails: Fix failing tests, retry until ALL pass
+
+**FAILURE ESCALATION**: If you cannot resolve compilation or test failures:
+1. Document the specific error messages
+2. Analyze the root cause
+3. Implement targeted fixes (minimal changes)
+4. Re-run validation
+5. Repeat until success - DO NOT proceed with incomplete validation
 
 ### Before Requesting Review  
 1. **Proof of backend**: Screenshot of http://localhost:8080/q/dev-ui/extensions
@@ -194,11 +273,13 @@ Root structure:
 3. **Build timing**: Include actual build times in commit message
 4. **Warning documentation**: Add any build warnings as PR comments
 
-### Commit Message Format
+### Commit Message Format (MANDATORY)
 ```
-{Feature type} - {content of the commit} - java {mvn build time} - angular {npm build time}
+{Feature type} - {content of the commit} - java {mvn build time} - angular {npm build time} - ALL_VALIDATIONS_PASSED
 ```
 Where {feature type} is: `feature`, `improvement`, or `bugfix`
+
+**REQUIRED**: The commit message MUST include "ALL_VALIDATIONS_PASSED" to confirm that ALL mandatory compilation and test validations have been executed and passed successfully.
 
 ## Environment Variables and Configuration
 See `docs/environment-variables.md` for complete reference. Key production variables:
