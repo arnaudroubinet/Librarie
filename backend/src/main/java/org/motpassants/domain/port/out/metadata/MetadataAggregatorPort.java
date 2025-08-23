@@ -65,4 +65,10 @@ public interface MetadataAggregatorPort {
      * @return list of provider statuses
      */
     List<ProviderStatus> testAllProviders();
+    
+    /**
+     * Get statuses of all registered providers.
+     * @return list of provider statuses
+     */
+    List<ProviderStatus> getProviderStatuses();
 }

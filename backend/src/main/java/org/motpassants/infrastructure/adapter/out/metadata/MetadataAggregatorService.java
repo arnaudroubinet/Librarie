@@ -252,6 +252,19 @@ public class MetadataAggregatorService implements MetadataAggregatorPort {
             .collect(Collectors.toList());
     }
     
+    @Override
+    public List<ProviderStatus> getProviderStatuses() {
+        return providers.stream()
+            .map(provider -> new ProviderStatus(
+                provider.getProviderId(),
+                provider.getProviderName(),
+                provider.isEnabled(),
+                true, // Assume connected for status check
+                null
+            ))
+            .collect(Collectors.toList());
+    }
+    
     private <T> T preferNonNull(List<BookMetadata> metadataList, java.util.function.Function<BookMetadata, T> getter) {
         return metadataList.stream()
             .map(getter)
