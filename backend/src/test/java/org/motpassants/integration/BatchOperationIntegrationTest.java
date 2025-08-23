@@ -23,7 +23,7 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * Integration tests for batch operations API endpoints.
  */
-//@Test
+@QuarkusTest
 class BatchOperationIntegrationTest {
     
     @Inject
@@ -40,8 +40,8 @@ class BatchOperationIntegrationTest {
             .forEach(book -> bookRepository.deleteById(book.getId()));
         
         // Create test books
-        testBookId1 = createTestBook("Test Book 1", "Description 1", "en");
-        testBookId2 = createTestBook("Test Book 2", "Description 2", "fr");
+        testBookId1 = createTestBook("Test Book 1", "Description 1", "en-US");
+        testBookId2 = createTestBook("Test Book 2", "Description 2", "fr-FR");
     }
     
     @Test
@@ -55,7 +55,7 @@ class BatchOperationIntegrationTest {
             null,               // seriesId
             null,               // seriesPosition
             null,               // tags
-            "es",               // language
+            "es-ES",               // language
             null,               // publisher
             null,               // isbn
             null,               // addTags
@@ -89,13 +89,13 @@ class BatchOperationIntegrationTest {
         assertTrue(updatedBook1.isPresent());
         assertEquals("New Title", updatedBook1.get().getTitle());
         assertEquals("New Description", updatedBook1.get().getDescription());
-        assertEquals("es", updatedBook1.get().getLanguage());
+        assertEquals("es-ES", updatedBook1.get().getLanguage());
         
         var updatedBook2 = bookRepository.findById(testBookId2);
         assertTrue(updatedBook2.isPresent());
         assertEquals("New Title", updatedBook2.get().getTitle());
         assertEquals("New Description", updatedBook2.get().getDescription());
-        assertEquals("es", updatedBook2.get().getLanguage());
+        assertEquals("es-ES", updatedBook2.get().getLanguage());
     }
     
     @Test
@@ -187,7 +187,7 @@ class BatchOperationIntegrationTest {
     void previewBatchEdit_WithValidRequest_ShouldReturnPreview() {
         // Arrange
         var editRequest = new BatchEditRequestDto(
-            "New Title", null, "New Description", null, null, null, null, "es", null, null, null, null
+            "New Title", null, "New Description", null, null, null, null, "es-ES", null, null, null, null
         );
         
         var batchRequest = new BatchOperationRequestDto(
@@ -209,8 +209,8 @@ class BatchOperationIntegrationTest {
             .body("[0].newTitle", equalTo("New Title"))
             .body("[0].currentDescription", equalTo("Description 1"))
             .body("[0].newDescription", equalTo("New Description"))
-            .body("[0].currentLanguage", equalTo("en"))
-            .body("[0].newLanguage", equalTo("es"))
+            .body("[0].currentLanguage", equalTo("en-US"))
+            .body("[0].newLanguage", equalTo("es-ES"))
             .body("[0].hasChanges", equalTo(true))
             .body("[1].bookId", equalTo(testBookId2.toString()))
             .body("[1].currentTitle", equalTo("Test Book 2"))

@@ -42,7 +42,7 @@ public class UploadIntegrationTest {
             .when().post("/api/upload/validate")
             .then()
                 .statusCode(400)
-                .body("message", containsString("file"));
+                .body("message", containsString("File is required"));
     }
 
     @Test

@@ -233,7 +233,7 @@ public class MetadataServiceTest {
         // Then
         assertEquals(expectedStatuses, results);
         verify(metadataAggregatorPort).testAllProviders();
-        verify(loggingPort).info("Testing provider connections");
+        verify(loggingPort).info("Testing all metadata provider connections");
     }
 
     private BookMetadata createTestBookMetadata(String title) {

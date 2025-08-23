@@ -134,12 +134,14 @@ public class MetadataService implements MetadataUseCase {
     
     @Override
     public BookMetadata mergeMetadata(List<BookMetadata> metadataList) {
+        loggingPort.info("Merging " + metadataList.size() + " metadata results");
         return metadataAggregatorPort.mergeMetadata(metadataList);
     }
     
     @Override
     public List<ProviderStatus> getProviderStatuses() {
-        return metadataAggregatorPort.testAllProviders();
+        loggingPort.info("Getting provider statuses");
+        return metadataAggregatorPort.getProviderStatuses();
     }
     
     @Override
