@@ -2,6 +2,7 @@ package org.motpassants.integration;
 
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.http.ContentType;
+import io.restassured.response.Response;
 import org.junit.jupiter.api.Test;
 
 import static io.restassured.RestAssured.given;
@@ -113,22 +114,30 @@ public class MetadataIntegrationTest {
 
     @Test
     public void testPreviewMetadataChanges() {
-        // First get a book ID from the existing books
-        String bookId = given()
+        // First get a book from the existing books and check its current title
+        Response bookResponse = given()
             .when().get("/v1/books?page=0&size=1")
             .then()
                 .statusCode(200)
                 .extract()
-                .path("content[0].id");
+                .response();
+                
+        String bookId = bookResponse.path("content[0].id");
+        String currentTitle = bookResponse.path("content[0].title");
+        
+        // Use a title that's guaranteed to be different from the current one
+        String newTitle = currentTitle != null && currentTitle.equals("Unique Preview Test Title") 
+            ? "Different Preview Test Title" 
+            : "Unique Preview Test Title";
 
-        // Test metadata preview - using JSON directly instead of trying to serialize record
-        String metadataJson = """
+        // Test metadata preview - using JSON directly with guaranteed different values
+        String metadataJson = String.format("""
             {
-                "title": "New Test Title",
-                "description": "New test description",
-                "pageCount": 500
+                "title": "%s",
+                "description": "Unique preview test description that should be different",
+                "pageCount": 999
             }
-            """;
+            """, newTitle);
 
         given()
             .contentType(ContentType.JSON)
@@ -138,7 +147,7 @@ public class MetadataIntegrationTest {
                 .statusCode(200)
                 .contentType(ContentType.JSON)
                 .body("bookId", equalTo(bookId))
-                .body("newTitle", equalTo("New Test Title"))
+                .body("newTitle", equalTo(newTitle))
                 .body("changes.size()", greaterThan(0));
     }
 

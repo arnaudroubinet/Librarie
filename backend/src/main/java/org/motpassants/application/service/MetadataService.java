@@ -202,8 +202,21 @@ public class MetadataService implements MetadataUseCase {
         return overwriteExisting;
     }
     
+    private <T> boolean hasFieldChanged(T currentValue, T newValue) {
+        if (newValue == null) {
+            return false;
+        }
+        
+        if (currentValue == null) {
+            return true;
+        }
+        
+        return !currentValue.equals(newValue);
+    }
+    
     private void addFieldChange(List<FieldChange> changes, String fieldName, String currentValue, String newValue, boolean overwriteExisting) {
-        if (shouldUpdateField(currentValue, newValue, overwriteExisting)) {
+        // For preview, show changes regardless of overwrite setting
+        if (hasFieldChanged(currentValue, newValue)) {
             String changeType = currentValue == null ? "add" : "update";
             changes.add(new FieldChange(fieldName, currentValue, newValue, changeType));
         }
