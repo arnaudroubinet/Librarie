@@ -21,39 +21,33 @@ Librarie is a dual-module workspace:
 
 **CRITICAL REQUIREMENT**: Before completing ANY task, you MUST execute this complete workflow and ensure ALL steps pass:
 
-### Step 1: Backend Compilation (MANDATORY)
+### Step 1: Backend Build and Test (MANDATORY)
 ```bash
 cd /home/runner/work/Librarie/Librarie/backend
 mvn clean install  # MUST succeed - TIMEOUT: 30 minutes
 ```
-**Expected**: BUILD SUCCESS, ~69 seconds (after initial dependencies)
-**On Failure**: Fix compilation errors, retry until success
+**Expected**: BUILD SUCCESS with all tests passing (includes compilation + test execution)
+**On Failure**: Fix compilation errors and/or failing tests, retry until success
 
-### Step 2: Backend Tests (MANDATORY)  
-```bash
-cd /home/runner/work/Librarie/Librarie/backend
-mvn test  # MUST succeed - TIMEOUT: 90 minutes first run, 10 minutes subsequent
-```
-**Expected**: 150 tests pass, ~57 seconds (after Docker images downloaded)
-**On Failure**: Fix failing tests, retry until ALL tests pass
+*Note: `mvn clean install` executes the full Maven lifecycle including compile, test, and package phases*
 
-### Step 3: Frontend Compilation (MANDATORY)
+### Step 2: Frontend Compilation (MANDATORY)
 ```bash
 cd /home/runner/work/Librarie/Librarie/frontend
 npm run build  # MUST succeed - TIMEOUT: 10 minutes
 ```
-**Expected**: Bundle generation complete, ~9 seconds
+**Expected**: Bundle generation complete without errors
 **On Failure**: Fix compilation errors, retry until success
 
-### Step 4: Frontend Tests (MANDATORY)
+### Step 3: Frontend Tests (MANDATORY)
 ```bash
 cd /home/runner/work/Librarie/Librarie/frontend  
 npm test -- --watch=false --browsers=ChromeHeadless  # MUST succeed - TIMEOUT: 10 minutes
 ```
-**Expected**: 2 tests pass, ~9 seconds
+**Expected**: All tests pass without failures
 **On Failure**: Fix failing tests, retry until ALL tests pass
 
-**NO TASK IS COMPLETE UNTIL ALL 4 STEPS PASS SUCCESSFULLY**
+**NO TASK IS COMPLETE UNTIL ALL 3 STEPS PASS SUCCESSFULLY**
 
 ## Prerequisites and Environment
 ### Required Software
@@ -148,7 +142,7 @@ After making ANY changes, you MUST execute and PASS all these validation scenari
 **REQUIREMENT**: Both backend and frontend MUST compile successfully. Any failure MUST be fixed.
 
 ```bash
-# Backend build MUST succeed - RETRY until success
+# Backend build and test MUST succeed - RETRY until success
 cd backend && mvn clean install  # TIMEOUT: 30 minutes
 
 # Frontend build MUST succeed - RETRY until success
@@ -162,12 +156,10 @@ cd frontend && npm run build     # TIMEOUT: 10 minutes
 4. Repeat until BOTH builds succeed
 
 ### 2. MANDATORY Test Validation (MUST PASS)
-**REQUIREMENT**: Both backend and frontend tests MUST pass completely. Any test failure MUST be fixed.
+**REQUIREMENT**: Frontend tests MUST pass completely. Any test failure MUST be fixed.
+*Note: Backend tests are included in the mvn clean install step above*
 
 ```bash
-# Backend tests MUST pass - RETRY until success
-cd backend && mvn test  # TIMEOUT: 90 minutes first run, 10 minutes subsequent
-
 # Frontend tests MUST pass - RETRY until success  
 cd frontend && npm test -- --watch=false --browsers=ChromeHeadless  # TIMEOUT: 10 minutes
 ```
@@ -256,20 +248,16 @@ Root structure:
 ### Before Every Commit (MANDATORY - NO EXCEPTIONS)
 These validations MUST be executed and MUST pass before any commit:
 
-1. **MANDATORY Backend Build**: `cd backend && mvn clean install` (TIMEOUT: 30 minutes)
+1. **MANDATORY Backend Build and Test**: `cd backend && mvn clean install` (TIMEOUT: 30 minutes)
+   - MUST succeed with zero compilation errors and all tests passing
+   - If fails: Fix errors/failing tests, retry until success
+   
+2. **MANDATORY Frontend Build**: `cd frontend && npm run build` (TIMEOUT: 10 minutes)
    - MUST succeed with zero compilation errors
    - If fails: Fix errors, retry until success
    
-2. **MANDATORY Backend Tests**: `cd backend && mvn test` (TIMEOUT: 90 minutes first run)
-   - ALL tests MUST pass (currently 150 tests)
-   - If fails: Fix failing tests, retry until ALL pass
-   
-3. **MANDATORY Frontend Build**: `cd frontend && npm run build` (TIMEOUT: 10 minutes)
-   - MUST succeed with zero compilation errors
-   - If fails: Fix errors, retry until success
-   
-4. **MANDATORY Frontend Tests**: `cd frontend && npm test -- --watch=false --browsers=ChromeHeadless` (TIMEOUT: 10 minutes)
-   - ALL tests MUST pass (currently 2 tests)
+3. **MANDATORY Frontend Tests**: `cd frontend && npm test -- --watch=false --browsers=ChromeHeadless` (TIMEOUT: 10 minutes)
+   - ALL tests MUST pass
    - If fails: Fix failing tests, retry until ALL pass
 
 **FAILURE ESCALATION**: If you cannot resolve compilation or test failures:
