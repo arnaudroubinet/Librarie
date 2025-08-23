@@ -61,10 +61,10 @@ docker --version && docker info  # Docker must be running
 cd backend
 mvn clean install  # TIMEOUT: 30 minutes
 
-# 3. Frontend build (NEVER CANCEL - npm dependency issue exists)
+# 3. Frontend build (NEVER CANCEL - stable dependencies available)
 cd ../frontend
-# KNOWN ISSUE: @readium packages specify ^2.0.0 but only beta versions exist
-# Temporary fix: Update package.json to use ^2.0.0-beta.18 for @readium/* packages
+# NOTE: @readium packages now have stable 2.0.0 releases (August 2025)
+# Only @readium/css remains in beta (2.0.0-beta.18)
 npm install     # TIMEOUT: 10 minutes
 npm run build   # TIMEOUT: 10 minutes
 ```
@@ -132,14 +132,19 @@ Navigate through the frontend application:
 
 ## Common Issues and Solutions
 
-### Frontend Dependency Issue
-**Known Issue**: `npm install` fails with "No matching version found for @readium/css@^2.0.0"
-**Solution**: Temporarily update package.json to use beta versions:
+### Frontend Dependency Status
+**Current Status** (as of August 2025): Most @readium packages now have stable 2.0.0 releases
+- ✅ @readium/navigator: 2.0.0 (stable)
+- ✅ @readium/shared: 2.0.0 (stable) 
+- ⚠️ @readium/css: 2.0.0-beta.18 (still in beta)
+- ✅ @readium/navigator-html-injectables: 2.0.0 (stable)
+
+**package.json configuration**:
 ```json
-"@readium/navigator": "^2.0.0-beta.18",
-"@readium/shared": "^2.0.0-beta.18", 
+"@readium/navigator": "^2.0.0",
+"@readium/shared": "^2.0.0",
 "@readium/css": "^2.0.0-beta.18",
-"@readium/navigator-html-injectables": "^2.0.0-beta.18"
+"@readium/navigator-html-injectables": "^2.0.0"
 ```
 
 ### Docker Issues
