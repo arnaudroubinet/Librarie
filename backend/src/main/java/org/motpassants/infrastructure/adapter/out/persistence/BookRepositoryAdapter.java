@@ -468,6 +468,19 @@ public class BookRepositoryAdapter implements BookRepository {
     }
 
     @Override
+    public boolean existsByFileHash(String fileHash) {
+        String sql = "SELECT 1 FROM books WHERE file_hash = ?";
+        try (Connection conn = dataSource.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, fileHash);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("DB error checking book existence by hash", e);
+        }
+    }
+
+    @Override
     public long count() {
         String sql = "SELECT COUNT(*) FROM books";
         try (Connection conn = dataSource.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {

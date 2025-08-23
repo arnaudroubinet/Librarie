@@ -81,14 +81,20 @@ public class IngestService implements IngestUseCase {
         }
         
         try {
+            // Calculate file hash and size
+            String fileHash = calculateFileHash(bookPath);
+            long fileSize = Files.size(bookPath);
+            
             // Extract metadata from filename and path
             String filename = bookPath.getFileName().toString();
             String titleFromFilename = extractTitleFromFilename(filename);
             
             // Create book entity using constructor
             Book book = new Book(titleFromFilename, bookPath.toString());
-            // Note: Book model doesn't have the update methods used here
-            // Would need to use setters or add the methods to Book model if needed
+            
+            // Set file properties
+            book.setFileHash(fileHash);
+            book.setFileSize(fileSize);
             
             // Try to extract additional metadata
             enhanceBookMetadata(book, bookPath);
@@ -179,6 +185,36 @@ public class IngestService implements IngestUseCase {
             book.setDescription("Automatically ingested from: " + bookPath.getFileName());
             
         } catch (IOException e) {
+        }
+    }
+    
+    private String calculateFileHash(Path filePath) {
+        try {
+            java.security.MessageDigest digest = java.security.MessageDigest.getInstance("SHA-256");
+            byte[] buffer = new byte[8192];
+            
+            try (java.io.InputStream inputStream = Files.newInputStream(filePath)) {
+                int bytesRead;
+                while ((bytesRead = inputStream.read(buffer)) != -1) {
+                    digest.update(buffer, 0, bytesRead);
+                }
+            }
+            
+            byte[] hashBytes = digest.digest();
+            StringBuilder hexString = new StringBuilder();
+            
+            for (byte b : hashBytes) {
+                String hex = Integer.toHexString(0xff & b);
+                if (hex.length() == 1) {
+                    hexString.append('0');
+                }
+                hexString.append(hex);
+            }
+            
+            return hexString.toString();
+            
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to calculate file hash", e);
         }
     }
 }

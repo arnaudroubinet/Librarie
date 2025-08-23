@@ -110,6 +110,15 @@ public interface BookRepository {
     boolean existsById(UUID id);
 
     /**
+     * Check if a book exists by file hash.
+     * Used for deduplication during upload.
+     * 
+     * @param fileHash the SHA256 hash of the file
+     * @return true if book with this hash exists
+     */
+    boolean existsByFileHash(String fileHash);
+
+    /**
      * Count total number of books.
      * 
      * @return total count
