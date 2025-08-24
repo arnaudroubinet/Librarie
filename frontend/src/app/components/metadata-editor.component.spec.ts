@@ -1,4 +1,4 @@
-import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
+import { ComponentFixture, TestBed, fakeAsync, tick, flushMicrotasks } from '@angular/core/testing';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MatSnackBar } from '@angular/material/snack-bar';
@@ -113,6 +113,9 @@ describe('MetadataEditorComponent', () => {
   });
 
   it('should handle book loading error', () => {
+    // Spy on console.error to prevent test framework failures
+    spyOn(console, 'error');
+    
     bookServiceSpy.getBookDetails.and.returnValue(throwError(() => new Error('Book not found')));
     
     const component2 = new MetadataEditorComponent(
@@ -128,6 +131,7 @@ describe('MetadataEditorComponent', () => {
     
     component2.ngOnInit();
     
+    expect(console.error).toHaveBeenCalledWith('Failed to load book:', jasmine.any(Error));
     expect(snackBarSpy.open).toHaveBeenCalledWith('Failed to load book details', 'Close', { duration: 3000 });
   });
 
@@ -155,20 +159,25 @@ describe('MetadataEditorComponent', () => {
   });
 
   it('should handle search errors', fakeAsync(() => {
+    // Spy on console.error to prevent test framework failures
+    spyOn(console, 'error');
+    
     metadataServiceSpy.searchByIsbn.and.returnValue(throwError(() => new Error('Search failed')));
     
     component.searchIsbn = '9780123456789';
     component.searchByIsbn();
     
-    // Manually trigger error handling by checking the subscription
-    tick(100); // Process async operations
+    // Process async operations and ensure error handling completes
+    tick(); // Process the error
     fixture.detectChanges(); // Trigger change detection
     
+    expect(console.error).toHaveBeenCalledWith('Search failed:', jasmine.any(Error));
     expect(component.isSearching()).toBe(false);
     expect(snackBarSpy.open).toHaveBeenCalledWith('Search failed: Search failed', 'Close', { duration: 3000 });
   }));
 
   it('should apply metadata from search results', fakeAsync(() => {
+    // Set up spies to return consistent results
     metadataServiceSpy.applyMetadata.and.returnValue(of(void 0));
     bookServiceSpy.getBookDetails.and.returnValue(of(mockBook));
     
@@ -177,15 +186,18 @@ describe('MetadataEditorComponent', () => {
     
     component.applyMetadata(mockMetadata);
     
-    // Process async operations
-    tick(100);
-    fixture.detectChanges();
+    // Process async operations and wait for all observables to complete
+    tick(); // Process initial apply operation
+    tick(); // Process loadBook operation 
+    fixture.detectChanges(); // Force change detection
     
     expect(metadataServiceSpy.applyMetadata).toHaveBeenCalledWith('book-123', {
       metadata: mockMetadata,
       overwriteExisting: false
     });
     expect(snackBarSpy.open).toHaveBeenCalledWith('Metadata applied successfully', 'Close', { duration: 3000 });
+    // Verify loadBook was called for refreshing data
+    expect(bookServiceSpy.getBookDetails).toHaveBeenCalledWith('book-123');
   }));
 
   it('should clear preview', () => {

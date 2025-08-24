@@ -1,4 +1,4 @@
-import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
+import { ComponentFixture, TestBed, fakeAsync, tick, flushMicrotasks } from '@angular/core/testing';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { Router } from '@angular/router';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
@@ -75,12 +75,16 @@ describe('UploadComponent', () => {
   });
 
   it('should handle config load error', () => {
+    // Spy on console.error to prevent test framework failures
+    spyOn(console, 'error');
+    
     // Reset and recreate component with error scenario
     uploadServiceSpy.getUploadConfig.and.returnValue(throwError(() => new Error('Failed to load')));
     
     const component2 = new UploadComponent(uploadServiceSpy, bookServiceSpy, snackBarSpy, routerSpy);
     component2.ngOnInit();
     
+    expect(console.error).toHaveBeenCalledWith('Failed to load upload config:', jasmine.any(Error));
     expect(snackBarSpy.open).toHaveBeenCalledWith('Failed to load upload configuration', 'Close', { duration: 3000 });
   });
 
@@ -182,7 +186,12 @@ describe('UploadComponent', () => {
       
       expect(component.uploadQueue().length).toBe(1);
       expect(component.uploadQueue()[0].file.name).toBe('test.epub');
-      expect(snackBarSpy.open).toHaveBeenCalled();
+      // Verify snackBar was called with validation errors
+      expect(snackBarSpy.open).toHaveBeenCalledWith(
+        jasmine.stringContaining('test.xyz: Invalid file type'), 
+        'Close', 
+        { duration: 5000 }
+      );
     });
 
     it('should prevent duplicate files in queue', () => {
@@ -192,6 +201,10 @@ describe('UploadComponent', () => {
       // Ensure both files have the same size for duplicate detection
       Object.defineProperty(file1, 'size', { value: 1000000 });
       Object.defineProperty(file2, 'size', { value: 1000000 });
+      
+      // Set up validation spies to allow EPUB files
+      uploadServiceSpy.isFileExtensionAllowed.and.returnValue(true);
+      uploadServiceSpy.isFileSizeAllowed.and.returnValue(true);
       
       component.config.set(mockConfig);
       
@@ -243,7 +256,10 @@ describe('UploadComponent', () => {
       }]);
       
       component.uploadAll();
-      tick(1000); // Allow time for async operations and setTimeout
+      
+      // Allow time for all async operations including setTimeout calls
+      tick(); // Process the observable
+      tick(); // Process the setTimeout(resolve, 0) 
       fixture.detectChanges(); // Force change detection
       
       expect(uploadServiceSpy.uploadBookWithProgress).toHaveBeenCalledWith(mockFile);
@@ -266,7 +282,11 @@ describe('UploadComponent', () => {
       }]);
       
       component.uploadAll();
-      tick(1000); // Process all async operations and setTimeout
+      
+      // Allow time for all async operations including setTimeout calls
+      tick(); // Process the observable error
+      tick(); // Process the setTimeout(resolve, 0) 
+      fixture.detectChanges(); // Force change detection
       
       expect(component.uploadQueue()[0].status).toBe('error');
       expect(component.uploadQueue()[0].error).toBe('Upload failed');
@@ -295,7 +315,11 @@ describe('UploadComponent', () => {
       }]);
       
       component.uploadAll();
-      tick(1000); // Process all async operations and setTimeout
+      
+      // Allow time for all async operations including setTimeout calls
+      tick(); // Process the observable
+      tick(); // Process the setTimeout(resolve, 0) 
+      fixture.detectChanges(); // Force change detection
       
       expect(component.uploadQueue()[0].status).toBe('duplicate');
       expect(snackBarSpy.open).toHaveBeenCalledWith(

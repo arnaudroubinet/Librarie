@@ -108,11 +108,15 @@ describe('BatchOperationsComponent', () => {
   });
 
   it('should handle loading error', () => {
+    // Spy on console.error to prevent test framework failures
+    spyOn(console, 'error');
+    
     batchServiceSpy.getRecentBatchOperations.and.returnValue(throwError(() => new Error('Failed to load')));
     
     const component2 = new BatchOperationsComponent(batchServiceSpy, snackBarSpy);
     component2.ngOnInit();
     
+    expect(console.error).toHaveBeenCalledWith('Failed to load operations:', jasmine.any(Error));
     expect(snackBarSpy.open).toHaveBeenCalledWith('Failed to load batch operations', 'Close', { duration: 3000 });
   });
 
