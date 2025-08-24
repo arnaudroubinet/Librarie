@@ -145,23 +145,25 @@ describe('UploadComponent', () => {
       
       component.config.set(mockConfig);
       
-      // Call the private method directly for testing
-      (component as any).addFilesToQueue([mockFile]);
+      // Call the onFileSelected method as would happen on file input change
+      component.onFileSelected(event);
       
       expect(event.target.value).toBe(''); // Should reset input
     });
 
     it('should validate files before adding to queue', () => {
       const validFile = new File(['content'], 'test.epub', { type: 'application/epub+zip' });
-      const invalidExtensionFile = new File(['content'], 'test.txt', { type: 'text/plain' });
+      const invalidExtensionFile = new File(['content'], 'test.xyz', { type: 'application/unknown' }); // Use an invalid extension
       const tooLargeFile = new File(['content'], 'large.epub', { type: 'application/epub+zip' });
       
-      uploadServiceSpy.isFileExtensionAllowed.and.callFake((fileName: string, allowedExtensions: string[]) => 
-        fileName.endsWith('.epub') && allowedExtensions.includes('epub')
-      );
-      uploadServiceSpy.isFileSizeAllowed.and.callFake((fileSize: number, maxFileSize: number) => 
-        fileSize <= maxFileSize
-      );
+      // Configure validation spies to use the actual service logic
+      uploadServiceSpy.isFileExtensionAllowed.and.callFake((fileName: string, allowedExtensions: string[]) => {
+        const extension = fileName.split('.').pop()?.toLowerCase();
+        return extension ? allowedExtensions.includes(extension) : false;
+      });
+      uploadServiceSpy.isFileSizeAllowed.and.callFake((fileSize: number, maxFileSize: number) => {
+        return fileSize <= maxFileSize;
+      });
       uploadServiceSpy.formatFileSize.and.returnValue('100 MB');
       
       // Mock file sizes - make large file exceed the max size  
@@ -186,7 +188,7 @@ describe('UploadComponent', () => {
       
       expect(component.uploadQueue().length).toBe(1);
       expect(snackBarSpy.open).toHaveBeenCalledWith(
-        jasmine.stringMatching(/Already in upload queue/),
+        'test.epub: Already in upload queue',
         'Close',
         { duration: 5000 }
       );

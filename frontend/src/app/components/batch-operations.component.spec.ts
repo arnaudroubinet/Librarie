@@ -110,7 +110,8 @@ describe('BatchOperationsComponent', () => {
   it('should handle loading error', () => {
     batchServiceSpy.getRecentBatchOperations.and.returnValue(throwError(() => new Error('Failed to load')));
     
-    fixture.detectChanges();
+    const component2 = new BatchOperationsComponent(batchServiceSpy, snackBarSpy);
+    component2.ngOnInit();
     
     expect(snackBarSpy.open).toHaveBeenCalledWith('Failed to load batch operations', 'Close', { duration: 3000 });
   });
