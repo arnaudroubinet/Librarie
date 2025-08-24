@@ -144,6 +144,12 @@ interface UploadHistoryItem {
                         @if (item.result?.message) {
                           <div class="result-message" [class]="'result-' + item.result!.status.toLowerCase()">
                             {{ item.result!.message }}
+                            @if (item.result?.detail) {
+                              <div class="result-detail">{{ item.result!.detail }}</div>
+                            }
+                            @if (item.result?.traceId) {
+                              <div class="result-trace">Trace ID: {{ item.result!.traceId }}</div>
+                            }
                           </div>
                         }
                       </mat-card-content>
@@ -443,7 +449,8 @@ export class UploadComponent implements OnInit {
               queue.map(q => q === item ? { 
                 ...q, 
                 status: 'error' as const, 
-                error: errBody?.message || error.message || 'Upload failed' 
+                error: errBody?.message || error.message || 'Upload failed',
+                progress: 100
               } : q)
             );
             
@@ -455,8 +462,14 @@ export class UploadComponent implements OnInit {
               fileSize: item.file.size,
               status: 'error',
               message: errBody?.message || error.message || 'Upload failed',
+              fileHash: errBody?.fileHash ?? null,
               timestamp: Date.now()
             });
+
+            // Remove from queue on generic errors as well
+            this.uploadQueue.update(queue => 
+              queue.filter(q => !(q.file.name === item.file.name && q.file.size === item.file.size))
+            );
           }
 
           // Use setTimeout to ensure signal updates complete before resolving

@@ -179,6 +179,9 @@ import { Book } from '../models/book.model';
                                   [src]="result.imageUrl || result.thumbnailUrl" 
                                   [alt]="result.title"
                                   class="result-thumbnail"
+                                  loading="lazy"
+                                  decoding="async"
+                                  fetchpriority="low"
                                   (error)="$event.target.style.display='none'">
                               }
                               

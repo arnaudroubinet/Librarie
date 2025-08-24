@@ -81,9 +81,12 @@ import { environment } from '../../environments/environment';
                   <div class="card-container">
                     <div class="author-photo">
                       @if (item.id) {
-                        <img [src]="apiUrl + '/v1/authors/' + item.id + '/picture'" 
+            <img [src]="apiUrl + '/v1/authors/' + item.id + '/picture'" 
                              [alt]="item.name + ' photo'"
-                             class="photo-image"
+              class="photo-image"
+              loading="lazy"
+              decoding="async"
+              fetchpriority="low"
                              (error)="onImageError($event)">
                       } @else {
                         <div class="photo-placeholder">

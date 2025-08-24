@@ -52,6 +52,10 @@ import pkg from '../../../package.json';
             <iconify-icon icon="material-symbols:batch-prediction"></iconify-icon>
             <span>Batch Operations</span>
           </a>
+          <a mat-button class="nav-item" routerLink="/admin/anomalies" routerLinkActive="active">
+            <iconify-icon icon="material-symbols:rule"></iconify-icon>
+            <span>Anomalies</span>
+          </a>
           <a mat-button class="nav-item" routerLink="/settings" routerLinkActive="active">
             <iconify-icon icon="material-symbols:settings-outline"></iconify-icon>
             <span>Settings</span>

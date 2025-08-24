@@ -42,9 +42,12 @@ import { forkJoin, of } from 'rxjs';
             <!-- Series Cover -->
             <div class="series-cover-container">
               @if (getEffectiveImagePath(series()!)) {
-                <img [src]="getEffectiveImagePath(series()!)" 
+       <img [src]="getEffectiveImagePath(series()!)" 
                      [alt]="series()!.name + ' series'"
-                     class="series-cover" 
+         class="series-cover" 
+         loading="lazy" 
+         decoding="async" 
+         fetchpriority="low" 
                      (error)="onImageError($event)">
               } @else {
                 <div class="series-cover-placeholder">
@@ -191,7 +194,7 @@ import { forkJoin, of } from 'rxjs';
                       <div class="card-container">
                         <div class="author-photo">
                           @if (a.id && !hasAuthorImageError(a.id)) {
-                            <img [src]="getAuthorImageUrl(a)" [alt]="a.name + ' photo'" class="photo-image" (error)="onAuthorImageError($event, a.id)">
+                            <img [src]="getAuthorImageUrl(a)" [alt]="a.name + ' photo'" class="photo-image" loading="lazy" decoding="async" fetchpriority="low" (error)="onAuthorImageError($event, a.id)">
                           } @else {
                             <div class="photo-placeholder">
                               <mat-icon>person</mat-icon>

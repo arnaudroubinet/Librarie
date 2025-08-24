@@ -1,183 +1,191 @@
-param(
-  [switch]$UseWindowsTerminal
-)
+# PowerShell Dev Orchestrator for Librarie
+# - Cleans logs
+# - Ensures Docker is running
+# - Starts backend (Quarkus dev) and frontend (Angular start) with live logs to console and files
 
-$repoRoot   = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent $MyInvocation.MyCommand.Path }
-$backendDir = Join-Path $repoRoot 'backend'
-$frontendDir = Join-Path $repoRoot 'frontend'
+Set-StrictMode -Version Latest
+$ErrorActionPreference = 'Stop'
+[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
+Import-Module ThreadJob -ErrorAction SilentlyContinue
 
-function Ensure-DockerRunning {
-  if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
-    Write-Error "Docker CLI ('docker') not found in PATH. Please install Docker Desktop."
-    exit 1
-  }
-
-  # Quick check
-  & docker info *> $null
-  if ($LASTEXITCODE -eq 0) {
-    Write-Host "Docker is running." -ForegroundColor Green
-    return
-  }
-
-  Write-Host "Docker is not running. Starting Docker Desktop..." -ForegroundColor Yellow
-
-  # Build candidate paths without Join-Path to avoid parameter binding issues
-  $pf  = $env:ProgramFiles
-  $pf86 = ${env:ProgramFiles(x86)}
-  $candidatePaths = @()
-  if ($pf)  { $candidatePaths += "$pf\Docker\Docker\Docker Desktop.exe" }
-  if ($pf86){ $candidatePaths += "$pf86\Docker\Docker\Docker Desktop.exe" }
-  $candidatePaths += @(
-    'C:\\Program Files\\Docker\\Docker\\Docker Desktop.exe',
-    'C:\\Program Files (x86)\\Docker\\Docker\\Docker Desktop.exe'
-  )
-  $candidatePaths = $candidatePaths | Where-Object { $_ -and (Test-Path $_) }
-
-  $dockerDesktop = $candidatePaths | Select-Object -First 1
-  if (-not $dockerDesktop) {
-    Write-Error "Could not locate 'Docker Desktop.exe'. Please start Docker manually, then rerun this script."
-    exit 1
-  }
-
-  try {
-    Start-Process -FilePath $dockerDesktop | Out-Null
-  } catch {
-    Write-Error "Failed to start Docker Desktop: $($_.Exception.Message)"
-    exit 1
-  }
-
-  # Wait until Docker responds
-  Write-Host "Waiting for Docker to be ready (up to 2 minutes)..." -ForegroundColor Cyan
-  $maxAttempts = 60
-  for ($i = 1; $i -le $maxAttempts; $i++) {
-    Start-Sleep -Seconds 2
-    & docker info *> $null
-    if ($LASTEXITCODE -eq 0) {
-      Write-Host "Docker is ready." -ForegroundColor Green
-      return
-    }
-  }
-
-  Write-Error "Docker did not become ready within the timeout."
-  exit 1
+function Write-Section($text) {
+	Write-Host "`n==== $text ==== `n" -ForegroundColor Cyan
 }
 
-Ensure-DockerRunning
-
-# If explicitly requested, use Windows Terminal tabs
-if ($UseWindowsTerminal) {
-  if (-not (Get-Command wt -ErrorAction SilentlyContinue)) {
-    Write-Error "Windows Terminal (wt.exe) not found. Re-run without -UseWindowsTerminal to stream output in this terminal."
-    exit 1
-  }
-  $args = @(
-    'new-tab', '--title', 'Backend',  '-d', $backendDir,  'pwsh', '-NoExit', '-NoLogo', '-ExecutionPolicy', 'Bypass', '-Command', '.\mvnw quarkus:dev',
-    ';',
-    'new-tab', '--title', 'Frontend', '-d', $frontendDir, 'pwsh', '-NoExit', '-NoLogo', '-ExecutionPolicy', 'Bypass', '-Command', 'npm start'
-  )
-  Start-Process -FilePath 'wt.exe' -ArgumentList $args | Out-Null
-  return
+function New-LogsDir {
+	$logsDir = Join-Path $PSScriptRoot 'logs'
+	# Stop lingering jobs to release any file locks on logs
+	Get-Job -Name 'backend-dev','frontend-dev' -ErrorAction SilentlyContinue | % {
+		try { Stop-Job $_ -ErrorAction SilentlyContinue } catch {}
+		try { Remove-Job $_ -ErrorAction SilentlyContinue } catch {}
+	}
+	if (Test-Path $logsDir) {
+		try {
+			Remove-Item -Path $logsDir -Recurse -Force -ErrorAction Stop
+		} catch {
+			Write-Warning "Failed to remove logs directory: $($_.Exception.Message). Attempting to empty it."
+			Get-ChildItem -Path $logsDir -Force -Recurse | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
+		}
+	}
+	New-Item -ItemType Directory -Path $logsDir -Force | Out-Null
+	return $logsDir
 }
 
-# Integrated streaming mode: run both processes and live-stream outputs with prefixes
-function Start-DevProcess {
-  param(
-    [Parameter(Mandatory)] [string]$Name,
-    [Parameter(Mandatory)] [string]$WorkingDirectory,
-    [Parameter(Mandatory)] [string]$Command,
-    [Parameter(Mandatory)] [string]$Args
-  )
-
-  $logDir = Join-Path $env:TEMP "librarie-dev-logs"
-  if (-not (Test-Path $logDir)) { New-Item -ItemType Directory -Path $logDir | Out-Null }
-  $outFile = Join-Path $logDir ("${Name}.out.log")
-  $errFile = Join-Path $logDir ("${Name}.err.log")
-  # Clear previous logs
-  '' | Set-Content -Path $outFile -Encoding utf8
-  '' | Set-Content -Path $errFile -Encoding utf8
-
-  $psi = New-Object System.Diagnostics.ProcessStartInfo
-  $psi.FileName = $Command
-  $psi.Arguments = $Args
-  $psi.WorkingDirectory = $WorkingDirectory
-  $psi.RedirectStandardOutput = $true
-  $psi.RedirectStandardError  = $true
-  $psi.UseShellExecute = $false
-  $psi.CreateNoWindow = $true
-
-  $proc = New-Object System.Diagnostics.Process
-  $proc.StartInfo = $psi
-  [void]$proc.Start()
-
-  # Async stream readers writing to files
-  $stdoutTask = $proc.StandardOutput.BaseStream.CopyToAsync([System.IO.File]::Open($outFile, [System.IO.FileMode]::OpenOrCreate, [System.IO.FileAccess]::Write, [System.IO.FileShare]::Read))
-  $stderrTask = $proc.StandardError.BaseStream.CopyToAsync([System.IO.File]::Open($errFile, [System.IO.FileMode]::OpenOrCreate, [System.IO.FileAccess]::Write, [System.IO.FileShare]::Read))
-
-  return [pscustomobject]@{
-    Name = $Name
-    Process = $proc
-    OutFile = $outFile
-    ErrFile = $errFile
-  }
+function Test-DockerReady {
+	try {
+		$null = docker info --format '{{json .ServerVersion}}' 2>$null
+		return $true
+	} catch {
+		return $false
+	}
 }
 
-function Start-LogTailJob {
-  param(
-    [Parameter(Mandatory)] [string]$Name,
-    [Parameter(Mandatory)] [string]$File,
-    [Parameter(Mandatory)] [ConsoleColor]$Color
-  )
+function Start-DockerDesktopIfNeeded {
+	if (Test-DockerReady) { return $true }
 
-  $jobName = "tail:{0}:{1}" -f $Name, ([IO.Path]::GetFileName($File))
-  Start-ThreadJob -Name $jobName -ScriptBlock {
-    param($n, $f, $c)
-    try {
-      # Wait until file exists and is ready
-      while (-not (Test-Path $f)) { Start-Sleep -Milliseconds 100 }
-      Get-Content -Path $f -Encoding UTF8 -Wait | ForEach-Object {
-        if ($_ -ne $null) {
-          $old = $Host.UI.RawUI.ForegroundColor
-          try { $Host.UI.RawUI.ForegroundColor = $c } catch {}
-          Write-Host ("[{0}] {1}" -f $n, $_)
-          try { $Host.UI.RawUI.ForegroundColor = $old } catch {}
-        }
-      }
-    } catch {}
-  } -ArgumentList $Name, $File, $Color | Out-Null
+	Write-Section 'Docker not ready. Attempting to start Docker Desktop'
+
+	# Try Windows service first
+	$svc = Get-Service -Name 'com.docker.service' -ErrorAction SilentlyContinue
+	if ($null -ne $svc -and $svc.Status -ne 'Running') {
+		try {
+			Start-Service -Name 'com.docker.service'
+		} catch {
+			Write-Warning "Could not start com.docker.service: $($_.Exception.Message)"
+		}
+	}
+
+	# Try launching Docker Desktop app if service approach not sufficient
+	$candidates = @(
+		(Join-Path $Env:ProgramFiles 'Docker\Docker\Docker Desktop.exe'),
+		(Join-Path ${Env:ProgramFiles(x86)} 'Docker\Docker\Docker Desktop.exe')
+	)
+	foreach ($exe in $candidates) {
+		if ($exe -and (Test-Path $exe)) {
+			Write-Host "Starting Docker Desktop: $exe"
+			try {
+				Start-Process -FilePath $exe | Out-Null
+			} catch {
+				Write-Warning "Failed to start Docker Desktop ($exe): $($_.Exception.Message)"
+			}
+			break
+		}
+	}
+
+	# Wait up to 2 minutes for Docker to become ready
+	$timeoutSec = 120
+	$sw = [Diagnostics.Stopwatch]::StartNew()
+	while ($sw.Elapsed.TotalSeconds -lt $timeoutSec) {
+		if (Test-DockerReady) {
+			Write-Host 'Docker is ready.' -ForegroundColor Green
+			return $true
+		}
+		Start-Sleep -Seconds 3
+		Write-Host 'Waiting for Docker to be ready…'
+	}
+
+	Write-Warning 'Docker did not become ready within the expected time. Continuing anyway.'
+	return $false
 }
 
-Write-Host "Starting dev services... (press Ctrl+C to stop)" -ForegroundColor Cyan
+function Start-BackendDev {
+	param(
+		[Parameter(Mandatory)] [string] $LogPath
+	)
+	$backendDir = Join-Path $PSScriptRoot 'backend'
+	if (-not (Test-Path (Join-Path $backendDir 'mvnw.cmd'))) {
+		throw "Backend wrapper not found at $backendDir\mvnw.cmd"
+	}
 
-# Clean up any previous tail jobs from earlier runs in this session
-Get-Job | Where-Object { $_.Name -like 'tail:*' } | Remove-Job -Force -ErrorAction SilentlyContinue | Out-Null
+	$sb = {
+		param($backendDir,$logPath)
+		Set-Location -Path $backendDir
+	"[backend] starting at $(Get-Date -Format o) in $backendDir" | Out-File -FilePath $logPath -Append -Encoding UTF8
+		& .\mvnw.cmd quarkus:dev 2>&1 |
+			Tee-Object -FilePath $logPath -Encoding UTF8 |
+			Out-Host
+	}
 
-$backend = Start-DevProcess -Name 'backend' -WorkingDirectory $backendDir -Command 'pwsh' -Args "-NoLogo -NoProfile -Command .\mvnw quarkus:dev"
-$frontend = Start-DevProcess -Name 'frontend' -WorkingDirectory $frontendDir -Command 'pwsh' -Args "-NoLogo -NoProfile -Command npm start"
-
-# Tail logs concurrently
-Start-LogTailJob -Name 'backend'  -File $backend.OutFile -Color ([ConsoleColor]::Yellow)
-Start-LogTailJob -Name 'backend!' -File $backend.ErrFile -Color ([ConsoleColor]::DarkYellow)
-Start-LogTailJob -Name 'frontend'  -File $frontend.OutFile -Color ([ConsoleColor]::Cyan)
-Start-LogTailJob -Name 'frontend!' -File $frontend.ErrFile -Color ([ConsoleColor]::DarkCyan)
-
-# Cleanup handler on Ctrl+C/exit
-$script:cleanup = {
-  try {
-  if ($backend.Process -and -not $backend.Process.HasExited) { $backend.Process.Kill($true) }
-  } catch {}
-  try {
-  if ($frontend.Process -and -not $frontend.Process.HasExited) { $frontend.Process.Kill($true) }
-  } catch {}
-  Get-Job | Where-Object { $_.Name -like 'tail:*' } | Stop-Job -Force -ErrorAction SilentlyContinue | Out-Null
+	# Use ThreadJob to stream host output to current console
+	Start-ThreadJob -Name 'backend-dev' -StreamingHost $Host -ScriptBlock $sb -ArgumentList $backendDir, $LogPath
 }
-Register-EngineEvent PowerShell.Exiting -Action $cleanup | Out-Null
+
+function Start-FrontendDev {
+	param(
+		[Parameter(Mandatory)] [string] $LogPath
+	)
+	$frontendDir = Join-Path $PSScriptRoot 'frontend'
+	if (-not (Test-Path (Join-Path $frontendDir 'package.json'))) {
+		throw "Frontend package.json not found at $frontendDir"
+	}
+
+	$sb = {
+		param($frontendDir,$logPath)
+		Set-Location -Path $frontendDir
+	"[frontend] starting at $(Get-Date -Format o) in $frontendDir" | Out-File -FilePath $logPath -Append -Encoding UTF8
+		# Install deps: prefer ci when lockfile exists, otherwise fallback to install
+		if (Test-Path -Path 'package-lock.json') {
+			& npm ci 2>&1 |
+				Tee-Object -FilePath $logPath -Encoding UTF8 |
+				Out-Host
+		} else {
+			"[frontend] package-lock.json missing; running npm install instead of npm ci" |
+				Out-File -FilePath $logPath -Append -Encoding UTF8
+			& npm install 2>&1 |
+				Tee-Object -FilePath $logPath -Encoding UTF8 |
+				Out-Host
+		}
+
+	# Start Angular using workspace task-equivalent command (proxy-friendly)
+	& npm run start --prefix "$frontendDir" 2>&1 |
+			Tee-Object -FilePath $logPath -Encoding UTF8 |
+			Out-Host
+	}
+
+	Start-ThreadJob -Name 'frontend-dev' -StreamingHost $Host -ScriptBlock $sb -ArgumentList $frontendDir, $LogPath
+}
+
+# --- Main ---
+Write-Section 'Preparing logs'
+$logsDir = New-LogsDir
+$backendLog = Join-Path $logsDir 'backend.log'
+$frontendLog = Join-Path $logsDir 'frontend.log'
+
+Write-Section 'Checking Docker'
+$null = Start-DockerDesktopIfNeeded
+
+Write-Section 'Starting Backend (Quarkus dev)'
+$backendJob = Start-BackendDev -LogPath $backendLog
+
+Write-Section 'Starting Frontend (Angular)'
+$frontendJob = Start-FrontendDev -LogPath $frontendLog
+
+Write-Host "Backend log:    $backendLog"
+Write-Host "Frontend log:   $frontendLog"
+Write-Host "Jobs started. Press Ctrl+C to stop."
+
 try {
-  # Wait while either process is running; refresh every 500ms
-  while (-not ($backend.Process.HasExited -and $frontend.Process.HasExited)) {
-    Start-Sleep -Milliseconds 500
-  }
+	while ($true) {
+		# Keep the script alive while jobs run; report once if any job exits
+		$jobs = Get-Job -Name 'backend-dev','frontend-dev' -ErrorAction SilentlyContinue
+		if (-not $jobs) { break }
+
+		$endedNow = $jobs | Where-Object { $_.State -in 'Completed','Failed','Stopped' }
+		foreach ($j in $endedNow) {
+			Write-Warning "Job '$($j.Name)' finished with state $($j.State)."
+			Receive-Job -Job $j -Keep -ErrorAction SilentlyContinue | Out-Null
+			# Remove finished jobs so we don't repeatedly warn
+			Remove-Job -Job $j -ErrorAction SilentlyContinue
+		}
+
+		$running = Get-Job -Name 'backend-dev','frontend-dev' -ErrorAction SilentlyContinue | Where-Object { $_.State -eq 'Running' -or $_.State -eq 'NotStarted' }
+		if (-not $running -or @($running).Count -eq 0) { break }
+
+		Wait-Job -Job $running -Any -Timeout 2 -ErrorAction SilentlyContinue | Out-Null
+	}
 } finally {
-  & $cleanup
+	Write-Host 'Stopping jobs…'
+	Get-Job -Name 'backend-dev','frontend-dev' -ErrorAction SilentlyContinue | Stop-Job -ErrorAction SilentlyContinue
+	Get-Job -Name 'backend-dev','frontend-dev' -ErrorAction SilentlyContinue | Remove-Job -ErrorAction SilentlyContinue
 }
 
-Write-Host "Dev services stopped." -ForegroundColor Green

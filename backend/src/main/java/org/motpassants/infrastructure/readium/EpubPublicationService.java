@@ -49,7 +49,18 @@ public class EpubPublicationService {
             if (!epubPath.startsWith(basePath) || !Files.exists(epubPath)) {
                 return Optional.empty();
             }
+            return openPublication(epubPath);
+        } catch (Exception e) {
+            return Optional.empty();
+        }
+    }
 
+    /** Open publication by absolute path (no storage base constraints). */
+    public Optional<PublicationInfo> openPublication(Path epubPath) {
+        try {
+            if (epubPath == null || !Files.exists(epubPath) || !epubPath.toString().toLowerCase().endsWith(".epub")) {
+                return Optional.empty();
+            }
             try (ZipFile zip = new ZipFile(epubPath.toFile())) {
                 String opfPath = locateOpfPath(zip);
                 if (opfPath == null) {
@@ -59,7 +70,7 @@ public class EpubPublicationService {
                 PublicationInfo info = new PublicationInfo();
                 info.setEpubFile(epubPath);
                 info.setOpfPath(opfPath);
-                info.setTitle(opf.title != null ? opf.title : book.getTitle());
+                info.setTitle(opf.title);
                 info.setLanguage(opf.language);
                 info.setSpineResourceHrefs(opf.spineHrefs);
                 info.setManifestHrefToMediaType(opf.hrefToType);
@@ -265,6 +276,162 @@ public class EpubPublicationService {
         public void setManifestIdToProperties(Map<String, String> manifestIdToProperties) { this.manifestIdToProperties = manifestIdToProperties; }
         public String getNcxId() { return ncxId; }
         public void setNcxId(String ncxId) { this.ncxId = ncxId; }
+    }
+
+    /** Basic metadata extracted from OPF. */
+    public static class CoreMetadata {
+        public String title;
+        public String language;
+        public List<String> creators = java.util.List.of();
+        public String publisher;
+        public String identifier;
+        public String isbn;
+        public String description;
+        public String date;
+        public List<String> subjects = java.util.List.of();
+    }
+
+    /** Extract common metadata fields from OPF. */
+    public Optional<CoreMetadata> extractCoreMetadata(PublicationInfo pub) {
+        try (ZipFile zip = new ZipFile(pub.getEpubFile().toFile())) {
+            ZipEntry opfEntry = zip.getEntry(pub.getOpfPath());
+            if (opfEntry == null) return Optional.empty();
+            DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+            dbf.setNamespaceAware(true);
+            DocumentBuilder builder = dbf.newDocumentBuilder();
+            Document doc;
+            try (InputStream is = zip.getInputStream(opfEntry)) { doc = builder.parse(is); }
+            XPath xp = XPathFactory.newInstance().newXPath();
+            CoreMetadata cm = new CoreMetadata();
+            cm.title = text(xp, "/*[local-name()='package']/*[local-name()='metadata']/*[local-name()='title'][1]/text()", doc);
+            cm.language = text(xp, "/*[local-name()='package']/*[local-name()='metadata']/*[local-name()='language'][1]/text()", doc);
+            cm.publisher = text(xp, "/*[local-name()='package']/*[local-name()='metadata']/*[local-name()='publisher'][1]/text()", doc);
+            cm.description = text(xp, "/*[local-name()='package']/*[local-name()='metadata']/*[local-name()='description'][1]/text()", doc);
+            cm.date = text(xp, "/*[local-name()='package']/*[local-name()='metadata']/*[local-name()='date'][1]/text()", doc);
+            // creators
+            NodeList creators = (NodeList) xp.evaluate("/*[local-name()='package']/*[local-name()='metadata']/*[local-name()='creator']/text()", doc, XPathConstants.NODESET);
+            java.util.List<String> cList = new java.util.ArrayList<>();
+            for (int i = 0; i < creators.getLength(); i++) cList.add(creators.item(i).getNodeValue());
+            cm.creators = java.util.List.copyOf(cList);
+            // identifiers
+            NodeList ids = (NodeList) xp.evaluate("/*[local-name()='package']/*[local-name()='metadata']/*[local-name()='identifier']/text()", doc, XPathConstants.NODESET);
+            if (ids.getLength() > 0) {
+                cm.identifier = ids.item(0).getNodeValue();
+                String id = cm.identifier != null ? cm.identifier.toLowerCase(Locale.ROOT) : null;
+                if (id != null) {
+                    String onlyDigits = id.replaceAll("[^0-9xX]", "");
+                    if (onlyDigits.length() == 13 || onlyDigits.length() == 10) cm.isbn = onlyDigits;
+                    if (id.startsWith("urn:isbn:") || id.startsWith("isbn:")) cm.isbn = id.replaceFirst("^.*isbn:?", "");
+                }
+            }
+            // subjects
+            NodeList subs = (NodeList) xp.evaluate("/*[local-name()='package']/*[local-name()='metadata']/*[local-name()='subject']/text()", doc, XPathConstants.NODESET);
+            java.util.List<String> sList = new java.util.ArrayList<>();
+            for (int i = 0; i < subs.getLength(); i++) sList.add(subs.item(i).getNodeValue());
+            cm.subjects = java.util.List.copyOf(sList);
+            return Optional.of(cm);
+        } catch (Exception e) {
+            return Optional.empty();
+        }
+    }
+
+    /** Try to find the cover image href inside the zip using OPF hints. */
+    public Optional<String> findCoverImageZipPath(PublicationInfo pub) {
+        try (ZipFile zip = new ZipFile(pub.getEpubFile().toFile())) {
+            ZipEntry opfEntry = zip.getEntry(pub.getOpfPath());
+            if (opfEntry == null) return Optional.empty();
+            DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+            dbf.setNamespaceAware(true);
+            DocumentBuilder builder = dbf.newDocumentBuilder();
+            Document doc;
+            try (InputStream is = zip.getInputStream(opfEntry)) { doc = builder.parse(is); }
+            XPath xp = XPathFactory.newInstance().newXPath();
+            // EPUB3 cover-image property
+            if (pub.getManifestIdToProperties() != null && pub.getManifestIdToHref() != null) {
+                for (var e : pub.getManifestIdToProperties().entrySet()) {
+                    String props = e.getValue();
+                    if (props != null && props.contains("cover-image")) {
+                        String href = pub.getManifestIdToHref().get(e.getKey());
+                        if (href != null) return Optional.of(buildZipPath(pub.getOpfDir(), href));
+                    }
+                }
+            }
+            // EPUB2 meta name="cover" content="id"
+            String coverId = text(xp, "/*[local-name()='package']/*[local-name()='metadata']/*[local-name()='meta'][@name='cover']/@content", doc);
+            if (coverId != null && pub.getManifestIdToHref() != null) {
+                String href = pub.getManifestIdToHref().get(coverId);
+                if (href != null) return Optional.of(buildZipPath(pub.getOpfDir(), href));
+            }
+            // Fallback: first jpg/png in manifest
+            if (pub.getManifestHrefToMediaType() != null) {
+                for (var e : pub.getManifestHrefToMediaType().entrySet()) {
+                    String type = e.getValue();
+                    if (type != null && (type.equalsIgnoreCase("image/jpeg") || type.equalsIgnoreCase("image/png"))) {
+                        return Optional.of(buildZipPath(pub.getOpfDir(), e.getKey()));
+                    }
+                }
+            }
+        } catch (Exception ignore) { }
+        return Optional.empty();
+    }
+
+    /** Read a zip entry to bytes. */
+    public Optional<byte[]> readEntryBytes(PublicationInfo pub, String entryPathInZip) {
+        try (ZipFile zip = new ZipFile(pub.getEpubFile().toFile())) {
+            ZipEntry entry = zip.getEntry(entryPathInZip);
+            if (entry == null) return Optional.empty();
+            try (InputStream is = zip.getInputStream(entry)) {
+                return Optional.of(is.readAllBytes());
+            }
+        } catch (Exception e) {
+            return Optional.empty();
+        }
+    }
+
+    private static String text(XPath xp, String expr, Document doc) throws Exception {
+        String s = (String) xp.evaluate(expr, doc, XPathConstants.STRING);
+        return (s != null && !s.isBlank()) ? s : null;
+    }
+
+    /**
+     * Fallback: try to find an image for the first page by scanning spine items.
+     * - If a spine item is an image type, use it directly
+     * - Else parse first XHTML spine items to find first <img src> and resolve to a zip path
+     */
+    public Optional<String> findFirstPageImageZipPath(PublicationInfo pub) {
+        try (ZipFile zip = new ZipFile(pub.getEpubFile().toFile())) {
+            // Direct image in spine
+            if (pub.getSpineResourceHrefs() != null && pub.getManifestHrefToMediaType() != null) {
+                for (String href : pub.getSpineResourceHrefs()) {
+                    String type = pub.getManifestHrefToMediaType().get(href);
+                    if (type != null && type.toLowerCase(Locale.ROOT).startsWith("image/")) {
+                        return Optional.of(buildZipPath(pub.getOpfDir(), href));
+                    }
+                }
+            }
+            // Parse first few XHTMLs for <img>
+            int checked = 0;
+            if (pub.getSpineResourceHrefs() != null) {
+                for (String href : pub.getSpineResourceHrefs()) {
+                    if (checked++ > 5) break; // limit work
+                    String type = pub.getManifestHrefToMediaType() != null ? pub.getManifestHrefToMediaType().get(href) : null;
+                    if (type == null || (!type.contains("xhtml") && !type.contains("html"))) continue;
+                    String zipPath = buildZipPath(pub.getOpfDir(), href);
+                    ZipEntry entry = zip.getEntry(zipPath);
+                    if (entry == null) continue;
+                    String html;
+                    try (InputStream is = zip.getInputStream(entry)) { html = new String(is.readAllBytes()); }
+                    java.util.regex.Matcher m = java.util.regex.Pattern.compile("<img[^>]+src=\\\"([^\\\"]+)\\\"", java.util.regex.Pattern.CASE_INSENSITIVE).matcher(html);
+                    if (m.find()) {
+                        String imgHref = m.group(1);
+                        String baseDir = zipPath.contains("/") ? zipPath.substring(0, zipPath.lastIndexOf('/')) : "";
+                        String resolved = resolveZipPath(baseDir, imgHref);
+                        return Optional.of(resolved);
+                    }
+                }
+            }
+        } catch (Exception ignore) {}
+        return Optional.empty();
     }
 
     /**

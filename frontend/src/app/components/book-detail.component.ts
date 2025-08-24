@@ -40,9 +40,12 @@ import { environment } from '../../environments/environment';
             <!-- Book Cover -->
             <div class="book-cover-container">
               @if (book()!.hasCover) {
-                <img [src]="apiUrl + '/v1/books/' + book()!.id + '/cover'"
+       <img [src]="apiUrl + '/v1/books/' + book()!.id + '/cover'"
                      [alt]="book()!.title + ' cover'"
-                     class="book-cover">
+         class="book-cover"
+         loading="eager"
+         decoding="async"
+         fetchpriority="high">
               } @else {
         <div class="book-cover-placeholder">
                   <div class="placeholder-content">
@@ -91,16 +94,16 @@ import { environment } from '../../environments/environment';
               <!-- Action Buttons -->
               <div class="action-buttons">
                 @if (isEpubBook()) {
-                  <button mat-raised-button color="primary" (click)="readBook()" class="read-button">
+                  <button mat-raised-button color="primary" (click)="readBook()" class="action-button">
                     <iconify-icon icon="material-symbols:menu-book-rounded"></iconify-icon>
-                    Read Book
+                    Read
                   </button>
                 }
-                <button mat-stroked-button [routerLink]="['/books', book()!.id, 'metadata']" class="metadata-button">
+                <button mat-raised-button color="primary" [routerLink]="['/books', book()!.id, 'metadata']" class="action-button">
                   <iconify-icon icon="material-symbols:edit-rounded"></iconify-icon>
-                  Edit Metadata
+                  Edit
                 </button>
-                <button mat-stroked-button (click)="downloadBook()" class="download-button">
+                <button mat-raised-button color="primary" (click)="downloadBook()" class="action-button">
                   <iconify-icon icon="material-symbols:download-rounded"></iconify-icon>
                   Download
                 </button>

@@ -50,5 +50,11 @@ export const routes: Routes = [
     path: 'settings', 
     loadComponent: () => import('./components/settings.component').then(c => c.SettingsComponent)
   },
+  { 
+    path: 'admin/anomalies', 
+    loadComponent: () => import('./components/book-anomalies.component').then(c => c.BookAnomaliesComponent)
+  },
+  // Friendly alias
+  { path: 'anomalies', redirectTo: '/admin/anomalies', pathMatch: 'full' },
   { path: '**', redirectTo: '/books' }
 ];

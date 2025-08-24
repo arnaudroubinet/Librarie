@@ -4,12 +4,16 @@ export interface UploadConfig {
 }
 
 export interface UploadResult {
-  status: 'SUCCESS' | 'DUPLICATE' | 'ERROR';
+  status: 'SUCCESS' | 'DUPLICATE' | 'ERROR' | 'VALIDATION_FAILED' | 'PROCESSING_FAILED';
   message: string;
   bookId?: string;
   fileName?: string;
   fileSize?: number;
   fileHash?: string;
+  // Optional diagnostic fields
+  errorCode?: string;
+  detail?: string;
+  traceId?: string;
 }
 
 export interface ValidationResult {

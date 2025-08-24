@@ -4,7 +4,6 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.motpassants.domain.port.in.UploadUseCase;
 import org.motpassants.domain.port.in.IngestUseCase;
-import org.motpassants.domain.port.out.FileStorageService;
 import org.motpassants.domain.port.out.ConfigurationPort;
 import org.motpassants.domain.port.out.SecureFileProcessingPort;
 import org.motpassants.domain.port.out.BookRepository;
@@ -30,7 +29,6 @@ import java.util.UUID;
 public class UploadService implements UploadUseCase {
     
     private final IngestUseCase ingestUseCase;
-    private final FileStorageService fileStorageService;
     private final ConfigurationPort configurationPort;
     private final SecureFileProcessingPort secureFileProcessingPort;
     private final BookRepository bookRepository;
@@ -38,13 +36,11 @@ public class UploadService implements UploadUseCase {
     
     @Inject
     public UploadService(IngestUseCase ingestUseCase,
-                        FileStorageService fileStorageService,
                         ConfigurationPort configurationPort,
                         SecureFileProcessingPort secureFileProcessingPort,
                         BookRepository bookRepository,
                         LoggingPort loggingPort) {
         this.ingestUseCase = ingestUseCase;
-        this.fileStorageService = fileStorageService;
         this.configurationPort = configurationPort;
         this.secureFileProcessingPort = secureFileProcessingPort;
         this.bookRepository = bookRepository;
@@ -53,7 +49,8 @@ public class UploadService implements UploadUseCase {
     
     @Override
     public UploadModels.UploadResult processUploadedFile(InputStream inputStream, String filename, String contentType) {
-        loggingPort.info("Processing uploaded file: " + filename);
+        String traceId = UUID.randomUUID().toString();
+        loggingPort.info("[" + traceId + "] Processing uploaded file: " + filename);
         
         try {
             // Read the incoming stream once into a temp file, then use fresh streams from it
@@ -70,7 +67,7 @@ public class UploadService implements UploadUseCase {
 
                 if (!validation.valid()) {
                     return new UploadModels.UploadResult(null, filename, "VALIDATION_FAILED",
-                        validation.errorMessage(), false, validation.fileSize(), null);
+                        validation.errorMessage(), false, validation.fileSize(), null, "VALIDATION_FAILED", validation.errorMessage(), traceId);
                 }
 
                 // 2) Calculate hash using a new stream from the temp file
@@ -80,9 +77,9 @@ public class UploadService implements UploadUseCase {
 
                 // 3) Check for duplicates
                 if (isDuplicateFile(fileHash)) {
-                    loggingPort.info("Duplicate file detected: " + filename + " (hash: " + fileHash + ")");
+                    loggingPort.info("[" + traceId + "] Duplicate file detected: " + filename + " (hash: " + fileHash + ")");
                     return new UploadModels.UploadResult(null, filename, "DUPLICATE",
-                        "File already exists in library", false, validation.fileSize(), fileHash);
+                        "File already exists in library", false, validation.fileSize(), fileHash, "DUPLICATE", "Hash matched an existing book", traceId);
                 }
 
                 // 4) Process through ingestion using the same temp file
@@ -90,10 +87,11 @@ public class UploadService implements UploadUseCase {
 
                 if (bookId != null) {
                     return new UploadModels.UploadResult(bookId, filename, "SUCCESS",
-                        "File uploaded and processed successfully", true, validation.fileSize(), fileHash);
+                        "File uploaded and processed successfully", true, validation.fileSize(), fileHash, null, null, traceId);
                 } else {
+                    loggingPort.warn("[" + traceId + "] Ingestion returned null for file: " + filename);
                     return new UploadModels.UploadResult(null, filename, "PROCESSING_FAILED",
-                        "Failed to process file through ingestion pipeline", false, validation.fileSize(), fileHash);
+                        "Failed to process file through ingestion pipeline", false, validation.fileSize(), fileHash, "PROCESSING_FAILED", "Ingestion service returned null. Check server logs with traceId " + traceId, traceId);
                 }
 
             } finally {
@@ -101,14 +99,14 @@ public class UploadService implements UploadUseCase {
                 try {
                     Files.deleteIfExists(uploadedTemp);
                 } catch (IOException e) {
-                    loggingPort.warn("Failed to clean up temporary file: " + uploadedTemp);
+                    loggingPort.warn("[" + traceId + "] Failed to clean up temporary file: " + uploadedTemp);
                 }
             }
             
         } catch (Exception e) {
-            loggingPort.error("Error processing uploaded file: " + filename, e);
+            loggingPort.error("[" + traceId + "] Error processing uploaded file: " + filename, e);
             return new UploadModels.UploadResult(null, filename, "ERROR", 
-                "Internal error: " + e.getMessage(), false, 0, null);
+                "Internal error: " + e.getMessage(), false, 0, null, "INTERNAL_ERROR", e.getClass().getSimpleName() + ": " + e.getMessage(), traceId);
         }
     }
     

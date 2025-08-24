@@ -15,7 +15,10 @@ public class UploadModels {
         String message,
         boolean success,
         long fileSize,
-        String fileHash
+    String fileHash,
+    String errorCode,
+    String detail,
+    String traceId
     ) {}
     
     /**
