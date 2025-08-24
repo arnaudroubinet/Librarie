@@ -44,6 +44,14 @@ import pkg from '../../../package.json';
 
         <div class="nav-section">
           <div class="section-title">MANAGEMENT</div>
+          <a mat-button class="nav-item" routerLink="/upload" routerLinkActive="active">
+            <iconify-icon icon="material-symbols:cloud-upload"></iconify-icon>
+            <span>Upload Books</span>
+          </a>
+          <a mat-button class="nav-item" routerLink="/batch" routerLinkActive="active">
+            <iconify-icon icon="material-symbols:batch-prediction"></iconify-icon>
+            <span>Batch Operations</span>
+          </a>
           <a mat-button class="nav-item" routerLink="/settings" routerLinkActive="active">
             <iconify-icon icon="material-symbols:settings-outline"></iconify-icon>
             <span>Settings</span>

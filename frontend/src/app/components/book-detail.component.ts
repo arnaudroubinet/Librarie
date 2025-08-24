@@ -96,6 +96,10 @@ import { environment } from '../../environments/environment';
                     Read Book
                   </button>
                 }
+                <button mat-stroked-button [routerLink]="['/books', book()!.id, 'metadata']" class="metadata-button">
+                  <iconify-icon icon="material-symbols:edit-rounded"></iconify-icon>
+                  Edit Metadata
+                </button>
                 <button mat-stroked-button (click)="downloadBook()" class="download-button">
                   <iconify-icon icon="material-symbols:download-rounded"></iconify-icon>
                   Download

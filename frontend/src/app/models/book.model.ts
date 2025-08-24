@@ -2,7 +2,10 @@ export interface Book {
   id: string;
   title: string;
   titleSort?: string;
+  subtitle?: string;
   isbn?: string;
+  isbn10?: string;
+  isbn13?: string;
   description?: string;
   path?: string;
   fileSize?: number;
@@ -16,6 +19,7 @@ export interface Book {
   language?: string;
   publisher?: string;
   pageCount?: number;
+  pages?: number; // Alias for pageCount
   publicationYear?: number;
   // Contributors by role (names only, backward compatible)
   contributors?: Record<string, string[]>;
