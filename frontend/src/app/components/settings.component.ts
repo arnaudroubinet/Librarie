@@ -47,20 +47,13 @@ import pkg from '../../../package.json';
             <div class="stacked-column">
               <!-- Application Information -->
               <mat-card class="info-card dark-card">
-                <mat-card-header>
-                  <div mat-card-avatar class="avatar">
-                    <iconify-icon icon="mdi:information-outline"></iconify-icon>
-                  </div>
-                  <mat-card-title>
-                    Application Information
+                <mat-card-content>
+                  <div class="card-section-title">
+                    <span>Application Information</span>
                     <button mat-icon-button class="refresh-btn" aria-label="Refresh application info" (click)="reloadSettings(true)">
                       <iconify-icon icon="material-symbols-light:refresh-rounded"></iconify-icon>
                     </button>
-                  </mat-card-title>
-                  <mat-card-subtitle>System details and version</mat-card-subtitle>
-                </mat-card-header>
-                
-                <mat-card-content>
+                  </div>
                   <div class="stat-row">
                     <span class="stat-label">Backend version:</span>
                     <span class="stat-value">{{ settingsData()?.version || 'Unknown' }}</span>
@@ -74,19 +67,13 @@ import pkg from '../../../package.json';
 
               <!-- Liveness & Readiness -->
               <mat-card class="health-card dark-card">
-                <mat-card-header>
-                  <div mat-card-avatar class="avatar">
-                    <iconify-icon icon="mdi:heart-pulse"></iconify-icon>
-                  </div>
-                  <mat-card-title>
-                    Liveness & Readiness
+                <mat-card-content>
+                  <div class="card-section-title">
+                    <span>Liveness & Readiness</span>
                     <button mat-icon-button class="refresh-btn" aria-label="Refresh health" (click)="healthRefresh()">
                       <iconify-icon icon="material-symbols-light:refresh-rounded"></iconify-icon>
                     </button>
-                  </mat-card-title>
-                  <mat-card-subtitle>Backend health status</mat-card-subtitle>
-                </mat-card-header>
-                <mat-card-content>
+                  </div>
                   <div class="health-grid">
                     <div class="health-item">
                       <span class="health-label">Liveness</span>
@@ -121,20 +108,14 @@ import pkg from '../../../package.json';
 
             <!-- Supported Formats -->
             <mat-card class="formats-card dark-card">
-              <mat-card-header>
-                <div mat-card-avatar class="avatar">
-                  <iconify-icon icon="mdi:file-document-outline"></iconify-icon>
-                </div>
-                <mat-card-title>
-                  Supported Formats
+              <mat-card-content>
+                <div class="card-section-title">
+                  <span>Supported Formats</span>
                   <button mat-icon-button class="refresh-btn" aria-label="Refresh formats" (click)="reloadSettings(true)">
                     <iconify-icon icon="material-symbols-light:refresh-rounded"></iconify-icon>
                   </button>
-                </mat-card-title>
-                <mat-card-subtitle>{{ settingsData()?.supportedFormats?.length || 0 }} formats supported</mat-card-subtitle>
-              </mat-card-header>
-              
-              <mat-card-content>
+                  <span class="section-subtitle">{{ settingsData()?.supportedFormats?.length || 0 }} formats supported</span>
+                </div>
                 <div class="stats-grid format-grid">
                   @for (format of settingsData()?.supportedFormats; track format) {
                     <div class="stat-item format-item">
@@ -150,20 +131,14 @@ import pkg from '../../../package.json';
 
             <!-- Library Statistics -->
             <mat-card class="stats-card dark-card">
-              <mat-card-header>
-                <div mat-card-avatar class="avatar">
-                  <iconify-icon icon="mdi:chart-bar"></iconify-icon>
-                </div>
-                <mat-card-title>
-                  Library Statistics
+              <mat-card-content>
+                <div class="card-section-title">
+                  <span>Library Statistics</span>
                   <button mat-icon-button class="refresh-btn" aria-label="Refresh statistics" (click)="reloadSettings(true)">
                     <iconify-icon icon="material-symbols-light:refresh-rounded"></iconify-icon>
                   </button>
-                </mat-card-title>
-                <mat-card-subtitle>Content overview</mat-card-subtitle>
-              </mat-card-header>
-              
-              <mat-card-content>
+                  <span class="section-subtitle">Content overview</span>
+                </div>
                 <div class="stats-grid">
                   @for (stat of getEntityStats(); track stat.key) {
                     <div class="stat-item">

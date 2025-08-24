@@ -53,18 +53,6 @@ import { AdminService, BookAnomalyDTO } from '../services/admin.service';
             </div>
           } @else {
             <mat-card class="dark-card anomalies-card">
-              <mat-card-header>
-                <div mat-card-avatar class="avatar">
-                  <iconify-icon icon="material-symbols:rule"></iconify-icon>
-                </div>
-                <mat-card-title>
-                  Anomalies
-                  <button mat-icon-button class="refresh-btn" aria-label="Refresh anomalies" (click)="load()">
-                    <iconify-icon icon="material-symbols-light:refresh-rounded"></iconify-icon>
-                  </button>
-                </mat-card-title>
-                <mat-card-subtitle>{{ anomalies().length }} items</mat-card-subtitle>
-              </mat-card-header>
               <mat-card-content>
                 <div class="table-container">
                   <table mat-table [dataSource]="dataSource" matSort class="mat-elevation-z1 anomalies-table">

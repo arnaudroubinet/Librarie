@@ -7,6 +7,51 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <!-- Runtime themed favicon: builds an SVG from CSS variables so the favicon follows the canonical palette -->
+  <script>
+    (function(){
+      try {
+        var root = document.documentElement;
+        var cs = getComputedStyle(root);
+        var get = function(name, fallback){
+          var v = cs.getPropertyValue(name);
+          if(!v) return fallback || '';
+          return v.trim();
+        };
+  var primary = get('--primary') || 'currentColor';
+  var accent = get('--accent') || 'currentColor';
+  var blue1 = get('--brand-blue-1') || 'currentColor';
+  var blue2 = get('--brand-blue-2') || 'currentColor';
+  var bg = get('--bg') || 'none';
+  var fg = get('--content-fg') || 'currentColor';
+
+        var svg = "<svg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 16 16'>" +
+                  "<rect width='16' height='16' fill='" + (bg === 'none' ? 'none' : bg) + "'/>" +
+                  "<rect x='2' y='4' width='12' height='1' rx='0.25' fill='"+accent+"'/>" +
+                  "<rect x='3' y='2' width='1.5' height='2' fill='"+blue1+"'/>" +
+                  "<rect x='5' y='1.5' width='1.5' height='2.5' fill='"+blue2+"'/>" +
+                  "<rect x='7' y='2' width='1.5' height='2' fill='"+primary+"'/>" +
+                  "<rect x='9' y='1.5' width='1.5' height='2.5' fill='"+fg+"'/>" +
+                  "<rect x='11' y='2' width='1.5' height='2' fill='"+accent+"'/>" +
+                  "</svg>";
+
+        var data = 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+
+        var links = document.querySelectorAll("link[rel~='icon']");
+        // update existing icons
+        links.forEach(function(l){ l.href = data; });
+        // ensure a link exists for browsers that inspect after load
+        if(!links || links.length === 0){
+          var link = document.createElement('link');
+          link.rel = 'icon'; link.type = 'image/svg+xml'; link.href = data;
+          document.getElementsByTagName('head')[0].appendChild(link);
+        }
+      } catch(e){
+        // noop — keep bundled favicon files as fallback
+        console && console.debug && console.debug('favicon generator failed', e);
+      }
+    })();
+  </script>
   <!-- Google Fonts disabled due to network restrictions in CI environment -->
   <!-- <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

@@ -42,9 +42,6 @@ import { BatchOperation } from '../models/batch.model';
                 
                 @if (recentOperations().length === 0) {
                   <p>No recent batch operations found.</p>
-                  <button mat-raised-button color="primary" (click)="loadRecentOperations()">
-                    Load Operations
-                  </button>
                 } @else {
                   @for (operation of recentOperations(); track operation.id || i; let i = $index) {
                     <mat-card class="operation-card dark-card">
@@ -67,10 +64,6 @@ import { BatchOperation } from '../models/batch.model';
                       </mat-card-content>
                     </mat-card>
                   }
-                  
-                  <button mat-raised-button (click)="loadRecentOperations()">
-                    Refresh
-                  </button>
                 }
               </div>
             </mat-card-content>
@@ -79,81 +72,7 @@ import { BatchOperation } from '../models/batch.model';
       </div>
     </div>
   `,
-  styles: [`
-    .batch-operations-container {
-      max-width: 800px;
-      margin: 2rem auto;
-      padding: 0 1rem;
-    }
-
-    .operations-section h3 {
-      margin-bottom: 1rem;
-      font-size: 1.1rem;
-      font-weight: 500;
-    }
-
-    .operation-card {
-      margin-bottom: 1rem;
-    }
-
-    .operation-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 1rem;
-    }
-
-    .operation-info h4 {
-      margin: 0;
-      font-size: 1rem;
-      font-weight: 500;
-    }
-
-    .operation-info p {
-  margin: 0.25rem 0 0 0;
-  color: var(--muted-fg);
-      font-size: 0.875rem;
-    }
-
-    .operation-status {
-      padding: 0.25rem 0.5rem;
-      border-radius: 4px;
-      font-size: 0.75rem;
-      font-weight: 500;
-      text-transform: uppercase;
-    }
-
-    .status-pending {
-      background-color: #ff9800;
-      color: white;
-    }
-
-    .status-running {
-      background-color: #2196f3;
-      color: white;
-    }
-
-    .status-completed {
-      background-color: #4caf50;
-      color: white;
-    }
-
-    .status-failed {
-      background-color: #f44336;
-      color: white;
-    }
-
-    .status-cancelled {
-      background-color: #9e9e9e;
-      color: white;
-    }
-
-    .operation-progress p {
-  margin: 0.25rem 0;
-  font-size: 0.875rem;
-  color: var(--muted-fg);
-    }
-  `]
+  styleUrls: ['./batch-operations.component.css']
 })
 export class BatchOperationsComponent implements OnInit {
   recentOperations = signal<BatchOperation[]>([]);

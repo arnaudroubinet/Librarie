@@ -64,13 +64,13 @@
 }
 
 .provider-item.available {
-  background-color: rgba(76, 175, 80, 0.1);
-  color: #4caf50;
+  background-color: rgba(var(--success-rgb), 0.1);
+  color: var(--success);
 }
 
 .provider-item.unavailable {
-  background-color: rgba(244, 67, 54, 0.1);
-  color: #f44336;
+  background-color: rgba(var(--error-rgb), 0.1);
+  color: var(--error);
 }
 
 .provider-name {
@@ -94,7 +94,7 @@
 
 .result-card {
   margin-bottom: 1rem;
-  border-left: 4px solid #1976d2;
+  border-left: 4px solid var(--muted-dark);
 }
 
 .result-header {
@@ -115,7 +115,7 @@
   height: 120px;
   object-fit: cover;
   border-radius: 4px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 4px rgba(var(--bg-rgb), 0.15);
 }
 
 .result-details {
@@ -132,24 +132,24 @@
   margin: 0 0 0.5rem 0;
   font-size: 1rem;
   font-weight: 400;
-  color: #666;
+  color: rgba(var(--muted-rgb), 0.7);
 }
 
 .result-details p {
   margin: 0.25rem 0;
   font-size: 0.875rem;
-  color: #666;
+  color: rgba(var(--muted-rgb), 0.7);
 }
 
 .authors {
   font-weight: 500;
-  color: #333 !important;
+  color: var(--muted) !important;
 }
 
 .provider-badge {
   display: inline-block;
-  background-color: #1976d2;
-  color: white;
+  background-color: var(--muted-dark);
+  color: var(--muted);
   padding: 0.25rem 0.5rem;
   border-radius: 12px;
   font-size: 0.75rem;
@@ -160,8 +160,8 @@
 
 .confidence-badge {
   display: inline-block;
-  background-color: #4caf50;
-  color: white;
+  background-color: var(--success);
+  color: var(--content-fg);
   padding: 0.25rem 0.5rem;
   border-radius: 12px;
   font-size: 0.75rem;
@@ -183,7 +183,7 @@
 .description-panel p {
   margin: 1rem 0;
   line-height: 1.5;
-  color: #333;
+  color: var(--muted);
 }
 
 .manual-edit-form h3 {
@@ -204,13 +204,13 @@
   align-items: center;
   margin-bottom: 1.5rem;
   padding: 1rem;
-  background-color: rgba(25, 118, 210, 0.1);
+  background-color: rgba(var(--muted-rgb), 0.03);
   border-radius: 4px;
 }
 
 .change-card {
   margin-bottom: 1rem;
-  border-left: 4px solid #ff9800;
+  border-left: 4px solid var(--warning);
 }
 
 .change-header {
@@ -236,18 +236,18 @@
 }
 
 .change-add {
-  background-color: #4caf50;
-  color: white;
+  background-color: var(--success);
+  color: var(--content-fg);
 }
 
 .change-update {
-  background-color: #ff9800;
-  color: white;
+  background-color: var(--warning);
+  color: var(--content-fg);
 }
 
 .change-remove {
-  background-color: #f44336;
-  color: white;
+  background-color: var(--error);
+  color: var(--content-fg);
 }
 
 .change-content {
@@ -258,16 +258,16 @@
 
 .current-value {
   padding: 0.5rem;
-  background-color: rgba(244, 67, 54, 0.1);
+  background-color: rgba(var(--error-rgb), 0.1);
   border-radius: 4px;
-  border-left: 3px solid #f44336;
+  border-left: 3px solid var(--error);
 }
 
 .proposed-value {
   padding: 0.5rem;
-  background-color: rgba(76, 175, 80, 0.1);
+  background-color: rgba(var(--success-rgb), 0.1);
   border-radius: 4px;
-  border-left: 3px solid #4caf50;
+  border-left: 3px solid var(--success);
 }
 
 .preview-actions {

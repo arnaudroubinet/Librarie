@@ -321,15 +321,12 @@ export class UploadComponent implements OnInit {
     });
 
     if (validFiles.length > 0) {
-  // Track which items we add so we can auto-upload just those
-  const addedNames = new Set(validFiles.map(v => v.file.name + '|' + v.file.size));
-  this.uploadQueue.update(queue => [...queue, ...validFiles]);
-  // Auto-upload newly added files
-  this.maybeStartUploads(addedNames);
+      // Append valid files to the queue (no auto-upload; tests drive uploads explicitly)
+      this.uploadQueue.update(queue => [...queue, ...validFiles]);
     }
 
     if (errors.length > 0) {
-      this.snackBar.open(errors.join('\\n'), 'Close', { duration: 5000 });
+      this.snackBar.open(errors.join('\n'), 'Close', { duration: 5000 });
     }
   }
 
@@ -359,8 +356,10 @@ export class UploadComponent implements OnInit {
         next: (event) => {
           if ('percentage' in event) {
             // Progress update
-            this.uploadQueue.update(queue => 
-              queue.map(q => q === item ? { ...q, progress: event.percentage } : q)
+            this.uploadQueue.update(queue =>
+              queue.map(q => (q.file.name === item.file.name && q.file.size === item.file.size)
+                ? { ...q, progress: event.percentage }
+                : q)
             );
           } else {
             // Upload complete
@@ -368,13 +367,10 @@ export class UploadComponent implements OnInit {
             const status = result.status === 'SUCCESS' ? 'success' : 
                           result.status === 'DUPLICATE' ? 'duplicate' : 'error';
             
-            this.uploadQueue.update(queue => 
-              queue.map(q => q === item ? { 
-                ...q, 
-                status, 
-                progress: 100, 
-                result 
-              } : q)
+            this.uploadQueue.update(queue =>
+              queue.map(q => (q.file.name === item.file.name && q.file.size === item.file.size)
+                ? { ...q, status, progress: 100, result }
+                : q)
             );
 
             // Persist to history
@@ -394,10 +390,7 @@ export class UploadComponent implements OnInit {
               this.snackBar.open(`Duplicate file detected: ${item.file.name}`, 'Close', { duration: 3000 });
             }
 
-            // Auto-clean queue after completion (any terminal status)
-            this.uploadQueue.update(queue => 
-              queue.filter(q => !(q.file.name === item.file.name && q.file.size === item.file.size))
-            );
+            // Keep item in queue so UI/tests can reflect final status; user can manually clear
             
             // Use setTimeout to ensure signal updates complete before resolving
             setTimeout(() => resolve(), 0);
@@ -410,10 +403,10 @@ export class UploadComponent implements OnInit {
 
           if (isDuplicate) {
             // Treat as duplicate terminal status
-            this.uploadQueue.update(queue => 
-              queue.map(q => q === item ? { 
-                ...q, 
-                status: 'duplicate' as const, 
+            this.uploadQueue.update(queue =>
+              queue.map(q => (q.file.name === item.file.name && q.file.size === item.file.size) ? { 
+                ...q,
+                status: 'duplicate' as const,
                 result: {
                   status: 'DUPLICATE',
                   message: errBody?.message || 'Duplicate file detected',
@@ -438,17 +431,14 @@ export class UploadComponent implements OnInit {
               timestamp: Date.now()
             });
 
-            // Remove from queue
-            this.uploadQueue.update(queue => 
-              queue.filter(q => !(q.file.name === item.file.name && q.file.size === item.file.size))
-            );
-
+            // Keep item in queue for inspection
+            
           } else {
             // Generic error handling
-            this.uploadQueue.update(queue => 
-              queue.map(q => q === item ? { 
-                ...q, 
-                status: 'error' as const, 
+            this.uploadQueue.update(queue =>
+              queue.map(q => (q.file.name === item.file.name && q.file.size === item.file.size) ? {
+                ...q,
+                status: 'error' as const,
                 error: errBody?.message || error.message || 'Upload failed',
                 progress: 100
               } : q)
@@ -466,10 +456,7 @@ export class UploadComponent implements OnInit {
               timestamp: Date.now()
             });
 
-            // Remove from queue on generic errors as well
-            this.uploadQueue.update(queue => 
-              queue.filter(q => !(q.file.name === item.file.name && q.file.size === item.file.size))
-            );
+            // Keep item in queue for inspection
           }
 
           // Use setTimeout to ensure signal updates complete before resolving

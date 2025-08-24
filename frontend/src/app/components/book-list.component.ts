@@ -74,7 +74,6 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
                 <iconify-icon icon="material-symbols:refresh-rounded"></iconify-icon>
                 Retry
               </button>
-              <a mat-button href="http://localhost:8080/q/dev-ui/extensions" target="_blank" rel="noopener">Open Dev UI</a>
             </div>
           </div>
         </div>

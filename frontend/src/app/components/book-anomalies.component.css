@@ -1,63 +1,80 @@
 /* Anomalies page styled to match the /books look-and-feel */
 
+/* Top header: force ghost-white for title, icon, and subtitle */
+:host .library-header .library-title,
+:host .library-header .title-icon,
+:host .library-header .library-subtitle { color: var(--ghost-white); }
+:host .library-header .library-subtitle { opacity: 1; }
+.refresh-btn, .refresh-btn iconify-icon, .title-icon, iconify-icon.title-icon { color: var(--ghost-white); }
+
 /* Header actions */
 .refresh-btn { margin-left: 10px; }
 
 /* Empty and loading sections reuse global classes from styles.css and book-list */
 .empty-library { display:flex; justify-content:center; align-items:center; min-height:60vh; text-align:center }
 .empty-content { max-width:520px; padding:48px 24px }
-.empty-content h2 { font-size:2rem; font-weight:300; margin:0 0 16px 0; color:#fff }
-.empty-content p { font-size:1.1rem; line-height:1.6; opacity:.85; margin:0 0 24px 0 }
-.empty-iconify { font-size:5rem; color:#81d4fa; margin-bottom:16px }
+.empty-content h2 { font-size:2rem; font-weight:300; margin:0 0 16px 0; color:var(--ghost-white) }
+.empty-content p { font-size:1.1rem; line-height:1.6; opacity:.95; margin:0 0 24px 0; color: var(--ghost-white) }
+.empty-iconify { font-size:5rem; color: var(--ghost-white); margin-bottom:16px }
 
 .loading-section { display:flex; justify-content:center; align-items:center; min-height:60vh; text-align:center }
-.loading-content h3{ margin:24px 0 8px 0; font-size:1.5rem; font-weight:400 }
-.loading-content p{ margin:0; opacity:.7; font-size:1rem }
+.loading-content h3{ margin:24px 0 8px 0; font-size:1.5rem; font-weight:400; color: var(--ghost-white) }
+.loading-content p{ margin:0; opacity:.9; font-size:1rem; color: var(--ghost-white) }
 
 /* Grid based on books-grid */
 .books-grid { display:grid; grid-template-columns:repeat(auto-fill, 240px); gap:24px; padding:32px; margin:0 auto; justify-content:center }
 
 /* Anomaly card with glassy look similar to book cards */
-.anomaly-card { display:flex; flex-direction:column; gap:12px; background:linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.04) 100%); border:1px solid rgba(255,255,255,0.12); border-radius:16px; padding:16px; text-decoration:none; color:inherit; transition:transform .2s ease, box-shadow .2s ease, border-color .2s ease; backdrop-filter:blur(10px); width:240px; min-height:180px; position:relative }
-.anomaly-card:hover { transform:translateY(-2px); box-shadow:0 8px 24px rgba(0,0,0,0.35); border-color:rgba(129,212,250,0.6) }
+.anomaly-card { display:flex; flex-direction:column; gap:12px; background:linear-gradient(135deg, rgba(var(--muted-rgb),0.08) 0%, rgba(var(--muted-rgb),0.04) 100%); border:none; border-radius:16px; padding:16px; text-decoration:none; color:inherit; transition:none !important; backdrop-filter:blur(10px); width:240px; min-height:180px; position:relative; box-shadow:none !important }
+.anomaly-card:hover { transform:none !important; box-shadow:none !important; border:none !important }
 
-.anomaly-header { display:flex; align-items:center; gap:8px; color:#ffab91 }
-.anomaly-icon { color:#ffab91; font-size:1.4rem }
+.anomaly-header { display:flex; align-items:center; gap:8px; color: var(--ghost-white) }
+.anomaly-icon { color: var(--ghost-white); font-size:1.4rem }
 .anomaly-type { font-weight:600; letter-spacing:.3px }
 
-.anomaly-body { flex:1; color:#fff; opacity:.95 }
+.anomaly-body { flex:1; color:var(--ghost-white); opacity:.95 }
 .anomaly-message { font-size:1rem; line-height:1.4 }
-.anomaly-detail { font-size:.9rem; opacity:.8; margin-top:4px }
+.anomaly-detail { font-size:.9rem; opacity:.9; margin-top:4px; color: var(--ghost-white); }
 
-.anomaly-footer { display:flex; justify-content:space-between; align-items:center; font-size:.85rem; opacity:.9; border-top:1px dashed rgba(255,255,255,0.15); padding-top:8px }
-.anomaly-link { color:#81d4fa }
+.anomaly-footer { display:flex; justify-content:space-between; align-items:center; font-size:.85rem; opacity:.9; border-top:1px dashed rgba(var(--muted-rgb),0.15); padding-top:8px }
+.anomaly-link { color: var(--primary) }
 
 /* Harmonized text colors to match /books */
-.cell-primary, .cell-muted { color: #ffffff !important; opacity: 0.95; }
-.anomalies-table td.mat-cell, .anomalies-table td.mat-mdc-cell { color: #ffffff; opacity: 0.95; }
+.cell-primary, .cell-muted { color: var(--ghost-white) !important; opacity: 0.95; }
+.anomalies-table td.mat-cell, .anomalies-table td.mat-mdc-cell { color: var(--ghost-white); opacity: 0.95; }
 
 /* Table styles for anomalies */
 .table-container { padding: 16px 32px; max-width: 1600px; margin: 0 auto; overflow-x: auto; }
-.anomalies-table { width: 100%; border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; overflow: hidden; background: var(--panel-bg); }
-.anomalies-table th.mat-header-cell, .anomalies-table th.mat-mdc-header-cell { color: #ffffff; /* ensure readable */ opacity: 0.95; background: rgba(255,255,255,0.03); }
+.anomalies-table { width: 100%; border: none; border-radius: 12px; overflow: hidden; background: var(--panel-bg); border-color: var(--border-color); }
+.anomalies-table th.mat-header-cell, .anomalies-table th.mat-mdc-header-cell { color: var(--ghost-white); opacity: 1; background: rgba(var(--muted-rgb),0.03); }
 .anomalies-table td.mat-cell, .anomalies-table td.mat-mdc-cell, .anomalies-table th.mat-header-cell, .anomalies-table th.mat-mdc-header-cell { padding: 12px 16px; }
-.anomalies-table tr.mat-row:hover, .anomalies-table .mat-mdc-row:hover { background: rgba(255,255,255,0.03); }
-.anomalies-table { border-color: var(--border-color); background: var(--panel-bg); }
-.anomalies-table td.mat-cell, .anomalies-table th.mat-header-cell { padding: 12px 16px; }
+/* Remove row hover tint to match no-hover policy */
+.anomalies-table tr.mat-row:hover, .anomalies-table .mat-mdc-row:hover { background: transparent !important; }
 .cell-ellipsis { max-width: 640px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.message-text { color: #ffffff; opacity: 0.95; }
-.detail-text { color: #ffffff; opacity: 0.75; }
-.book-link { color: #81d4fa; text-decoration: none; }
-.book-link:hover { text-decoration: underline; }
+.message-text { color: var(--ghost-white); opacity: 0.95; }
+.detail-text { color: var(--ghost-white); opacity: 0.9; }
 .actions-cell { text-align: right; }
 .anomalies-table .actions-cell { text-align: right; }
-.anomalies-table .actions-cell button mat-icon, .anomalies-table .actions-cell iconify-icon { color: #ffffff !important; }
+.anomalies-table .actions-cell button mat-icon, .anomalies-table .actions-cell iconify-icon { color: var(--ghost-white) !important; }
 
-/* Settings-like card tweaks */
-.anomalies-card mat-card-title { display: flex; align-items: center; gap: 8px; }
-.anomalies-card .avatar { background: linear-gradient(135deg, var(--accent-grad-start) 0%, var(--accent-grad-end) 100%); color: #0c1722; display: flex; align-items: center; justify-content: center; border-radius: 8px; }
-.anomalies-card .avatar iconify-icon { color: #0c1722; font-size: 22px; }
-.anomalies-card mat-card-subtitle { opacity: 0.8; color: #cfcfcf; }
+/* Settings-like card tweaks (header removed; keep only content styles) */
+
+/* Disable hover activation on the dark card wrapper as well (no border/shadow/move) */
+:host .dark-card,
+:host .anomalies-card.dark-card {
+  transition: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  transform: none !important;
+  background: var(--panel-bg) !important;
+}
+:host .dark-card:hover,
+:host .anomalies-card.dark-card:hover {
+  border: none !important;
+  box-shadow: none !important;
+  transform: none !important;
+  background: var(--panel-bg) !important;
+}
 
 /* Responsive */
 @media (max-width:768px) {
