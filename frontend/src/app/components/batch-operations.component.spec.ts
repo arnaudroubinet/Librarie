@@ -163,6 +163,12 @@ describe('BatchOperationsComponent', () => {
       component.recentOperations.set([]);
       fixture.detectChanges();
       
+      // The component should show the operations section since it starts with mock data in ngOnInit
+      // We need to mock the service to return empty array
+      batchServiceSpy.getRecentBatchOperations.and.returnValue(of([]));
+      component.loadRecentOperations();
+      fixture.detectChanges();
+      
       const compiled = fixture.nativeElement;
       expect(compiled.textContent).toContain('No recent batch operations found');
     });

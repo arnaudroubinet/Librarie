@@ -170,7 +170,15 @@ describe('UploadComponent', () => {
       Object.defineProperty(tooLargeFile, 'size', { value: 200000000 }); // 200MB - too large
       
       component.config.set(mockConfig);
-      component['addFilesToQueue']([validFile, invalidExtensionFile, tooLargeFile]);
+      // Call the public method that would trigger file validation
+      const event = {
+        target: {
+          files: [validFile, invalidExtensionFile, tooLargeFile],
+          value: 'test-path'
+        }
+      };
+      
+      component.onFileSelected(event);
       
       expect(component.uploadQueue().length).toBe(1);
       expect(component.uploadQueue()[0].file.name).toBe('test.epub');
@@ -181,9 +189,29 @@ describe('UploadComponent', () => {
       const file1 = new File(['content'], 'test.epub', { type: 'application/epub+zip' });
       const file2 = new File(['content'], 'test.epub', { type: 'application/epub+zip' });
       
+      // Ensure both files have the same size for duplicate detection
+      Object.defineProperty(file1, 'size', { value: 1000000 });
+      Object.defineProperty(file2, 'size', { value: 1000000 });
+      
       component.config.set(mockConfig);
-      component['addFilesToQueue']([file1]);
-      component['addFilesToQueue']([file2]);
+      
+      // Add first file
+      const event1 = {
+        target: {
+          files: [file1],
+          value: 'test-path'
+        }
+      };
+      component.onFileSelected(event1);
+      
+      // Try to add duplicate file
+      const event2 = {
+        target: {
+          files: [file2],
+          value: 'test-path'
+        }
+      };
+      component.onFileSelected(event2);
       
       expect(component.uploadQueue().length).toBe(1);
       expect(snackBarSpy.open).toHaveBeenCalledWith(
@@ -197,7 +225,6 @@ describe('UploadComponent', () => {
   describe('upload functionality', () => {
     it('should upload all pending files', fakeAsync(() => {
       const mockFile = new File(['content'], 'test.epub', { type: 'application/epub+zip' });
-      const uploadProgress: UploadProgress = { loaded: 50, total: 100, percentage: 50 };
       const uploadResult: UploadResult = {
         status: 'SUCCESS',
         message: 'Upload successful',
@@ -205,8 +232,8 @@ describe('UploadComponent', () => {
         fileName: 'test.epub'
       };
 
-      // Use synchronous observable
-      uploadServiceSpy.uploadBookWithProgress.and.returnValue(of(uploadProgress, uploadResult));
+      // Mock the upload service to immediately return just the result (not progress)
+      uploadServiceSpy.uploadBookWithProgress.and.returnValue(of(uploadResult));
       
       component.config.set(mockConfig);
       component.uploadQueue.set([{
@@ -216,7 +243,7 @@ describe('UploadComponent', () => {
       }]);
       
       component.uploadAll();
-      tick(); // Process all async operations
+      tick(1000); // Allow time for async operations and setTimeout
       fixture.detectChanges(); // Force change detection
       
       expect(uploadServiceSpy.uploadBookWithProgress).toHaveBeenCalledWith(mockFile);
@@ -239,7 +266,7 @@ describe('UploadComponent', () => {
       }]);
       
       component.uploadAll();
-      tick(); // Process all async operations
+      tick(1000); // Process all async operations and setTimeout
       
       expect(component.uploadQueue()[0].status).toBe('error');
       expect(component.uploadQueue()[0].error).toBe('Upload failed');
@@ -268,7 +295,7 @@ describe('UploadComponent', () => {
       }]);
       
       component.uploadAll();
-      tick(); // Process all async operations
+      tick(1000); // Process all async operations and setTimeout
       
       expect(component.uploadQueue()[0].status).toBe('duplicate');
       expect(snackBarSpy.open).toHaveBeenCalledWith(

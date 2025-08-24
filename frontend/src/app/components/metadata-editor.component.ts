@@ -553,6 +553,7 @@ export class MetadataEditorComponent implements OnInit {
     this.metadataService.applyMetadata(this.bookId(), request).subscribe({
       next: () => {
         this.snackBar.open('Metadata applied successfully', 'Close', { duration: 3000 });
+        this.bookService.clearCache(); // Clear cache before reloading
         this.loadBook(); // Refresh book data
         this.clearPreview();
       },
