@@ -1,8 +1,12 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { Router } from '@angular/router';
-import { MatSnackBar } from '@angular/material/snack-bar';
-import { of, throwError } from 'rxjs';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatCardModule } from '@angular/material/card';
+import { MatButtonModule } from '@angular/material/button';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { MatIconModule } from '@angular/material/icon';
+import { of, throwError, Observable } from 'rxjs';
 import { UploadComponent } from './upload.component';
 import { UploadService } from '../services/upload.service';
 import { BookService } from '../services/book.service';
@@ -71,9 +75,11 @@ describe('UploadComponent', () => {
   });
 
   it('should handle config load error', () => {
+    // Reset and recreate component with error scenario
     uploadServiceSpy.getUploadConfig.and.returnValue(throwError(() => new Error('Failed to load')));
     
-    fixture.detectChanges();
+    const component2 = new UploadComponent(uploadServiceSpy, bookServiceSpy, snackBarSpy, routerSpy);
+    component2.ngOnInit();
     
     expect(snackBarSpy.open).toHaveBeenCalledWith('Failed to load upload configuration', 'Close', { duration: 3000 });
   });
@@ -150,9 +156,17 @@ describe('UploadComponent', () => {
       const invalidExtensionFile = new File(['content'], 'test.txt', { type: 'text/plain' });
       const tooLargeFile = new File(['content'], 'large.epub', { type: 'application/epub+zip' });
       
-      uploadServiceSpy.isFileExtensionAllowed.and.callFake((fileName: string) => fileName.endsWith('.epub'));
-      uploadServiceSpy.isFileSizeAllowed.and.callFake((size: number) => size < 1000);
+      uploadServiceSpy.isFileExtensionAllowed.and.callFake((fileName: string, allowedExtensions: string[]) => 
+        fileName.endsWith('.epub') && allowedExtensions.includes('epub')
+      );
+      uploadServiceSpy.isFileSizeAllowed.and.callFake((fileSize: number, maxFileSize: number) => 
+        fileSize <= maxFileSize
+      );
       uploadServiceSpy.formatFileSize.and.returnValue('100 MB');
+      
+      // Mock file sizes - make large file exceed the max size  
+      Object.defineProperty(validFile, 'size', { value: 1000000 }); // 1MB - valid
+      Object.defineProperty(tooLargeFile, 'size', { value: 200000000 }); // 200MB - too large
       
       component.config.set(mockConfig);
       component['addFilesToQueue']([validFile, invalidExtensionFile, tooLargeFile]);
@@ -190,7 +204,18 @@ describe('UploadComponent', () => {
         fileName: 'test.epub'
       };
 
-      uploadServiceSpy.uploadBookWithProgress.and.returnValue(of(uploadProgress, uploadResult));
+      // Create an observable that emits progress first, then result
+      const uploadObservable = new Observable<UploadProgress | UploadResult>(subscriber => {
+        setTimeout(() => {
+          subscriber.next(uploadProgress);
+          setTimeout(() => {
+            subscriber.next(uploadResult);
+            subscriber.complete();
+          }, 0);
+        }, 0);
+      });
+      
+      uploadServiceSpy.uploadBookWithProgress.and.returnValue(uploadObservable);
       
       component.config.set(mockConfig);
       component.uploadQueue.set([{
@@ -239,7 +264,15 @@ describe('UploadComponent', () => {
         fileHash: 'abc123'
       };
 
-      uploadServiceSpy.uploadBookWithProgress.and.returnValue(of(uploadResult));
+      // Create an observable that emits only the result (no progress for duplicate)
+      const uploadObservable = new Observable<UploadResult>(subscriber => {
+        setTimeout(() => {
+          subscriber.next(uploadResult);
+          subscriber.complete();
+        }, 0);
+      });
+      
+      uploadServiceSpy.uploadBookWithProgress.and.returnValue(uploadObservable);
       
       component.config.set(mockConfig);
       component.uploadQueue.set([{

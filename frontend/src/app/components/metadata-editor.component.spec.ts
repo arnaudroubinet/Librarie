@@ -1,8 +1,8 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { of, throwError } from 'rxjs';
+import { of, throwError, BehaviorSubject } from 'rxjs';
 import { MetadataEditorComponent } from './metadata-editor.component';
 import { MetadataService } from '../services/metadata.service';
 import { BookService } from '../services/book.service';
@@ -113,9 +113,20 @@ describe('MetadataEditorComponent', () => {
   });
 
   it('should handle book loading error', () => {
-    bookServiceSpy.getBookDetails = jasmine.createSpy().and.returnValue(throwError(() => new Error('Book not found')));
+    bookServiceSpy.getBookDetails.and.returnValue(throwError(() => new Error('Book not found')));
     
-    fixture.detectChanges();
+    const component2 = new MetadataEditorComponent(
+      route, 
+      metadataServiceSpy, 
+      bookServiceSpy, 
+      snackBarSpy
+    );
+    
+    // Simulate route change to trigger book loading
+    const paramsSubject = new BehaviorSubject({ id: 'book-123' });
+    (route as any).params = paramsSubject.asObservable();
+    
+    component2.ngOnInit();
     
     expect(snackBarSpy.open).toHaveBeenCalledWith('Failed to load book details', 'Close', { duration: 3000 });
   });

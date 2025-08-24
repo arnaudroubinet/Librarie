@@ -113,7 +113,13 @@ describe('UploadService', () => {
     it('should handle progress without total size', () => {
       const mockFile = new File(['test content'], 'test.epub', { type: 'application/epub+zip' });
 
-      service.uploadBookWithProgress(mockFile).subscribe();
+      let progressReceived = false;
+      service.uploadBookWithProgress(mockFile).subscribe(event => {
+        if ('percentage' in event) {
+          progressReceived = true;
+          expect(event.percentage).toBe(0); // Should be 0 when no total size
+        }
+      });
 
       const req = httpMock.expectOne(`${baseUrl}/book`);
 
@@ -124,8 +130,9 @@ describe('UploadService', () => {
       };
       req.event(progressEvent);
 
-      // Don't need to verify the exact result, just that it doesn't crash
+      // Verify we received progress and didn't crash
       req.flush({ status: 'SUCCESS', message: 'Done' });
+      expect(progressReceived).toBe(true);
     });
   });
 

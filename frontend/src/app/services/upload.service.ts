@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpEvent, HttpEventType, HttpRequest } from '@angular/common/http';
-import { Observable, map } from 'rxjs';
+import { Observable, map, filter } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { UploadConfig, UploadResult, ValidationResult, UploadProgress } from '../models/upload.model';
 
@@ -53,9 +53,11 @@ export class UploadService {
           case HttpEventType.Response:
             return event.body as UploadResult;
           default:
-            return { loaded: 0, total: 0, percentage: 0 } as UploadProgress;
+            // Filter out other events we don't need
+            return null;
         }
-      })
+      }),
+      filter((event): event is UploadProgress | UploadResult => event !== null)
     );
   }
 
