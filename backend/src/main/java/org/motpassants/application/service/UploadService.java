@@ -56,44 +56,52 @@ public class UploadService implements UploadUseCase {
         loggingPort.info("Processing uploaded file: " + filename);
         
         try {
-            // 1. Validate the uploaded file
-            UploadModels.ValidationResult validation = validateUploadedFile(inputStream, filename, contentType);
-            if (!validation.valid()) {
-                return new UploadModels.UploadResult(null, filename, "VALIDATION_FAILED", 
-                    validation.errorMessage(), false, validation.fileSize(), null);
-            }
-            
-            // 2. Calculate file hash for deduplication
-            String fileHash = calculateFileHash(inputStream);
-            
-            // 3. Check for duplicates
-            if (isDuplicateFile(fileHash)) {
-                loggingPort.info("Duplicate file detected: " + filename + " (hash: " + fileHash + ")");
-                return new UploadModels.UploadResult(null, filename, "DUPLICATE", 
-                    "File already exists in library", false, validation.fileSize(), fileHash);
-            }
-            
-            // 4. Create temporary file for processing
-            Path tempFile = createTempFile(inputStream, filename);
-            
+            // Read the incoming stream once into a temp file, then use fresh streams from it
+            Path uploadedTemp = createTempFile(inputStream, filename);
+
+            UploadModels.ValidationResult validation;
+            String fileHash;
+
             try {
-                // 5. Move to working directory and process through ingestion
-                String bookId = ingestUseCase.ingestSingleBook(tempFile);
-                
+                // 1) Validate using a new stream from the temp file
+                try (InputStream isForValidation = Files.newInputStream(uploadedTemp)) {
+                    validation = validateUploadedFile(isForValidation, filename, contentType);
+                }
+
+                if (!validation.valid()) {
+                    return new UploadModels.UploadResult(null, filename, "VALIDATION_FAILED",
+                        validation.errorMessage(), false, validation.fileSize(), null);
+                }
+
+                // 2) Calculate hash using a new stream from the temp file
+                try (InputStream isForHash = Files.newInputStream(uploadedTemp)) {
+                    fileHash = calculateFileHash(isForHash);
+                }
+
+                // 3) Check for duplicates
+                if (isDuplicateFile(fileHash)) {
+                    loggingPort.info("Duplicate file detected: " + filename + " (hash: " + fileHash + ")");
+                    return new UploadModels.UploadResult(null, filename, "DUPLICATE",
+                        "File already exists in library", false, validation.fileSize(), fileHash);
+                }
+
+                // 4) Process through ingestion using the same temp file
+                String bookId = ingestUseCase.ingestSingleBook(uploadedTemp);
+
                 if (bookId != null) {
-                    return new UploadModels.UploadResult(bookId, filename, "SUCCESS", 
+                    return new UploadModels.UploadResult(bookId, filename, "SUCCESS",
                         "File uploaded and processed successfully", true, validation.fileSize(), fileHash);
                 } else {
-                    return new UploadModels.UploadResult(null, filename, "PROCESSING_FAILED", 
+                    return new UploadModels.UploadResult(null, filename, "PROCESSING_FAILED",
                         "Failed to process file through ingestion pipeline", false, validation.fileSize(), fileHash);
                 }
-                
+
             } finally {
-                // Clean up temporary file
+                // Always clean up the temp file
                 try {
-                    Files.deleteIfExists(tempFile);
+                    Files.deleteIfExists(uploadedTemp);
                 } catch (IOException e) {
-                    loggingPort.warn("Failed to clean up temporary file: " + tempFile);
+                    loggingPort.warn("Failed to clean up temporary file: " + uploadedTemp);
                 }
             }
             

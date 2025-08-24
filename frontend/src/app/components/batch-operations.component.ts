@@ -1,4 +1,4 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, signal, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
@@ -10,6 +10,7 @@ import { BatchOperation } from '../models/batch.model';
 @Component({
   selector: 'app-batch-operations',
   standalone: true,
+  schemas: [CUSTOM_ELEMENTS_SCHEMA],
   imports: [
     CommonModule,
     MatCardModule,
@@ -18,57 +19,64 @@ import { BatchOperation } from '../models/batch.model';
     MatSnackBarModule
   ],
   template: `
-    <div class="batch-operations-container">
-      <mat-card>
-        <mat-card-header>
-          <mat-card-title>
-            <mat-icon>batch_prediction</mat-icon>
+    <div class="motspassants-library">
+      <div class="library-header">
+        <div class="header-content">
+          <h1 class="library-title">
+            <iconify-icon class="title-icon" icon="material-symbols:batch-prediction"></iconify-icon>
             Batch Operations
-          </mat-card-title>
-          <mat-card-subtitle>
-            Manage bulk operations on multiple books
-          </mat-card-subtitle>
-        </mat-card-header>
+            <button mat-icon-button class="refresh-btn" aria-label="Refresh operations" (click)="loadRecentOperations()">
+              <iconify-icon icon="material-symbols-light:refresh-rounded"></iconify-icon>
+            </button>
+          </h1>
+          <p class="library-subtitle">Manage bulk operations across your library</p>
+        </div>
+      </div>
 
-        <mat-card-content>
-          <div class="operations-section">
-            <h3>Recent Operations</h3>
-            
-            @if (recentOperations().length === 0) {
-              <p>No recent batch operations found.</p>
-              <button mat-raised-button color="primary" (click)="loadRecentOperations()">
-                Load Operations
-              </button>
-            } @else {
-              @for (operation of recentOperations(); track operation.id) {
-                <mat-card class="operation-card">
-                  <mat-card-content>
-                    <div class="operation-header">
-                      <div class="operation-info">
-                        <h4>{{ operation.type }} Operation</h4>
-                        <p>{{ operation.totalBooks }} books</p>
-                      </div>
-                      <div class="operation-status" [class]="batchService.getStatusCssClass(operation.status)">
-                        {{ batchService.getStatusDisplayText(operation.status) }}
-                      </div>
-                    </div>
-                    
-                    <div class="operation-progress">
-                      <p>Progress: {{ batchService.getOperationProgress(operation) }}%</p>
-                      <p>Success Rate: {{ batchService.getOperationSuccessRate(operation) }}%</p>
-                      <p>Duration: {{ batchService.getOperationDuration(operation) }}</p>
-                    </div>
-                  </mat-card-content>
-                </mat-card>
-              }
-              
-              <button mat-raised-button (click)="loadRecentOperations()">
-                Refresh
-              </button>
-            }
-          </div>
-        </mat-card-content>
-      </mat-card>
+      <div class="library-content">
+        <div class="batch-operations-container">
+          <mat-card class="dark-card">
+            <mat-card-content>
+              <div class="operations-section">
+                <h3>Recent Operations</h3>
+                
+                @if (recentOperations().length === 0) {
+                  <p>No recent batch operations found.</p>
+                  <button mat-raised-button color="primary" (click)="loadRecentOperations()">
+                    Load Operations
+                  </button>
+                } @else {
+                  @for (operation of recentOperations(); track operation.id || i; let i = $index) {
+                    <mat-card class="operation-card dark-card">
+                      <mat-card-content>
+                        <div class="operation-header">
+                          <div class="operation-info">
+                            <h4>{{ operation.type }} Operation</h4>
+                            <p>{{ operation.totalBooks }} books</p>
+                          </div>
+                          <div class="operation-status" [class]="batchService.getStatusCssClass(operation.status)">
+                            {{ batchService.getStatusDisplayText(operation.status) }}
+                          </div>
+                        </div>
+                        
+                        <div class="operation-progress">
+                          <p>Progress: {{ batchService.getOperationProgress(operation) }}%</p>
+                          <p>Success Rate: {{ batchService.getOperationSuccessRate(operation) }}%</p>
+                          <p>Duration: {{ batchService.getOperationDuration(operation) }}</p>
+                        </div>
+                      </mat-card-content>
+                    </mat-card>
+                  }
+                  
+                  <button mat-raised-button (click)="loadRecentOperations()">
+                    Refresh
+                  </button>
+                }
+              </div>
+            </mat-card-content>
+          </mat-card>
+        </div>
+      </div>
     </div>
   `,
   styles: [`
@@ -102,8 +110,8 @@ import { BatchOperation } from '../models/batch.model';
     }
 
     .operation-info p {
-      margin: 0.25rem 0 0 0;
-      color: #666;
+  margin: 0.25rem 0 0 0;
+  color: var(--muted-fg);
       font-size: 0.875rem;
     }
 
@@ -141,9 +149,9 @@ import { BatchOperation } from '../models/batch.model';
     }
 
     .operation-progress p {
-      margin: 0.25rem 0;
-      font-size: 0.875rem;
-      color: #666;
+  margin: 0.25rem 0;
+  font-size: 0.875rem;
+  color: var(--muted-fg);
     }
   `]
 })

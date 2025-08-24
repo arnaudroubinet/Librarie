@@ -371,6 +371,10 @@ body, .motspassants-container { background: var(--app-bg); color: var(--content-
 .book-series{font-size:.85rem;margin:0 0 2px 0;opacity:.75;color:#81d4fa;font-style:italic}
 .book-date{font-size:.8rem;margin:0;opacity:.7;color:#4fc3f7}
 
+/* Global dark panel/card styling used across pages (Upload, Batch, Settings, etc.) */
+.dark-card { background: #222 !important; color: #fff !important; border-radius: 12px !important; border: 1px solid rgba(255,255,255,0.06) !important; }
+.dark-card:hover { box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35) !important; }
+
 @media (max-width:768px){
   .books-grid{ grid-template-columns:repeat(auto-fill,240px); justify-content:center; gap:24px; padding:24px }
   .book-actions{ opacity:1; position:static; margin-top:8px; justify-content:center }

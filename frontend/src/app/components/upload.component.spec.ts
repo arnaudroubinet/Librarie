@@ -393,12 +393,12 @@ describe('UploadComponent', () => {
     });
 
     it('should return correct status icons', () => {
-      expect(component.getStatusIcon('pending')).toBe('schedule');
-      expect(component.getStatusIcon('uploading')).toBe('cloud_upload');
-      expect(component.getStatusIcon('success')).toBe('check_circle');
-      expect(component.getStatusIcon('duplicate')).toBe('content_copy');
-      expect(component.getStatusIcon('error')).toBe('error');
-      expect(component.getStatusIcon('unknown')).toBe('help');
+  expect(component.getStatusIcon('pending')).toBe('material-symbols:schedule');
+  expect(component.getStatusIcon('uploading')).toBe('material-symbols:cloud-upload');
+  expect(component.getStatusIcon('success')).toBe('material-symbols:check-circle');
+  expect(component.getStatusIcon('duplicate')).toBe('material-symbols:content-copy');
+  expect(component.getStatusIcon('error')).toBe('material-symbols:error');
+  expect(component.getStatusIcon('unknown')).toBe('material-symbols:help');
     });
 
     it('should return correct status icon classes', () => {
