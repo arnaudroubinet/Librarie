@@ -1,4 +1,4 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { Router } from '@angular/router';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
@@ -121,15 +121,14 @@ describe('UploadComponent', () => {
       spyOn(event, 'stopPropagation');
       component.config.set(mockConfig);
       
-      // Call the private method directly for testing
-      (component as any).addFilesToQueue([mockFile]);
-      
-      expect(component.uploadQueue().length).toBe(1);
-      expect(component.uploadQueue()[0].file.name).toBe('test.epub');
+      // Call the actual onDrop method
+      component.onDrop(event);
       
       expect(event.preventDefault).toHaveBeenCalled();
       expect(event.stopPropagation).toHaveBeenCalled();
       expect(component.isDragOver()).toBe(false);
+      expect(component.uploadQueue().length).toBe(1);
+      expect(component.uploadQueue()[0].file.name).toBe('test.epub');
     });
   });
 
@@ -196,7 +195,7 @@ describe('UploadComponent', () => {
   });
 
   describe('upload functionality', () => {
-    it('should upload all pending files', async () => {
+    it('should upload all pending files', fakeAsync(() => {
       const mockFile = new File(['content'], 'test.epub', { type: 'application/epub+zip' });
       const uploadProgress: UploadProgress = { loaded: 50, total: 100, percentage: 50 };
       const uploadResult: UploadResult = {
@@ -206,18 +205,8 @@ describe('UploadComponent', () => {
         fileName: 'test.epub'
       };
 
-      // Create an observable that emits progress first, then result
-      const uploadObservable = new Observable<UploadProgress | UploadResult>(subscriber => {
-        setTimeout(() => {
-          subscriber.next(uploadProgress);
-          setTimeout(() => {
-            subscriber.next(uploadResult);
-            subscriber.complete();
-          }, 0);
-        }, 0);
-      });
-      
-      uploadServiceSpy.uploadBookWithProgress.and.returnValue(uploadObservable);
+      // Use synchronous observable
+      uploadServiceSpy.uploadBookWithProgress.and.returnValue(of(uploadProgress, uploadResult));
       
       component.config.set(mockConfig);
       component.uploadQueue.set([{
@@ -226,15 +215,17 @@ describe('UploadComponent', () => {
         status: 'pending'
       }]);
       
-      await component.uploadAll();
+      component.uploadAll();
+      tick(); // Process all async operations
+      fixture.detectChanges(); // Force change detection
       
       expect(uploadServiceSpy.uploadBookWithProgress).toHaveBeenCalledWith(mockFile);
       expect(bookServiceSpy.clearCache).toHaveBeenCalled();
       expect(component.isUploading()).toBe(false);
       expect(component.uploadQueue()[0].status).toBe('success');
-    });
+    }));
 
-    it('should handle upload errors', async () => {
+    it('should handle upload errors', fakeAsync(() => {
       const mockFile = new File(['content'], 'test.epub', { type: 'application/epub+zip' });
       const error = { error: { message: 'Upload failed' } };
 
@@ -247,7 +238,8 @@ describe('UploadComponent', () => {
         status: 'pending'
       }]);
       
-      await component.uploadAll();
+      component.uploadAll();
+      tick(); // Process all async operations
       
       expect(component.uploadQueue()[0].status).toBe('error');
       expect(component.uploadQueue()[0].error).toBe('Upload failed');
@@ -256,9 +248,9 @@ describe('UploadComponent', () => {
         'Close',
         { duration: 3000 }
       );
-    });
+    }));
 
-    it('should handle duplicate upload result', async () => {
+    it('should handle duplicate upload result', fakeAsync(() => {
       const mockFile = new File(['content'], 'test.epub', { type: 'application/epub+zip' });
       const uploadResult: UploadResult = {
         status: 'DUPLICATE',
@@ -266,15 +258,7 @@ describe('UploadComponent', () => {
         fileHash: 'abc123'
       };
 
-      // Create an observable that emits only the result (no progress for duplicate)
-      const uploadObservable = new Observable<UploadResult>(subscriber => {
-        setTimeout(() => {
-          subscriber.next(uploadResult);
-          subscriber.complete();
-        }, 0);
-      });
-      
-      uploadServiceSpy.uploadBookWithProgress.and.returnValue(uploadObservable);
+      uploadServiceSpy.uploadBookWithProgress.and.returnValue(of(uploadResult));
       
       component.config.set(mockConfig);
       component.uploadQueue.set([{
@@ -283,7 +267,8 @@ describe('UploadComponent', () => {
         status: 'pending'
       }]);
       
-      await component.uploadAll();
+      component.uploadAll();
+      tick(); // Process all async operations
       
       expect(component.uploadQueue()[0].status).toBe('duplicate');
       expect(snackBarSpy.open).toHaveBeenCalledWith(
@@ -291,7 +276,7 @@ describe('UploadComponent', () => {
         'Close',
         { duration: 3000 }
       );
-    });
+    }));
   });
 
   describe('queue management', () => {

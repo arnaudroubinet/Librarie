@@ -322,7 +322,8 @@ export class UploadComponent implements OnInit {
               this.snackBar.open(`Duplicate file detected: ${item.file.name}`, 'Close', { duration: 3000 });
             }
             
-            resolve();
+            // Use setTimeout to ensure signal updates complete before resolving
+            setTimeout(() => resolve(), 0);
           }
         },
         error: (error) => {
@@ -335,7 +336,9 @@ export class UploadComponent implements OnInit {
           );
           
           this.snackBar.open(`Upload failed: ${item.file.name}`, 'Close', { duration: 3000 });
-          resolve();
+          
+          // Use setTimeout to ensure signal updates complete before resolving
+          setTimeout(() => resolve(), 0);
         }
       });
     });
