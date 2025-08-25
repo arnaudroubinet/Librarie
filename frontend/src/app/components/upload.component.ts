@@ -4,7 +4,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatIconModule } from '@angular/material/icon';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatListModule } from '@angular/material/list';
 import { UploadService } from '../services/upload.service';
@@ -40,7 +40,6 @@ interface UploadHistoryItem {
     MatButtonModule,
     MatProgressBarModule,
     MatIconModule,
-    MatSnackBarModule,
     MatDividerModule,
     MatListModule
   ],
