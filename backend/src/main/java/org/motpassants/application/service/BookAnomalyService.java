@@ -6,7 +6,7 @@ import org.motpassants.domain.core.model.BookAnomaly;
 import org.motpassants.domain.port.in.BookAnomalyUseCase;
 import org.motpassants.domain.port.out.LoggingPort;
 
-import io.agroal.api.AgroalDataSource;
+import javax.sql.DataSource;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.Connection;
@@ -20,7 +20,7 @@ import java.util.UUID;
 public class BookAnomalyService implements BookAnomalyUseCase {
 
     @Inject
-    AgroalDataSource dataSource;
+    DataSource dataSource;
 
     @Inject
     LoggingPort loggingPort;

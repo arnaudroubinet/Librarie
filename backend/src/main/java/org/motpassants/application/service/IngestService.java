@@ -9,6 +9,7 @@ import org.motpassants.domain.core.model.Book;
 import org.motpassants.domain.port.out.ConfigurationPort;
 import org.motpassants.domain.port.out.SecureFileProcessingPort;
 import org.motpassants.domain.port.out.LoggingPort;
+import org.motpassants.domain.port.out.readium.EpubPublicationPort;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -32,7 +33,7 @@ public class IngestService implements IngestUseCase {
     private final FileStorageService fileStorageService;
     private final SecureFileProcessingPort secureFileProcessingPort;
     private final ConfigurationPort configurationPort;
-    private final org.motpassants.infrastructure.readium.EpubPublicationService epubService;
+    private final EpubPublicationPort epubService;
     private final LoggingPort loggingPort;
 
     // Allowed language codes seeded by migration (V1.0.0__Initial_schema.sql)
@@ -63,7 +64,7 @@ public class IngestService implements IngestUseCase {
                         FileStorageService fileStorageService,
                         SecureFileProcessingPort secureFileProcessingPort,
                         ConfigurationPort configurationPort,
-                        org.motpassants.infrastructure.readium.EpubPublicationService epubService,
+                        EpubPublicationPort epubService,
                         LoggingPort loggingPort) {
         this.bookUseCase = bookUseCase;
         this.fileStorageService = fileStorageService;
@@ -134,20 +135,20 @@ public class IngestService implements IngestUseCase {
                     var pub = pubOpt.get();
                     var core = epubService.extractCoreMetadata(pub).orElse(null);
                     if (core != null) {
-                        if (core.title != null && (book.getTitle() == null || book.getTitle().isBlank())) book.setTitle(core.title);
-                        if (core.language != null) {
-                            String normalized = normalizeLanguageCode(core.language);
+                        if (core.title() != null && (book.getTitle() == null || book.getTitle().isBlank())) book.setTitle(core.title());
+                        if (core.language() != null) {
+                            String normalized = normalizeLanguageCode(core.language());
                             if (normalized != null) {
-                                if (!normalized.equals(core.language)) {
-                                    loggingPort.debug("Normalized language '" + core.language + "' -> '" + normalized + "'");
+                                if (!normalized.equals(core.language())) {
+                                    loggingPort.debug("Normalized language '" + core.language() + "' -> '" + normalized + "'");
                                 }
                                 book.setLanguage(normalized);
                             } else {
-                                loggingPort.warn("Unknown or unsupported language code '" + core.language + "' - skipping to avoid FK violation");
+                                loggingPort.warn("Unknown or unsupported language code '" + core.language() + "' - skipping to avoid FK violation");
                             }
                         }
-                        if (core.description != null) book.setDescription(core.description);
-                        if (core.isbn != null && (book.getIsbn() == null || book.getIsbn().isBlank())) book.setIsbn(core.isbn);
+                        if (core.description() != null) book.setDescription(core.description());
+                        if (core.isbn() != null && (book.getIsbn() == null || book.getIsbn().isBlank())) book.setIsbn(core.isbn());
                     }
                     // Cover: try OPF-declared cover image first; if missing, fallback to first spine resource snapshot is out-of-scope here
                     var coverZipPathOpt = epubService.findCoverImageZipPath(pub);
