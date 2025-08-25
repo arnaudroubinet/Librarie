@@ -42,9 +42,12 @@ import { forkJoin } from 'rxjs';
             <!-- Author Photo -->
             <div class="author-photo-container">
               @if (author()!.id) {
-                <img [src]="apiUrl + '/v1/authors/' + author()!.id + '/picture'" 
+       <img [src]="apiUrl + '/v1/authors/' + author()!.id + '/picture'" 
                      [alt]="author()!.name + ' photo'" 
-                     class="author-photo"
+         class="author-photo"
+         loading="eager"
+         decoding="async"
+         fetchpriority="high"
                      (error)="onImageError($event)" />
               } @else {
         <div class="author-photo-placeholder">
@@ -168,9 +171,9 @@ import { forkJoin } from 'rxjs';
                         <a class="series-card" [routerLink]="['/series', s.id]">
                           <div class="cover-wrap">
                             @if (s.imagePath) {
-                              <img class="book-cover" [src]="getSeriesImageUrl(s)" [alt]="s.name + ' cover'" />
+                              <img class="book-cover" [src]="getSeriesImageUrl(s)" [alt]="s.name + ' cover'" loading="lazy" decoding="async" fetchpriority="low" />
                             } @else if (s.coverFromBookId) {
-                              <img class="book-cover" [src]="apiUrl + '/v1/books/' + s.coverFromBookId + '/cover'" [alt]="s.name + ' cover'" />
+                              <img class="book-cover" [src]="apiUrl + '/v1/books/' + s.coverFromBookId + '/cover'" [alt]="s.name + ' cover'" loading="lazy" decoding="async" fetchpriority="low" />
                             } @else {
                               <div class="series-cover-placeholder">
                                 <iconify-icon class="placeholder-iconify" icon="material-symbols:books-movies-and-music"></iconify-icon>
@@ -185,7 +188,7 @@ import { forkJoin } from 'rxjs';
                         <div class="series-card">
                           <div class="cover-wrap">
                             @if (s.coverFromBookId) {
-                              <img class="book-cover" [src]="apiUrl + '/v1/books/' + s.coverFromBookId + '/cover'" [alt]="s.name + ' cover'" />
+                              <img class="book-cover" [src]="apiUrl + '/v1/books/' + s.coverFromBookId + '/cover'" [alt]="s.name + ' cover'" loading="lazy" decoding="async" fetchpriority="low" />
                             } @else {
                               <div class="series-cover-placeholder">
                                 <iconify-icon class="placeholder-iconify" icon="material-symbols:books-movies-and-music"></iconify-icon>
@@ -214,7 +217,7 @@ import { forkJoin } from 'rxjs';
                       <a class="book-card" [routerLink]="['/books', b.id]">
                         <div class="cover-wrap">
                           @if (b.hasCover) {
-                            <img class="book-cover" [src]="apiUrl + '/v1/books/' + b.id + '/cover'" [alt]="b.title + ' cover'" />
+                            <img class="book-cover" [src]="apiUrl + '/v1/books/' + b.id + '/cover'" [alt]="b.title + ' cover'" loading="lazy" decoding="async" fetchpriority="low" />
                           } @else {
                             <div class="book-cover-placeholder">
                               <iconify-icon class="placeholder-iconify" icon="material-symbols:book-2-rounded"></iconify-icon>

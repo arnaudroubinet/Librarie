@@ -6,12 +6,10 @@
   /* Transparent to let the root gradient flow across the whole page */
   background: transparent;
   /* Remove hard separation line to blend with content */
-  /* border-right: 1px solid #333; */
   display: flex;
   flex-direction: column;
   padding: 0;
   /* Remove drop shadow separation */
-  /* box-shadow: 2px 0 10px rgba(0, 0, 0, 0.3); */
 }
 
 .motspassants-logo {
@@ -19,16 +17,16 @@
   align-items: center;
   padding: 24px 20px;
   /* Remove bottom border to avoid a visible seam between top-left and bottom-left */
-  /* border-bottom: 1px solid #333; */
   margin-bottom: 20px;
 }
 
-.logo-icon { font-size: 32px; width: 32px; height: 32px; color: #e5a00d; margin-right: 12px; }
+/* Updated logo color */
+.logo-icon { font-size: 32px; width: 32px; height: 32px; color: var(--ghost-white); margin-right: 12px; }
 
 .logo-text {
   font-size: 20px;
   font-weight: 600;
-  color: #ffffff;
+  color: var(--ghost-white);
   letter-spacing: -0.5px;
 }
 
@@ -40,7 +38,7 @@
 .section-title {
   font-size: 11px;
   font-weight: 600;
-  color: #888;
+  color: var(--muted-fg);
   text-transform: uppercase;
   letter-spacing: 1px;
   margin-bottom: 12px;
@@ -54,26 +52,27 @@
   margin-bottom: 4px;
   padding: 12px 8px;
   border-radius: 8px;
-  color: #ffffff; /* Menu button text/icon should be white */
+  color: var(--ghost-white); /* Nav text uses ghost white */
   font-weight: 500;
   transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
+  background: transparent;
 }
 
-/* Ensure links are white in all unselected states */
+/* Ensure links are light in all unselected states */
 .nav-item:link,
 .nav-item:visited,
 .nav-item:hover,
 .nav-item:focus,
-.nav-item:active { color: #ffffff !important; }
+.nav-item:active { color: var(--ghost-white) !important; }
 
-.nav-item:hover { color: #ffffff; transform: translateX(4px); }
+.nav-item:hover { color: var(--ghost-white); background: var(--surface-soft); transform: translateX(4px); }
 
 .nav-item.active {
-  /* Keep whatever background (often blue) but ensure text stays white */
-  color: #ffffff !important;
+  color: var(--ghost-white) !important;
   font-weight: 600;
+  background: var(--surface-soft);
 }
 
 .nav-item.active::before {
@@ -81,17 +80,21 @@
   position: absolute;
   left: 0;
   top: 0;
-  height: 100%;
-  width: 3px;
-  background: #fff;
+  height: 100%; 
+  width: 3px; 
+  background: var(--accent);
 }
 
-.nav-item :is(mat-icon, iconify-icon) { margin-right: 12px; font-size: 20px; width: 20px; height: 20px; color: inherit; }
+.nav-item :is(mat-icon, iconify-icon) { margin-right: 12px; font-size: 20px; width: 20px; height: 20px; color: var(--ghost-white) !important; }
 .nav-item iconify-icon,
-.nav-item mat-icon { color: #ffffff !important; }
+.nav-item mat-icon { color: var(--ghost-white) !important; }
 
-/* Ensure Angular Material button label inside stays white */
-.nav-item .mdc-button__label { color: #ffffff !important; }
+/* Ensure active item icons and labels use the active color */
+.nav-item.active iconify-icon,
+.nav-item.active mat-icon { color: var(--ghost-white) !important; }
+
+/* Ensure Angular Material button label inside stays readable */
+.nav-item .mdc-button__label { color: var(--ghost-white) !important; }
 
 .nav-footer {
   margin-top: auto;
@@ -102,7 +105,7 @@
   display: flex;
   align-items: center;
   padding: 8px;
-  color: #666;
+  color: var(--surface-soft);
   font-size: 12px;
 }
 

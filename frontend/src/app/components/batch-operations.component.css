@@ -1,0 +1,123 @@
+/* Top header: force ghost-white for title, icon, and subtitle */
+:host .library-header .library-title,
+:host .library-header .title-icon,
+:host .library-header .library-subtitle {
+  color: var(--ghost-white);
+}
+:host .library-header .library-subtitle { opacity: 1; }
+
+.batch-operations-container {
+  max-width: 800px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+}
+
+.operations-section h3 {
+  margin-bottom: 1rem;
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: var(--ghost-white);
+}
+
+.operation-card {
+  margin-bottom: 1rem;
+  border: none;
+}
+/* Disable hover activation on all dark cards within Batch */
+:host .dark-card,
+:host .operation-card.dark-card {
+  transition: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  transform: none !important;
+  background: var(--panel-bg) !important;
+}
+:host .dark-card:hover,
+:host .operation-card.dark-card:hover {
+  border: none !important;
+  box-shadow: none !important;
+  transform: none !important;
+  background: var(--panel-bg) !important;
+}
+
+.operation-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.operation-info h4 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--ghost-white);
+}
+
+.operation-info p {
+  margin: 0.25rem 0 0 0;
+  color: var(--ghost-white);
+  font-size: 0.875rem;
+}
+
+.operation-status {
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  color: var(--ghost-white);
+}
+
+.status-pending { background-color: var(--muted-dark); }
+.status-running { background-color: var(--muted); }
+.status-completed { background-color: var(--success) !important; }
+.status-failed { background-color: var(--surface-soft); }
+.status-cancelled { background-color: var(--muted-dark); }
+/* Unknown status: earth-yellow (#D99030) via central token */
+.status-unknown { background-color: var(--earth-yellow) !important; }
+
+/* Refresh button and icons in header */
+.refresh-btn,
+.refresh-btn iconify-icon,
+.title-icon,
+iconify-icon { color: var(--ghost-white); }
+/* Remove background highlight on icon button hover/focus */
+.refresh-btn.mat-mdc-icon-button:hover,
+.refresh-btn.mat-mdc-icon-button:focus { background-color: transparent !important; }
+
+.operation-progress p {
+  margin: 0.25rem 0;
+  font-size: 0.875rem;
+  color: var(--ghost-white);
+}
+
+/* Generic text inside this component (fallback) */
+.batch-operations-container p,
+.batch-operations-container h1,
+.batch-operations-container h2,
+.batch-operations-container h3,
+.batch-operations-container h4,
+.batch-operations-container h5,
+.batch-operations-container h6 { color: var(--ghost-white); }
+
+/* Ensure button text/icons appear ghost white here */
+button[mat-raised-button],
+button[mat-button],
+button[mat-icon-button] { color: var(--ghost-white); }
+/* Also kill hover visuals for buttons within this page */
+button[mat-raised-button]:hover,
+button[mat-button]:hover,
+button[mat-icon-button]:hover,
+button[mat-raised-button]:focus,
+button[mat-button]:focus,
+button[mat-icon-button]:focus {
+  color: var(--ghost-white) !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+  transform: none !important;
+  filter: none !important;
+}
+
+/* Make any mat-card subtitles in this page ghost white for consistency */
+mat-card-subtitle { color: var(--ghost-white) !important; opacity: 1 !important; }

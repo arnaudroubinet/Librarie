@@ -15,6 +15,10 @@ export const routes: Routes = [
     loadComponent: () => import('./components/ebook-reader.component').then(c => c.EbookReaderComponent)
   },
   { 
+    path: 'books/:id/metadata', 
+    loadComponent: () => import('./components/metadata-editor.component').then(c => c.MetadataEditorComponent)
+  },
+  { 
     path: 'series', 
     loadComponent: () => import('./components/series-list.component').then(c => c.SeriesListComponent)
   },
@@ -35,8 +39,22 @@ export const routes: Routes = [
     loadComponent: () => import('./components/search.component').then(c => c.SearchComponent)
   },
   { 
+    path: 'upload', 
+    loadComponent: () => import('./components/upload.component').then(c => c.UploadComponent)
+  },
+  { 
+    path: 'batch', 
+    loadComponent: () => import('./components/batch-operations.component').then(c => c.BatchOperationsComponent)
+  },
+  { 
     path: 'settings', 
     loadComponent: () => import('./components/settings.component').then(c => c.SettingsComponent)
   },
+  { 
+    path: 'admin/anomalies', 
+    loadComponent: () => import('./components/book-anomalies.component').then(c => c.BookAnomaliesComponent)
+  },
+  // Friendly alias
+  { path: 'anomalies', redirectTo: '/admin/anomalies', pathMatch: 'full' },
   { path: '**', redirectTo: '/books' }
 ];

@@ -167,8 +167,8 @@ import type { RwpmLink } from '../models/rwpm.model';
       flex-direction: column;
   height: 100vh;
   height: 100dvh; /* modern browsers: fill dynamic viewport */
-      background: var(--reader-bg, #ffffff);
-      color: var(--reader-text, #000000);
+  background: var(--reader-bg, var(--muted));
+  color: var(--reader-text, var(--content-fg));
     }
 
     /* Toolbar: match main theme */
@@ -216,7 +216,7 @@ import type { RwpmLink } from '../models/rwpm.model';
       flex: 1;
       overflow: hidden;
       padding: 0;
-      background: var(--reader-bg, #ffffff);
+  background: var(--reader-bg, var(--bg));
       min-height: 0; /* allow child to size fully within flex */
       position: relative;
     }
@@ -267,16 +267,16 @@ import type { RwpmLink } from '../models/rwpm.model';
       width: min(320px, 70vw);
       max-height: calc(100vh - 128px);
       overflow: auto;
-      background: var(--toolbar-bg, #f5f5f5);
-      border: 1px solid var(--border-color, #e0e0e0);
-      border-radius: 8px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  background: var(--toolbar-bg, var(--surface));
+  border: 1px solid var(--border-color, var(--muted-dark));
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(var(--bg-rgb),0.15);
       padding: 8px 0;
     }
     .toc-title {
       font-weight: 600;
       padding: 8px 12px;
-      border-bottom: 1px solid var(--border-color, #e0e0e0);
+  border-bottom: 1px solid var(--border-color, var(--muted-dark));
     }
     .toc-panel ul {
       list-style: none;
@@ -293,7 +293,7 @@ import type { RwpmLink } from '../models/rwpm.model';
       cursor: pointer;
       color: inherit;
     }
-    .toc-link:hover { background: rgba(0,0,0,0.05); }
+  .toc-link:hover { background: rgba(var(--bg-rgb), 0.05); }
 
     /* Bottom controls: match main theme */
     .reader-controls {
@@ -326,7 +326,7 @@ import type { RwpmLink } from '../models/rwpm.model';
       height: 4px;
       -webkit-appearance: none;
       appearance: none;
-      background: rgba(255, 255, 255, 0.3);
+  background: var(--panel-bg-soft, var(--surface-soft));
       border-radius: 2px;
       outline: none;
     }
@@ -336,7 +336,7 @@ import type { RwpmLink } from '../models/rwpm.model';
       appearance: none;
       width: 16px;
       height: 16px;
-      background: #4fc3f7;
+  background: var(--accent, var(--accent));
       border-radius: 50%;
       cursor: pointer;
     }
@@ -344,7 +344,7 @@ import type { RwpmLink } from '../models/rwpm.model';
     .progress-slider::-moz-range-thumb {
       width: 16px;
       height: 16px;
-      background: #4fc3f7;
+  background: var(--accent, var(--accent));
       border-radius: 50%;
       cursor: pointer;
       border: none;
@@ -362,20 +362,20 @@ import type { RwpmLink } from '../models/rwpm.model';
 
     /* Dark theme (inherits from body.dark-theme via :host-context) */
     :host-context(.dark-theme) {
-      --reader-bg: #1e1e1e;
-      --reader-text: #e0e0e0;
-      --toolbar-bg: #2d2d2d;
-      --border-color: #404040;
-      --text-secondary: #a0a0a0;
+  --reader-bg: var(--bg);
+  --reader-text: var(--content-fg);
+  --toolbar-bg: var(--surface);
+  --border-color: var(--muted-dark);
+  --text-secondary: rgba(var(--muted-rgb),0.7);
     }
 
     /* Sepia theme */
     :host-context(.sepia-theme) {
-      --reader-bg: #f7f0e1;
-      --reader-text: #3b2f1b;
-      --toolbar-bg: #efe6d6;
-      --border-color: #d8c9ad;
-      --text-secondary: #6f624d;
+  --reader-bg: var(--muted);
+  --reader-text: var(--bg);
+  --toolbar-bg: var(--surface-soft);
+  --border-color: var(--muted-dark);
+  --text-secondary: rgba(var(--muted-rgb),0.6);
     }
 
     /* Mobile responsive */

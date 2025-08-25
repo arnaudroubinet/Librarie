@@ -180,7 +180,7 @@ import { environment } from '../../environments/environment';
                     <div class="book-poster" matRipple [routerLink]="['/books', book.id]">
                       <div class="book-cover">
                         @if (book.hasCover) {
-                          <img [src]="apiUrl + '/v1/books/' + book.id + '/cover'" [alt]="book.title + ' cover'" class="cover-image" (error)="onImageError($event)">
+                          <img [src]="apiUrl + '/v1/books/' + book.id + '/cover'" [alt]="book.title + ' cover'" class="cover-image" loading="lazy" decoding="async" fetchpriority="low" (error)="onImageError($event)">
                         } @else {
                           <div class="cover-placeholder">
                             <mat-icon>book</mat-icon>
@@ -270,7 +270,7 @@ import { environment } from '../../environments/environment';
                 <div class="book-poster" matRipple [routerLink]="['/books', book.id]">
                   <div class="book-cover">
                     @if (book.hasCover) {
-                      <img [src]="apiUrl + '/v1/books/' + book.id + '/cover'" [alt]="book.title + ' cover'" class="cover-image" (error)="onImageError($event)">
+                      <img [src]="apiUrl + '/v1/books/' + book.id + '/cover'" [alt]="book.title + ' cover'" class="cover-image" loading="lazy" decoding="async" fetchpriority="low" (error)="onImageError($event)">
                     } @else {
                       <div class="cover-placeholder">
                         <mat-icon>book</mat-icon>
