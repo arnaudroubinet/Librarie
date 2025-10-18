@@ -1,57 +1,232 @@
 # Contributing to Librarie
 
-Thank you for your interest in contributing to Librarie! This document provides guidelines and information for contributors.
+Thank you for your interest in contributing to Librarie! This document provides guidelines and information about our development process.
 
 ## Table of Contents
-
-- [Development Setup](#development-setup)
-- [Code Quality](#code-quality)
+- [Getting Started](#getting-started)
+- [Development Workflow](#development-workflow)
+- [CI/CD Pipeline](#cicd-pipeline)
+- [Coding Standards](#coding-standards)
+- [Testing](#testing)
 - [Bundle Size Monitoring](#bundle-size-monitoring)
 - [Pull Request Process](#pull-request-process)
 
-## Development Setup
+## Getting Started
 
 ### Prerequisites
+- **Backend**: Java 21, Maven 3.9+
+- **Frontend**: Node.js 20+, npm 10+
+- Git
 
-- Node.js 20.x or later
-- npm (comes with Node.js)
+### Local Setup
 
-### Frontend Setup
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/arnaudroubinet/Librarie.git
+   cd Librarie
+   ```
 
-1. Clone the repository
-2. Navigate to the frontend directory: `cd frontend`
-3. Install dependencies: `npm ci`
-4. Start the development server: `npm start`
-5. Open your browser to `http://localhost:4200`
+2. **Backend setup**
+   ```bash
+   cd backend
+   mvn clean install
+   ```
 
-### Backend Setup
+3. **Frontend setup**
+   ```bash
+   cd frontend
+   npm ci
+   ```
 
-Please refer to the backend-specific documentation in the `backend` directory.
+## Development Workflow
 
-## Code Quality
+1. **Create a feature branch**
+   ```bash
+   git checkout -b feature/your-feature-name
+   ```
 
-### Testing
+2. **Make your changes**
+   - Follow the coding standards (see below)
+   - Write tests for new functionality
+   - Update documentation as needed
 
-Run tests before submitting your pull request:
+3. **Run tests locally**
+   ```bash
+   # Backend
+   cd backend
+   mvn test
+   
+   # Frontend
+   cd frontend
+   npm test
+   ```
+
+4. **Commit your changes**
+   ```bash
+   git add .
+   git commit -m "feat: descriptive commit message"
+   ```
+
+5. **Push and create a Pull Request**
+   ```bash
+   git push origin feature/your-feature-name
+   ```
+
+## CI/CD Pipeline
+
+Our project uses GitHub Actions for continuous integration and deployment. All pull requests must pass CI checks before merging.
+
+### Workflows
+
+#### Main CI Pipeline (`ci.yml`)
+Runs on every pull request and push to main/develop branches.
+
+**Features:**
+- **Change Detection**: Only runs jobs for changed components
+- **Backend CI**: Builds and tests Java backend with Maven
+- **Frontend CI**: Builds and tests Angular frontend with npm
+- **Security Scanning**: Scans dependencies for vulnerabilities using Trivy
+- **Status Check**: Final gate that requires all jobs to pass
+
+**Triggered by:**
+- Pull requests targeting `main` or `develop`
+- Direct pushes to `main` or `develop`
+
+#### CodeQL Analysis (`codeql.yml`)
+Performs static code analysis for security vulnerabilities.
+
+**Features:**
+- Analyzes Java and JavaScript/TypeScript code
+- Detects security vulnerabilities and code quality issues
+- Runs on PRs, pushes, and weekly schedule
+
+**Languages analyzed:**
+- Java (backend)
+- JavaScript/TypeScript (frontend)
+
+#### Backend CI (`backend-ci.yml`)
+Dedicated workflow for backend changes.
+
+**Runs:**
+- Maven tests with coverage
+- Package application
+- Upload test results and coverage reports
+
+#### Frontend CI (`frontend-ci.yml`)
+Dedicated workflow for frontend changes.
+
+**Runs:**
+- Code formatting checks (Prettier)
+- Unit tests with Karma/Jasmine
+- Build production application
+- Upload test results and build artifacts
+
+#### Bundle Size Check (`bundle-size-check.yml`)
+Monitors frontend bundle sizes on pull requests.
+
+**Runs:**
+- Build and measure bundle sizes
+- Compare with main branch
+- Post results as PR comment
+- Fail if bundles exceed limits
+
+### Required Status Checks
+
+The following checks must pass before a PR can be merged:
+
+1. **Backend CI**: All backend tests and build must succeed
+2. **Frontend CI**: All frontend tests and build must succeed  
+3. **Security Scan**: No critical or high severity vulnerabilities
+4. **CodeQL Analysis**: No security issues detected
+5. **CI Status Check**: Final verification that all jobs passed
+
+### Artifacts
+
+CI workflows upload the following artifacts (retained for 7 days):
+
+- **Backend**:
+  - Test results (`surefire-reports/`)
+  - Code coverage reports (`jacoco/`)
+  
+- **Frontend**:
+  - Test results with coverage
+  - Production build artifacts
+
+- **Security**:
+  - Trivy vulnerability scan results (SARIF format)
+
+### Local CI Testing
+
+You can run the same checks locally before pushing:
 
 ```bash
+# Backend
+cd backend
+mvn clean verify
+
+# Frontend  
 cd frontend
-npm test
-```
-
-### Code Formatting
-
-We use Prettier for code formatting. The CI pipeline will check your code formatting.
-
-```bash
-cd frontend
+npm ci
 npx prettier --check "src/**/*.{ts,html,scss,css}"
+npm run test -- --watch=false --browsers=ChromeHeadless --code-coverage
+npm run build
 ```
 
-To automatically fix formatting issues:
+## Coding Standards
 
+### Backend (Java/Quarkus)
+- Follow Java coding conventions
+- Use meaningful variable and method names
+- Write Javadoc for public APIs
+- Keep methods focused and concise
+- Write unit tests for all business logic
+
+### Frontend (Angular/TypeScript)
+- Follow Angular style guide
+- Use TypeScript strict mode
+- Format code with Prettier
+- Use semantic HTML and proper accessibility attributes
+- Write unit tests for components and services
+
+### Git Commit Messages
+Follow conventional commits format:
+- `feat:` New feature
+- `fix:` Bug fix
+- `docs:` Documentation changes
+- `test:` Adding or updating tests
+- `refactor:` Code refactoring
+- `chore:` Maintenance tasks
+
+Example: `feat: add book search functionality`
+
+## Testing
+
+### Backend Testing
 ```bash
-npx prettier --write "src/**/*.{ts,html,scss,css}"
+cd backend
+
+# Run unit tests
+mvn test
+
+# Run tests with coverage
+mvn verify
+
+# Run specific test
+mvn test -Dtest=YourTestClass
+```
+
+### Frontend Testing
+```bash
+cd frontend
+
+# Run tests once
+npm run test -- --watch=false --browsers=ChromeHeadless
+
+# Run tests in watch mode
+npm run test
+
+# Run tests with coverage
+npm run test -- --watch=false --browsers=ChromeHeadless --code-coverage
 ```
 
 ## Bundle Size Monitoring
@@ -69,7 +244,7 @@ npm run size
 ```
 
 The `size-limit` tool will report:
-- Current size of each bundle
+- Current size of the bundle
 - Whether the size exceeds configured limits
 - Loading time estimates on slow networks
 - Running time estimates on slower devices
@@ -108,7 +283,6 @@ If the bundle size check fails, you have several options:
    npm run build
    npm run analyze
    ```
-   This will open an interactive visualization of your bundle composition.
 
 3. **Update size limits** (only if justified):
    - If the size increase is necessary and justified
@@ -137,31 +311,47 @@ Open https://esbuild.github.io/analyze/ in your browser and upload the generated
 
 ## Pull Request Process
 
-1. Fork the repository
-2. Create a feature branch from `main`
-3. Make your changes
-4. Run tests and bundle size checks locally
-5. Commit your changes with clear, descriptive messages
-6. Push to your fork
-7. Submit a pull request to the main repository
+1. **Create PR**
+   - Use a descriptive title
+   - Fill out the PR template
+   - Link related issues
 
-### PR Requirements
+2. **CI Checks**
+   - All CI workflows must pass
+   - Address any failing tests or security issues
+   - Ensure code coverage doesn't decrease significantly
+   - Bundle sizes must not exceed limits
 
-- All tests must pass
-- Code must be properly formatted
-- Bundle sizes must not exceed limits (or have documented justification)
-- Changes should be described clearly in the PR description
+3. **Code Review**
+   - Request reviews from maintainers
+   - Address review comments
+   - Update PR as needed
 
-### Review Process
+4. **Merge Requirements**
+   - ✅ All CI status checks passing
+   - ✅ At least one approved review
+   - ✅ No merge conflicts
+   - ✅ Branch is up to date with target branch
 
-- Maintainers will review your PR
-- Address any feedback or requested changes
-- Once approved, a maintainer will merge your PR
+5. **Merge Strategy**
+   - Squash and merge for feature branches
+   - Keep commit history clean
+
+## Security
+
+### Reporting Vulnerabilities
+If you discover a security vulnerability, please email the maintainers directly instead of opening a public issue.
+
+### Dependency Updates
+- Dependencies are scanned automatically by Trivy
+- Security updates should be prioritized
+- Test thoroughly after updating dependencies
 
 ## Questions?
 
-If you have questions or need help, please:
-- Open an issue on GitHub
-- Reach out to the maintainers
+If you have questions about contributing, please:
+- Check existing documentation
+- Search closed issues
+- Open a new issue with your question
 
-Thank you for contributing to Librarie!
+Thank you for contributing to Librarie! 🎉
