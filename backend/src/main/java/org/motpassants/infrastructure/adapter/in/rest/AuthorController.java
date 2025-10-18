@@ -334,7 +334,8 @@ public class AuthorController {
 
             if (authorOpt.isEmpty()) {
                 return Response.status(Response.Status.NOT_FOUND)
-                        .entity(Map.of("error", "Author not found"))
+                        .type(MediaType.TEXT_PLAIN)
+                        .entity("Author not found")
                         .build();
             }
 
@@ -362,11 +363,13 @@ public class AuthorController {
             );
         } catch (IllegalArgumentException e) {
             return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(Map.of("error", "Invalid author ID format"))
+                    .type(MediaType.TEXT_PLAIN)
+                    .entity("Invalid author ID format")
                     .build();
         } catch (Exception e) {
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                    .entity(Map.of("error", "Internal server error"))
+                    .type(MediaType.TEXT_PLAIN)
+                    .entity("Internal server error")
                     .build();
         }
     }
