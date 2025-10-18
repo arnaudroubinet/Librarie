@@ -83,7 +83,7 @@
     },
     {
       "name": "Core Chunk",
-      "path": "dist/frontend/browser/chunk-CTL5V43H.js",
+      "path": "dist/frontend/browser/chunk-*.js",
       "limit": "85 kB"
     },
     {
