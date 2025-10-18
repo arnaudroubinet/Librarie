@@ -5,8 +5,11 @@
     "ng": "ng",
     "start": "ng serve",
     "build": "ng build",
+    "build:stats": "ng build --stats-json",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test"
+    "test": "ng test",
+    "size": "size-limit",
+    "analyze": "npm run build:stats && echo '\n📊 Bundle stats generated! Analyze at: https://esbuild.github.io/analyze/\n' && echo 'Upload the file: dist/frontend/stats.json\n'"
   },
   "prettier": {
     "overrides": [
@@ -29,10 +32,10 @@
     "@angular/material": "^20.1.5",
     "@angular/platform-browser": "^20.1.0",
     "@angular/router": "^20.1.0",
-    "@readium/navigator": "^2.0.0",
-    "@readium/shared": "^2.0.0",
     "@readium/css": "^2.0.0-beta.18",
+    "@readium/navigator": "^2.0.0",
     "@readium/navigator-html-injectables": "^2.0.0",
+    "@readium/shared": "^2.0.0",
     "iconify-icon": "^3.0.0",
     "ng": "^0.0.0",
     "rxjs": "~7.8.0",
@@ -43,6 +46,8 @@
     "@angular/build": "^20.1.5",
     "@angular/cli": "^20.1.5",
     "@angular/compiler-cli": "^20.1.0",
+    "@size-limit/file": "^11.2.0",
+    "@size-limit/preset-app": "^11.2.0",
     "@types/jasmine": "~5.1.0",
     "jasmine-core": "~5.8.0",
     "karma": "~6.4.0",
@@ -52,5 +57,37 @@
     "karma-jasmine-html-reporter": "~2.1.0",
     "playwright": "^1.55.0",
     "typescript": "~5.8.2"
-  }
+  },
+  "size-limit": [
+    {
+      "name": "Main Bundle",
+      "path": "dist/frontend/browser/main-*.js",
+      "limit": "35 kB"
+    },
+    {
+      "name": "Polyfills",
+      "path": "dist/frontend/browser/polyfills-*.js",
+      "limit": "40 kB"
+    },
+    {
+      "name": "Angular Material Chunk",
+      "path": "dist/frontend/browser/chunk-HXYQTTYS.js",
+      "limit": "170 kB"
+    },
+    {
+      "name": "Readium Chunk",
+      "path": "dist/frontend/browser/chunk-Q2RSVZ2K.js",
+      "limit": "130 kB"
+    },
+    {
+      "name": "Core Chunk",
+      "path": "dist/frontend/browser/chunk-CTL5V43H.js",
+      "limit": "85 kB"
+    },
+    {
+      "name": "Styles",
+      "path": "dist/frontend/browser/styles-*.css",
+      "limit": "25 kB"
+    }
+  ]
 }
