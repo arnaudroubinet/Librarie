@@ -70,7 +70,7 @@ import { environment } from '../../environments/environment';
               <mat-panel-description>Filter by fields</mat-panel-description>
             </mat-expansion-panel-header>
 
-            <div class="advanced-form">
+            <div class="advanced-form" [formGroup]="searchForm">
               <div class="form-row">
                 <mat-form-field appearance="outline">
                   <mat-label>Title contains</mat-label>
@@ -373,6 +373,7 @@ export class SearchComponent implements OnDestroy {
     private fb: FormBuilder,
     private location: Location
   ) {
+    // Initialize searchForm immediately to avoid NG01050 error
     this.searchForm = this.fb.group({
       quickSearch: [''],
       title: [''],
@@ -386,6 +387,7 @@ export class SearchComponent implements OnDestroy {
       sortBy: ['title'],
       sortDirection: ['asc']
     });
+    
     this.setupBrowserBackSupport();
     this.setupKeyboardShortcuts();
     this.loadSearchHistory();
