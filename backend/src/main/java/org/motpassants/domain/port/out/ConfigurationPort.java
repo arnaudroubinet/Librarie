@@ -11,6 +11,11 @@ public interface ConfigurationPort {
     boolean isDemoEnabled();
     
     /**
+     * Get the current application profile (e.g., dev, test, prod).
+     */
+    String getActiveProfile();
+    
+    /**
      * Storage configuration.
      */
     StorageConfig getStorageConfig();

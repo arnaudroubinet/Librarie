@@ -30,6 +30,26 @@ public class ConfigurationIntegrationTest {
             assertTrue(demoEnabled, "Demo should be enabled in test environment");
         });
     }
+    
+    @Test
+    @DisplayName("Should access active profile")
+    void shouldAccessActiveProfile() {
+        assertDoesNotThrow(() -> {
+            String activeProfile = configurationPort.getActiveProfile();
+            assertNotNull(activeProfile, "Active profile should not be null");
+            assertFalse(activeProfile.isBlank(), "Active profile should not be blank");
+            // In test environment, profile should be 'test'
+            assertEquals("test", activeProfile, "Profile should be 'test' in test environment");
+        });
+    }
+    
+    @Test
+    @DisplayName("Should detect test profile is not production")
+    void shouldDetectTestProfileIsNotProduction() {
+        String activeProfile = configurationPort.getActiveProfile();
+        assertNotEquals("prod", activeProfile.toLowerCase(), 
+                       "Test profile should not be 'prod'");
+    }
 
     @Test
     @DisplayName("Should access storage configuration")

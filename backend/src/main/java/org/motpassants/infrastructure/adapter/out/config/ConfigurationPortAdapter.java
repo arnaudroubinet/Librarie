@@ -2,6 +2,7 @@ package org.motpassants.infrastructure.adapter.out.config;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.motpassants.domain.port.out.ConfigurationPort;
 import org.motpassants.infrastructure.config.LibrarieConfigProperties;
 
@@ -12,15 +13,23 @@ import org.motpassants.infrastructure.config.LibrarieConfigProperties;
 public class ConfigurationPortAdapter implements ConfigurationPort {
     
     private final LibrarieConfigProperties config;
+    private final String activeProfile;
     
     @Inject
-    public ConfigurationPortAdapter(LibrarieConfigProperties config) {
+    public ConfigurationPortAdapter(LibrarieConfigProperties config,
+                                   @ConfigProperty(name = "quarkus.profile") String activeProfile) {
         this.config = config;
+        this.activeProfile = activeProfile;
     }
     
     @Override
     public boolean isDemoEnabled() {
         return config.demo().enabled();
+    }
+    
+    @Override
+    public String getActiveProfile() {
+        return activeProfile;
     }
     
     @Override
