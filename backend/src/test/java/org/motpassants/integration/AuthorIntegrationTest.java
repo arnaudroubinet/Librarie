@@ -233,7 +233,7 @@ public class AuthorIntegrationTest {
     }
 
     @Test
-    @Order(14)
+    @Order(13)
     public void testSearchAuthorsWithInvalidQuery() {
         given()
             .queryParam("q", "")
