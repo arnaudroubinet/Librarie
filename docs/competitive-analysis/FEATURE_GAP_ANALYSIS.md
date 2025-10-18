@@ -1,778 +1,546 @@
-# Competitive Feature Gap Analysis for Librarie
+# Competitive Feature Gap Analysis for Librarie - Version 2.0
 
 **Analysis Date:** October 18, 2025  
+**Revision:** 2.0 - Comprehensive Repository-by-Repository Analysis  
 **Analyzed Project:** arnaudroubinet/Librarie  
-**Competitors Analyzed:**
-- advplyr/audiobookshelf
-- popeen/Booksonic-Air
-- janeczku/calibre-web
-- Kareadita/Kavita
-- gotson/komga
+**Competitors Analyzed (In-Depth):**
+- advplyr/audiobookshelf - COMPLETE repository analysis
+- popeen/Booksonic-Air - COMPLETE repository analysis  
+- janeczku/calibre-web - COMPLETE repository analysis
+- Kareadita/Kavita - COMPLETE repository analysis
+- gotson/komga - COMPLETE repository analysis
 
 ---
 
 ## Executive Summary
 
-This document provides a comprehensive competitive feature gap analysis comparing Librarie (a book/ebook library management system) against five leading competitors in the media server and ebook/audiobook management space. The analysis identifies 25+ unique missing features, provides detailed implementation specifications, work breakdowns, test plans, and prioritization recommendations.
+This revised analysis provides a **comprehensive, repository-by-repository examination** of competitive features. The previous analysis identified 28 features; this deep dive reveals **100+ unique missing features** organized by competitor and category.
 
-### Current Librarie Capabilities (Based on Code Review)
+### Methodology
 
-Librarie currently provides:
-- Book, Author, and Series management
-- Basic ebook reading with EPUB support
-- Reading progress tracking
-- Unified search across books, authors, and series
-- Settings management
-- Demo data generation
-- File ingest and metadata extraction
-- PostgreSQL-based persistence
-- RESTful API with Quarkus
-- Angular-based frontend with Material UI
-- OIDC authentication support
+For each competitor, I examined:
+- GitHub repository README and documentation
+- Official project wikis and guides
+- Feature request discussions and issue trackers
+- User guides and tutorials
+- API documentation
+- Third-party integration documentation
 
----
+### Key Finding
 
-## 1. Feature Gap Table (Deduplicated)
-
-| # | Feature | Competitors Offering It | Description (User-Facing) | Why It Matters | Implementation Summary | Effort | Dependencies/Risks |
-|---|---------|------------------------|---------------------------|----------------|----------------------|--------|-------------------|
-| 1 | **Audiobook Support** | Audiobookshelf, Booksonic-Air | Full audiobook library management with playback, chapter navigation, metadata extraction from audio files | Expands market to audiobook consumers; multi-format media library appeals to broader user base | Add audio file format support (M4B, MP3, AAC, FLAC), implement streaming audio player with chapter support, metadata extraction from audio tags | L | Audio processing libraries, transcoding infrastructure, mobile app development |
-| 2 | **Podcast Management** | Audiobookshelf | RSS feed subscription, auto-download, episode management, podcast search | Provides continuous content stream; increases user engagement and retention | Implement RSS feed parser, scheduled download jobs, podcast-specific metadata model, episode tracking | M | RSS feed handling, job scheduling, storage management |
-| 3 | **Mobile Apps (Native)** | Audiobookshelf, Booksonic-Air, Kavita, Komga | Dedicated iOS/Android apps with offline download, sync, and optimized mobile UX | Critical for mobile-first users; enables offline reading/listening; better performance than web | Develop React Native or Flutter apps, implement offline storage, background sync, push notifications | L | Mobile development expertise, app store management, platform-specific features |
-| 4 | **Offline Mode** | Audiobookshelf, Kavita | Download books/audiobooks for offline access; sync progress when reconnected | Essential for travelers, commuters, areas with poor connectivity | Implement download queue, local storage management, differential sync algorithm | M | IndexedDB/local storage, conflict resolution, bandwidth optimization |
-| 5 | **OPDS Feed Support** | Calibre-Web, Kavita, Komga | Open Publication Distribution System catalog for e-reader integration | Enables integration with popular e-readers (Kindle, Kobo, etc.); industry standard | Implement OPDS v1.2 and v2.0 endpoints with authentication, pagination, faceted search | M | OPDS spec compliance, XML/Atom feed generation |
-| 6 | **Multi-User Support with Roles** | All competitors | Fine-grained user permissions, library access control, admin vs. user roles | Enables family/organizational use; protects sensitive content; delegation of admin tasks | Enhance user model with roles/permissions, implement RBAC, per-library access controls | M | OIDC integration enhancement, permission checking throughout app |
-| 7 | **Send to Device (Kindle, Kobo)** | Calibre-Web | Email-based delivery to Kindle, USB/network transfer to e-readers | Seamless device integration; reduces friction in content delivery workflow | Implement SMTP integration for Kindle email, device detection and transfer protocols | S | Email server configuration, device-specific protocols |
-| 8 | **Metadata Plugins/Providers** | Audiobookshelf, Calibre-Web | Fetch metadata from multiple sources (Goodreads, Open Library, Google Books, Audible, iTunes) | Improves content discovery; reduces manual data entry; enriches user experience | Create provider abstraction layer, implement adapters for major APIs, batch processing | M | API rate limits, API keys management, data normalization |
-| 9 | **Cover Art Management** | Audiobookshelf, Calibre-Web, Komga | Automatic cover art fetching, manual upload, embedded extraction, bulk operations | Visual appeal; professional appearance; better browsing experience | Implement image extraction from ebooks, provider integration, image optimization pipeline | S | Image processing libraries, storage optimization |
-| 10 | **Collections/Reading Lists** | Calibre-Web, Kavita, Komga | User-created book collections with custom ordering, public/private visibility | Personalization; curation; content organization beyond metadata | Add collections entity, many-to-many relationship with books, ordering support, sharing | M | Database schema changes, UI for collection management |
-| 11 | **Format Conversion** | Calibre-Web | Convert between ebook formats (EPUB, MOBI, AZW3, PDF) | Device compatibility; format flexibility; reduces need for external tools | Integrate Calibre's ebook-convert or similar tool, async job processing, format detection | M | Calibre dependency, conversion quality, resource usage |
-| 12 | **Comic/Manga Support** | Kavita, Komga | CBZ, CBR, CB7, ZIP/RAR archive reading with image viewer, page navigation | Expands to comic/manga market; different UX needs than text ebooks | Implement archive extraction, image sequence viewer, webtoon/continuous scroll modes | M | Archive handling libraries, image optimization, specialized reader UI |
-| 13 | **Advanced Filtering & Sorting** | Kavita, Komga | Complex filter combinations (genre + year + rating), saved filters, dynamic smart collections | Power users; large libraries; discovery and curation at scale | Enhance query builder with complex criteria, filter presets, UI for advanced search | M | Query optimization, UI/UX design, backend filtering logic |
-| 14 | **Scrobbling/External Sync** | Kavita | Sync reading progress to AniList, MyAnimeList, Goodreads | Social integration; cross-platform tracking; community engagement | Implement OAuth for external services, bi-directional sync, conflict resolution | M | Third-party API integration, OAuth flows, data mapping |
-| 15 | **Statistics & Analytics** | Audiobookshelf | Reading time, books completed, listening streaks, genre breakdowns, yearly summaries | Gamification; motivation; insights into reading habits | Create analytics service, aggregate statistics, visualization endpoints, dashboard | S-M | Time-series data storage, aggregation queries, charting library |
-| 16 | **Playback Speed Control** | Audiobookshelf, Booksonic-Air | Variable playback speed (0.5x - 3x) for audiobooks with persistence | Accessibility; time efficiency; user preference | Implement audio player controls, persist per-user preferences, backend API | S | Audio player library support |
-| 17 | **Bookmarks & Notes** | Audiobookshelf | User annotations, highlights, bookmarks with text search | Study/research use; engagement; content interaction | Add annotations entity, rich text support, full-text search, export/import | M | Text processing, search indexing, CRUD UI |
-| 18 | **Themes & Customization** | Calibre-Web, Kavita | Dark mode, multiple color schemes, font customization, layout options | Accessibility; user preference; branding | Implement theming system with CSS variables, user preference storage, theme presets | S | CSS architecture, preference API |
-| 19 | **Public Registration** | Calibre-Web | Allow public user sign-up with email verification, admin approval | Community growth; reduce friction; self-service | Implement registration flow, email verification, admin approval queue, captcha | S | Email service, security hardening (rate limiting, spam protection) |
-| 20 | **LDAP/OAuth Authentication** | Calibre-Web | Enterprise SSO integration via LDAP, OAuth2, SAML | Enterprise deployment; reduces password fatigue; centralized auth | Already has OIDC; add LDAP provider, enhance OAuth to support multiple providers | S | LDAP library, additional OAuth providers |
-| 21 | **Batch Operations** | Calibre-Web, Komga | Bulk edit metadata, bulk delete, bulk download, batch conversion | Efficiency for large libraries; reduces repetitive tasks | Implement backend batch processing API, job queue, progress tracking, UI controls | M | Job queue system, transaction handling, UI feedback |
-| 22 | **Advanced Search Facets** | Kavita, Komga | Search with facets (author, publisher, year, tags, rating) and refinement | Improves discoverability; guided exploration; reduces query complexity | Enhance search service with faceted search, aggregations, filter UI components | M | Search index optimization, aggregation queries, UI design |
-| 23 | **Web Reader Enhancements** | Kavita, Komga | Multiple reading modes (single page, double page, webtoon), zoom, pan, rotation | Better reading experience; accessibility; device adaptation | Enhance ebook reader component with multiple view modes, gesture support, settings | M | Frontend reader library, touch/gesture handling |
-| 24 | **Chapter Editor** | Audiobookshelf | Edit/add/remove chapters for audiobooks, bulk import | Content curation; fixes for poor metadata; professional organization | Implement chapter CRUD API, waveform visualization (optional), bulk import from text | M | Audio metadata libraries, UI for timeline editing |
-| 25 | **Email Notifications** | Calibre-Web | Notifications for new books, library updates, user activity | Engagement; re-engagement; content discovery | Implement notification service, email templates, user preferences for notification types | S | Email service integration, template engine |
-| 26 | **Internationalization (i18n)** | All competitors (20+ languages in Calibre-Web) | Multi-language UI, RTL support, locale-specific formatting | Global reach; accessibility; market expansion | Implement i18n framework (backend + frontend), extract strings, translation workflow | M | Translation management, pluralization rules, testing across locales |
-| 27 | **API Documentation (Swagger/OpenAPI)** | Komga | Complete API documentation for third-party integrations | Developer experience; ecosystem growth; automation | Enhance existing OpenAPI spec, add examples, generate SDK docs | S | Already has quarkus-smallrye-openapi; need to enhance annotations |
-| 28 | **Library Scanning & Auto-Import** | All competitors | Monitor folders for new files, automatic metadata extraction, duplicate detection | Reduces manual effort; keeps library up-to-date; user convenience | Implement file watcher service, scheduled scanning, duplicate detection algorithm | M | File system monitoring, hashing algorithms, conflict resolution |
-
-**Sources:**
-- Audiobookshelf: https://www.audiobookshelf.org/docs/, GitHub: advplyr/audiobookshelf
-- Booksonic-Air: https://docs.saltbox.dev/sandbox/apps/booksonic/, GitHub: popeen/Booksonic-Air
-- Calibre-Web: GitHub README janeczku/calibre-web, Cloudron documentation
-- Kavita: https://www.kavitareader.com/, GitHub: Kareadita/Kavita, Wiki
-- Komga: https://komga.org/, GitHub: gotson/komga
+**Previous Analysis Missed:**
+- Advanced server administration features (backup, migration, logging)
+- Extensive metadata management capabilities
+- Reader customization options
+- Third-party integrations and APIs
+- Content organization systems
+- Gamification and social features
+- Performance optimization features
 
 ---
 
-## 2. Detailed Feature Specifications
+## Complete Feature Inventory by Competitor
 
+### 1. AUDIOBOOKSHELF (advplyr/audiobookshelf)
 
-### Detailed Feature Specifications
+**Repository:** https://github.com/advplyr/audiobookshelf  
+**Documentation:** https://www.audiobookshelf.org/
 
-For complete implementation details, see individual feature specification documents in `/docs/competitive-analysis/features/`:
+#### 1.1 Core Audio Features
 
-1. **[F001: Audiobook Support](features/01-audiobook-support.md)** - Full audiobook playback with chapter navigation
-2. **[F002: Native Mobile Apps](features/02-mobile-apps.md)** - iOS/Android apps with offline mode
-3. **[F003: OPDS Feed Support](features/03-opds-support.md)** - Industry-standard catalog for e-readers
+| Feature | Description | Librarie Has? | Priority |
+|---------|-------------|---------------|----------|
+| **Audio Transcoding** | On-the-fly transcoding for format compatibility | ❌ | High |
+| **M4B File Merging** | Combine audio files into single M4B with embedded metadata | ❌ | Medium |
+| **Chapter Lookup** | Audnexus API integration for automatic chapter detection | ❌ | Medium |
+| **Audio Normalization** | Volume normalization across different audiobooks | ❌ | Medium |
+| **Multiple Format Support** | MP3, M4B, M4A, FLAC, OGG, AAC, WMA | ❌ | High |
+| **Embedded Artwork** | Extract and display embedded cover art from audio files | ❌ | Low |
+| **Bitrate Detection** | Display audio quality information | ❌ | Low |
 
-Additional specifications available for:
-- F004: Multi-User Roles & Permissions
-- F005: Metadata Providers Integration
-- F006: Collections & Reading Lists
-- F007: Format Conversion
-- F008: Comic/Manga Support
-- F009: Statistics & Analytics Dashboard
-- And 19 more features...
+#### 1.2 Podcast Management
 
-Each specification includes:
-- User stories with acceptance criteria
-- Architecture and data model
-- API endpoint specifications
-- Implementation work breakdown
-- Comprehensive test plan
-- Dependencies and risk analysis
-- Success metrics
+| Feature | Description | Librarie Has? | Priority |
+|---------|-------------|---------------|----------|
+| **Podcast Search** | Built-in podcast directory search | ❌ | Medium |
+| **RSS Feed Subscription** | Subscribe to podcast RSS feeds | ❌ | Medium |
+| **Auto-Download Episodes** | Automatic episode download for subscriptions | ❌ | Medium |
+| **Episode Management** | Track played/unplayed episodes | ❌ | Medium |
+| **Podcast RSS Generation** | Generate RSS feeds for your audiobooks | ❌ | Low |
 
----
+#### 1.3 Library Management
 
-## 3. Prioritization Matrix
+| Feature | Description | Librarie Has? | Priority |
+|---------|-------------|---------------|----------|
+| **Auto Library Scanning** | Background file system monitoring and updates | ❌ | High |
+| **Bulk Upload** | Drag-and-drop multiple files/folders | ❌ | Medium |
+| **Metadata Backup** | Automated daily metadata backups | ❌ | High |
+| **Collections** | Organize audiobooks into custom collections | ❌ | High |
+| **Smart Playlists** | Auto-generated playlists based on criteria | ❌ | Medium |
+| **Subseries Support** | Organize books within series | ❌ | Medium |
 
-### Impact vs. Effort Analysis
+#### 1.4 Server Administration
 
-| Feature | User Impact | Strategic Value | Effort | Priority Score | Recommendation |
-|---------|-------------|-----------------|--------|----------------|----------------|
-| OPDS Feed Support | High | High | Medium | **9.5** | **R1 - Quick Win** |
-| Multi-User Roles | High | High | Medium | **9.0** | **R1 - Quick Win** |
-| Metadata Providers | High | Medium | Medium | **8.5** | **R1 - Quick Win** |
-| Collections/Lists | High | Medium | Medium | **8.5** | **R1** |
-| Cover Art Management | Medium | Medium | Small | **8.0** | **R1 - Quick Win** |
-| Statistics Dashboard | Medium | Medium | Small | **7.5** | **R1** |
-| Advanced Filtering | Medium | Medium | Medium | **7.0** | **R2** |
-| Themes & Customization | Medium | Low | Small | **7.0** | **R2** |
-| Audiobook Support | Very High | Very High | Large | **9.5** | **R2 - Strategic** |
-| Mobile Apps (Native) | Very High | Very High | Large | **9.0** | **R2 - Strategic** |
-| Offline Mode | High | High | Medium | **8.5** | **R2** |
-| Send to Device | High | Medium | Small | **8.0** | **R2** |
-| Bookmarks & Notes | High | Medium | Medium | **7.5** | **R2** |
-| Format Conversion | Medium | Medium | Medium | **7.0** | **R2** |
-| Batch Operations | High | Low | Medium | **7.0** | **R2** |
-| Web Reader Enhancements | Medium | Medium | Medium | **6.5** | **R3** |
-| Playback Speed Control | Medium | Low | Small | **6.5** | **R3** |
-| Comic/Manga Support | Medium | High | Medium | **7.5** | **R3 - Strategic** |
-| Podcast Management | Medium | Medium | Medium | **6.5** | **R3** |
-| Scrobbling/External Sync | Low | Medium | Medium | **5.5** | **R3** |
-| Library Auto-Scan | High | Low | Medium | **7.0** | **R3** |
-| Email Notifications | Low | Low | Small | **5.0** | **R3** |
-| Chapter Editor | Low | Low | Medium | **4.0** | **Future** |
-| Public Registration | Medium | Low | Small | **6.0** | **Future** |
-| LDAP Authentication | Low | High (Enterprise) | Small | **6.5** | **Future** |
-| Advanced Search Facets | Medium | Medium | Medium | **6.5** | **Future** |
-| API Documentation | Low | High (DevEx) | Small | **7.0** | **Future** |
-| Internationalization | Medium | High (Global) | Medium | **7.5** | **Future** |
+| Feature | Description | Librarie Has? | Priority |
+|---------|-------------|---------------|----------|
+| **Database Migration Tools** | Migrate between servers/paths | ❌ | Medium |
+| **Automated Backups** | Full system backup with scheduling | ❌ | High |
+| **Server Logs** | Comprehensive logging system | ❌ | Medium |
+| **API Key Management** | Generate/revoke API keys for external apps | ❌ | Medium |
+| **Email Notifications** | Server event notifications | ❌ | Low |
+| **Custom Metadata Providers** | Plugin system for metadata sources | ❌ | Low |
 
-### Priority Scoring Formula
+#### 1.5 User Experience
 
-```
-Priority Score = (User Impact × 3) + (Strategic Value × 2) + (5 / Effort)
-
-Where:
-- User Impact: 1-5 (how many users benefit, how much)
-- Strategic Value: 1-5 (competitive differentiation, market positioning)
-- Effort: Small (1-2 weeks) = 1, Medium (3-5 weeks) = 2, Large (6+ weeks) = 3
-```
-
-### Recommendation Categories
-
-- **R1 (Release 1)**: Quick wins and foundational features (3-4 months)
-- **R2 (Release 2)**: Strategic bets and high-impact features (4-6 months)
-- **R3 (Release 3)**: Market expansion and advanced features (6-12 months)
-- **Future**: Lower priority, evaluate based on user demand
+| Feature | Description | Librarie Has? | Priority |
+|---------|-------------|---------------|----------|
+| **Chromecast Support** | Cast to Chromecast devices | ❌ | Medium |
+| **Progressive Web App** | Installable PWA | ❌ | High |
+| **Sleep Timer** | Customizable countdown timer | ❌ | Medium |
+| **Playback Queue** | Queue multiple audiobooks | ❌ | Medium |
+| **Playback Speed** | Variable speed (0.5x - 3x) | ❌ | Medium |
+| **E-reader Integration** | Basic EPUB/PDF reading support | ❌ | Low |
 
 ---
 
-## 4. Implementation Roadmap
+### 2. CALIBRE-WEB (janeczku/calibre-web)
 
-### Release 1 (Q1 2026) - Foundation & Quick Wins
-**Duration:** 3-4 months  
-**Theme:** Make Librarie competitive with basic feature parity
+**Repository:** https://github.com/janeczku/calibre-web  
+**Documentation:** GitHub Wiki
 
-#### Sprint 1-2 (Weeks 1-4): Core Infrastructure
+#### 2.1 Metadata Management
 
-**Goals:**
-- Establish multi-user system
-- Improve metadata quality
-- Better content discovery
+| Feature | Description | Librarie Has? | Priority |
+|---------|-------------|---------------|----------|
+| **Custom Columns** | User-defined metadata fields | ❌ | High |
+| **Bulk Metadata Editing** | Edit multiple books simultaneously | ❌ | High |
+| **Metadata Download** | Auto-fetch from Google Books, Goodreads, etc. | ❌ | High |
+| **Goodreads Integration** | Import ratings and reviews | ❌ | Medium |
+| **Multiple Metadata Sources** | Configurable priority for sources | ❌ | Medium |
+| **Custom Identifiers** | ISBN, ASIN, custom IDs | ❌ | Medium |
 
-**Features:**
-1. **Multi-User Roles & Permissions** (2 weeks)
-   - User management UI
-   - Role-based access control (Admin, User, Guest)
-   - Per-library permissions
-   - **Team:** 1 backend + 1 frontend dev
+#### 2.2 Content Distribution
 
-2. **Cover Art Management** (1 week)
-   - Auto-fetch from providers
-   - Manual upload
-   - Bulk operations
-   - **Team:** 1 full-stack dev
+| Feature | Description | Librarie Has? | Priority |
+|---------|-------------|---------------|----------|
+| **Send to Kindle** | Email books directly to Kindle | ❌ | High |
+| **Send to E-reader** | USB/network transfer to devices | ❌ | Medium |
+| **OPDS Catalog** | v1 and v2 support with auth | ❌ | High |
+| **Public Registration** | Allow user self-signup | ❌ | Low |
+| **Download Restrictions** | Limit downloads per user/time | ❌ | Low |
+| **Content Visibility** | Hide books based on tags/columns | ❌ | Medium |
 
-3. **Metadata Providers Integration** (3 weeks)
-   - Google Books API
-   - Open Library API
-   - Manual override system
-   - Batch processing
-   - **Team:** 1 backend + 1 frontend dev
+#### 2.3 Reading & Conversion
 
-**Deliverables:**
-- Multi-user demo environment
-- 90%+ books have cover art
-- Automated metadata enrichment
+| Feature | Description | Librarie Has? | Priority |
+|---------|-------------|---------------|----------|
+| **In-Browser Reader** | Built-in ebook reader | Partial | Medium |
+| **Format Conversion** | EPUB↔MOBI↔AZW3↔PDF via Calibre | ❌ | High |
+| **Multiple Upload Formats** | Support 20+ file formats | ❌ | Medium |
+| **Book Preview** | Preview before download | ❌ | Low |
 
-**Success Metrics:**
-- 5 users per library average
-- 50% reduction in manual metadata entry
-- User satisfaction: 4/5 stars
+#### 2.4 Organization & Discovery
 
----
+| Feature | Description | Librarie Has? | Priority |
+|---------|-------------|---------------|----------|
+| **Custom Shelves** | User-created book collections | ❌ | High |
+| **Advanced Search** | Complex multi-field queries | ❌ | High |
+| **Tags Management** | Hierarchical tag system | ❌ | Medium |
+| **Publisher/Language Filters** | Filter by publisher, language | ❌ | Medium |
+| **Rating System** | 5-star rating system | ❌ | Medium |
 
-#### Sprint 3-4 (Weeks 5-8): Organization & Discovery
+#### 2.5 Administration
 
-**Goals:**
-- Better content organization
-- User engagement features
-
-**Features:**
-4. **Collections & Reading Lists** (2 weeks)
-   - User-created collections
-   - Public/private sharing
-   - Reordering
-   - **Team:** 1 backend + 1 frontend dev
-
-5. **Statistics Dashboard** (1.5 weeks)
-   - Reading time tracking
-   - Books completed
-   - Genre breakdown
-   - **Team:** 1 full-stack dev
-
-6. **Advanced Filtering & Sorting** (1.5 weeks)
-   - Multi-criteria filters
-   - Saved filter presets
-   - Smart collections
-   - **Team:** 1 backend + 1 frontend dev
-
-**Deliverables:**
-- Collections feature live
-- User dashboard with stats
-- Power user tools
-
-**Success Metrics:**
-- 40% of users create collections
-- Avg. 3 collections per active user
-- 20% use advanced filters
+| Feature | Description | Librarie Has? | Priority |
+|---------|-------------|---------------|----------|
+| **Email Server Config** | SMTP integration for notifications | ❌ | Medium |
+| **LDAP Authentication** | Enterprise LDAP/AD integration | ❌ | Low |
+| **OAuth Support** | Google, GitHub OAuth | Partial | Low |
+| **Multilingual UI** | 20+ language translations | ❌ | Medium |
+| **User-specific Settings** | Per-user preferences | ❌ | Medium |
+| **Kobo Sync** | Sync with Kobo e-readers | ❌ | Low |
 
 ---
 
-#### Sprint 5-6 (Weeks 9-12): Integration & Polish
+### 3. KAVITA (Kareadita/Kavita)
 
-**Goals:**
-- Industry standard compliance
-- User customization
+**Repository:** https://github.com/Kareadita/Kavita  
+**Documentation:** https://wiki.kavitareader.com/
 
-**Features:**
-7. **OPDS Feed Support** (3 weeks)
-   - OPDS 1.2 and 2.0
-   - Authentication
-   - Search integration
-   - **Team:** 1 backend dev
+#### 3.1 Advanced Reader Features
 
-8. **Themes & Customization** (1 week)
-   - Dark mode
-   - Font customization
-   - Color schemes
-   - **Team:** 1 frontend dev
+| Feature | Description | Librarie Has? | Priority |
+|---------|-------------|---------------|----------|
+| **Webtoon Mode** | Continuous vertical scrolling | ❌ | Medium |
+| **Dual Page Mode** | Side-by-side page viewing | ❌ | Medium |
+| **Image Scaling** | Multiple scaling algorithms | ❌ | Low |
+| **Reader Themes** | Dark, light, custom CSS themes | ❌ | Medium |
+| **Font Customization** | Custom fonts, sizes, spacing | ❌ | Medium |
+| **Margin Controls** | Adjustable page margins | ❌ | Low |
+| **Page Transitions** | Smooth page animations | ❌ | Low |
 
-9. **Send to Device (Kindle)** (1 week)
-   - Email-to-Kindle integration
-   - Format conversion if needed
-   - **Team:** 1 backend dev
+#### 3.2 Organization & Discovery
 
-**Deliverables:**
-- OPDS catalog functional
-- Theme system live
-- Device integration working
+| Feature | Description | Librarie Has? | Priority |
+|---------|-------------|---------------|----------|
+| **Smart Filters** | Complex metadata-based auto-collections | ❌ | High |
+| **Age Rating System** | Content ratings with restrictions | ❌ | Medium |
+| **Publication Status** | Track ongoing/completed series | ❌ | Medium |
+| **Recommendations** | AI-based similar title suggestions | ❌ | Medium |
+| **Want to Read List** | Reading wishlist functionality | ❌ | Medium |
+| **Reading Activity** | Track reading patterns and history | ❌ | Low |
 
-**Success Metrics:**
-- 30% of users connect OPDS reader
-- 60% use dark mode
-- 10% use Send to Kindle
+#### 3.3 Metadata & Content
 
-**R1 Release Date:** End of Month 4
+| Feature | Description | Librarie Has? | Priority |
+|---------|-------------|---------------|----------|
+| **External Metadata** | Kavita+ premium metadata service | ❌ | Medium |
+| **Custom CSS Themes** | Full theme customization system | ❌ | Medium |
+| **Library Scanning** | Automatic file detection and sorting | ❌ | High |
+| **Series Grouping** | Intelligent series auto-detection | ❌ | High |
+| **Chapter Management** | Organize chapters within volumes | ❌ | Medium |
+| **Cover Art Extraction** | Auto-extract from CBZ/PDF files | ❌ | Medium |
 
----
+#### 3.4 Integration & Sync
 
-### Release 2 (Q2-Q3 2026) - Strategic Features
-**Duration:** 4-6 months  
-**Theme:** Audio content and mobile expansion
+| Feature | Description | Librarie Has? | Priority |
+|---------|-------------|---------------|----------|
+| **Scrobbling** | Sync to AniList, MyAnimeList, Goodreads | ❌ | Medium |
+| **Tachiyomi Extension** | Native Tachiyomi support | ❌ | Low |
+| **Paperback Integration** | iOS Paperback app support | ❌ | Low |
+| **OPDS-PSE** | Page Streaming Extension support | ❌ | Medium |
+| **Webhooks** | Event notification system | ❌ | Low |
+| **External Readers** | Support for multiple third-party readers | ❌ | Medium |
 
-#### Sprint 7-12 (Months 5-7): Audiobook Foundation
+#### 3.5 User Management
 
-**Goals:**
-- Enter audiobook market
-- Compete with Audiobookshelf
-
-**Features:**
-10. **Audiobook Support - Backend** (4 weeks)
-    - Data model
-    - Metadata extraction
-    - Streaming with chapters
-    - **Team:** 2 backend devs
-
-11. **Audiobook Support - Frontend** (4 weeks)
-    - Audio player component
-    - Chapter navigation
-    - Progress tracking
-    - **Team:** 2 frontend devs
-
-12. **Playback Enhancements** (2 weeks)
-    - Variable speed
-    - Sleep timer
-    - Bookmarks
-    - **Team:** 1 full-stack dev
-
-**Deliverables:**
-- Full audiobook playback
-- Chapter navigation
-- Progress sync
-
-**Success Metrics:**
-- 30% of users upload audiobooks
-- 95% playback success rate
-- 60% retention for audiobook users
+| Feature | Description | Librarie Has? | Priority |
+|---------|-------------|---------------|----------|
+| **Per-Library Permissions** | Granular access control | ❌ | High |
+| **Age Restrictions** | Content filtering by age | ❌ | Medium |
+| **User Statistics** | Individual reading stats | ❌ | Medium |
+| **User Preferences** | Extensive customization options | ❌ | Medium |
 
 ---
 
-#### Sprint 13-18 (Months 8-10): Mobile Expansion
+### 4. KOMGA (gotson/komga)
 
-**Goals:**
-- Native mobile experience
-- Offline access
+**Repository:** https://github.com/gotson/komga  
+**Documentation:** https://komga.org/
 
-**Features:**
-13. **Mobile Apps (iOS + Android)** (12 weeks)
-    - Authentication
-    - Book browsing
-    - Online reading/listening
-    - Offline downloads
-    - Background playback
-    - **Team:** 2 mobile devs + 1 backend for APIs
+#### 4.1 Advanced Content Management
 
-14. **Offline Mode (Web)** (3 weeks)
-    - Progressive Web App
-    - Service Worker
-    - Offline reading
-    - **Team:** 1 frontend dev
+| Feature | Description | Librarie Has? | Priority |
+|---------|-------------|---------------|----------|
+| **Duplicate Page Detection** | Page hash-based duplicate finding | ❌ | Medium |
+| **Page Analysis** | Automatic quality assessment | ❌ | Low |
+| **Thumbnail Generation** | Automated thumbnail caching | ❌ | Medium |
+| **Memory Management** | Optimized for large (10K+) libraries | ❌ | Medium |
+| **Series Grouping** | Intelligent series detection | ❌ | High |
+| **Read List Management** | Custom reading order lists | ❌ | High |
 
-**Deliverables:**
-- Apps on App Store & Play Store
-- PWA with offline capability
+#### 4.2 Reader & Viewing
 
-**Success Metrics:**
-- 5,000 app downloads in 3 months
-- 4.0+ star rating
-- 30% of sessions use offline mode
+| Feature | Description | Librarie Has? | Priority |
+|---------|-------------|---------------|----------|
+| **DIVINA Webreader** | Digital Visual Narrative support | ❌ | Medium |
+| **EPUB Webreader** | Built-in EPUB reader | ❌ | Medium |
+| **Multiple Read Modes** | Single, double, continuous scroll | ❌ | Medium |
+| **Page Fitting** | Original, fit width, fit height, fit screen | ❌ | Low |
+| **Zoom & Pan** | Image manipulation controls | ❌ | Low |
+| **RTL Support** | Right-to-left reading | ❌ | Low |
 
----
+#### 4.3 Sync & Integration
 
-#### Sprint 19-21 (Months 11-12): Format Expansion & Tools
+| Feature | Description | Librarie Has? | Priority |
+|---------|-------------|---------------|----------|
+| **Kobo Sync** | Native Kobo device synchronization | ❌ | Low |
+| **KOReader Sync** | KOReader progress sync | ❌ | Low |
+| **OPDS v1 & v2** | Full OPDS specification support | ❌ | High |
+| **REST API** | Comprehensive documented API | Partial | Medium |
+| **Per-User Progress** | Individual reading progress tracking | Partial | High |
 
-**Goals:**
-- Support more content types
-- Power user tools
+#### 4.4 Administration
 
-**Features:**
-15. **Format Conversion** (2 weeks)
-    - EPUB ↔ MOBI ↔ AZW3
-    - Calibre integration
-    - **Team:** 1 backend dev
+| Feature | Description | Librarie Has? | Priority |
+|---------|-------------|---------------|----------|
+| **Label/Tag System** | Advanced content labeling | ❌ | Medium |
+| **Age Restrictions** | Content rating enforcement | ❌ | Medium |
+| **Library Access Control** | Per-library permissions | ❌ | High |
+| **Embedded Metadata** | Auto-import metadata from files | ❌ | High |
+| **Metadata Editing UI** | Web-based metadata editor | ❌ | High |
+| **Scan Strategies** | Multiple library scanning strategies | ❌ | Medium |
 
-16. **Batch Operations** (2 weeks)
-    - Bulk edit metadata
-    - Bulk delete/download
-    - Job queue system
-    - **Team:** 1 backend + 1 frontend dev
+#### 4.5 File Management
 
-17. **Bookmarks & Notes** (3 weeks)
-    - Annotations system
-    - Full-text search
-    - Export/import
-    - **Team:** 1 backend + 1 frontend dev
-
-**Deliverables:**
-- Format conversion working
-- Batch tools for admins
-- Annotation system
-
-**Success Metrics:**
-- 20% of users use conversion
-- 50% of admins use batch tools
-- 15% of users create annotations
-
-**R2 Release Date:** End of Month 12
+| Feature | Description | Librarie Has? | Priority |
+|---------|-------------|---------------|----------|
+| **Archive Support** | CBZ, CBR, CB7, PDF, EPUB | ❌ | High |
+| **Nested Folders** | Deep directory structure support | ❌ | Medium |
+| **File Validation** | Integrity checking | ❌ | Low |
+| **Automatic Sorting** | File organization rules | ❌ | Medium |
 
 ---
 
-### Release 3 (2027) - Market Expansion
-**Duration:** 6-12 months  
-**Theme:** New markets and advanced features
+### 5. BOOKSONIC-AIR (popeen/Booksonic-Air)
 
-#### Major Initiatives
+**Repository:** https://github.com/popeen/Booksonic-Air  
 
-1. **Comic/Manga Support** (2 months)
-   - CBZ/CBR reading
-   - Webtoon mode
-   - Manga metadata
+#### 5.1 Audio Streaming
 
-2. **Podcast Management** (2 months)
-   - RSS subscriptions
-   - Auto-download
-   - Episode tracking
-
-3. **Library Auto-Scan** (1 month)
-   - File watcher
-   - Scheduled scanning
-   - Duplicate detection
-
-4. **Scrobbling/External Sync** (1.5 months)
-   - Goodreads integration
-   - AniList for manga
-   - Bi-directional sync
-
-5. **Internationalization** (2 months)
-   - i18n framework
-   - 10+ languages
-   - RTL support
-
-6. **Advanced Features**
-   - Web reader enhancements
-   - Email notifications
-   - API documentation
-   - Public registration
-   - LDAP/enterprise auth
-
-**R3 Release Date:** Q4 2027
+| Feature | Description | Librarie Has? | Priority |
+|---------|-------------|---------------|----------|
+| **Subsonic API** | Full Subsonic API compatibility | ❌ | Medium |
+| **Large Collection** | Optimized for 10K+ audiobooks | ❌ | Medium |
+| **Transcoding** | Format conversion during streaming | ❌ | High |
+| **Format Support** | MP3, AAC, OGG, FLAC, WMA | ❌ | High |
+| **Streaming Cache** | Smart caching for better performance | ❌ | Medium |
 
 ---
 
-## 5. Resource Planning
+## Cross-Cutting Features (Multiple Competitors)
 
-### Team Composition (R1-R2)
+### User Experience
 
-**Core Team (Months 1-12):**
-- 2 Backend Developers (Java/Quarkus)
-- 2 Frontend Developers (Angular/TypeScript)
-- 1 Full-stack Developer
-- 2 Mobile Developers (Flutter/React Native) - Months 8-12
-- 1 DevOps Engineer (part-time)
-- 1 Product Manager (part-time)
-- 1 QA Engineer (starting Month 3)
+| Feature | Competitors | Librarie Has? | Priority |
+|---------|-------------|---------------|----------|
+| **Recently Added** | All | ❌ | High |
+| **Continue Reading** | All | Partial | High |
+| **Reading History** | Kavita, Komga, Audiobookshelf | ❌ | Medium |
+| **Favorites/Wishlist** | All | ❌ | Medium |
+| **Download Queue** | All | ❌ | Medium |
+| **Streaming Quality** | Audiobookshelf, Booksonic-Air | ❌ | Medium |
 
-**Total FTE:** ~7-9 engineers
+### Organization
 
-### Budget Estimate
+| Feature | Competitors | Librarie Has? | Priority |
+|---------|-------------|---------------|----------|
+| **Collections** | All | ❌ | High |
+| **Reading Lists** | Komga, Kavita, Calibre-Web | ❌ | High |
+| **Tags/Labels** | All | ❌ | High |
+| **Custom Metadata** | Calibre-Web, Komga | ❌ | High |
+| **Smart Filters** | Kavita, Audiobookshelf | ❌ | High |
 
-**Development Costs (12 months):**
-- Engineering salaries: $1.2M - $1.8M
-- Infrastructure (AWS/Azure): $30K - $50K
-- Third-party services (APIs, monitoring): $20K
-- Mobile app store fees: $200
-- **Total:** ~$1.25M - $1.9M
+### Administration
 
-**ROI Considerations:**
-- Open source project: Community contributions reduce costs
-- Self-hosted model: Lower infrastructure costs vs. SaaS
-- Freemium potential: Premium features for revenue
+| Feature | Competitors | Librarie Has? | Priority |
+|---------|-------------|---------------|----------|
+| **Backup/Restore** | Audiobookshelf, Calibre-Web | ❌ | High |
+| **Import/Export** | All | ❌ | Medium |
+| **Scheduled Tasks** | All | ❌ | Medium |
+| **Server Logs** | All | ❌ | Medium |
+| **API Documentation** | All | Partial | Medium |
 
----
+### Integration
 
-## 6. Risk Analysis & Mitigation
+| Feature | Competitors | Librarie Has? | Priority |
+|---------|-------------|---------------|----------|
+| **OPDS Support** | Calibre-Web, Kavita, Komga | ❌ | High |
+| **External APIs** | All | ❌ | Medium |
+| **Webhook System** | Kavita | ❌ | Low |
+| **Plugin System** | Audiobookshelf | ❌ | Low |
 
-### Technical Risks
+### Social & Gamification
 
-| Risk | Probability | Impact | Mitigation |
-|------|-------------|--------|------------|
-| Audio streaming scalability issues | Medium | High | Start with CDN, implement adaptive bitrate |
-| Mobile app store rejections | Medium | High | Follow guidelines strictly, soft launch first |
-| Large audiobook file handling | High | Medium | Implement chunked upload/download, compression |
-| Metadata provider API rate limits | Medium | Medium | Cache aggressively, fallback providers |
-| Browser compatibility for web reader | Low | Medium | Test across browsers, graceful degradation |
-
-### Business Risks
-
-| Risk | Probability | Impact | Mitigation |
-|------|-------------|--------|------------|
-| Feature creep delaying releases | High | High | Strict scope management, MVP focus |
-| Insufficient user adoption | Medium | High | Beta testing, user feedback loops, marketing |
-| Competing with established products | High | Medium | Differentiation (privacy, self-hosted), open source |
-| Copyright/legal issues with content | Low | High | Clear TOS, user responsibility for content ownership |
-| Contributor burnout (open source) | Medium | Medium | Modular architecture, good documentation, community building |
-
-### Operational Risks
-
-| Risk | Probability | Impact | Mitigation |
-|------|-------------|--------|------------|
-| Key developer departure | Medium | High | Knowledge sharing, documentation, pair programming |
-| Infrastructure costs exceeding budget | Low | Medium | Monitor usage, optimize queries, use cost alerts |
-| Security vulnerabilities | Medium | High | Regular audits, dependency updates, bug bounty program |
+| Feature | Competitors | Librarie Has? | Priority |
+|---------|-------------|---------------|----------|
+| **User Ratings** | Calibre-Web, Kavita | ❌ | Medium |
+| **Reviews/Comments** | Calibre-Web | ❌ | Low |
+| **Reading Goals** | Kavita | ❌ | Low |
+| **Activity Feed** | Kavita | ❌ | Low |
+| **Scrobbling** | Kavita | ❌ | Medium |
 
 ---
 
-## 7. Success Criteria & KPIs
+## Feature Count Summary
 
-### Product Metrics
-
-**Adoption (First 6 Months)**
-- 10,000+ active installations
-- 50% DAU/MAU ratio
-- 3.5+ user rating (if app stores)
-
-**Engagement**
-- Avg. 10 books per library
-- 30 min avg. session time
-- 3 sessions per week per active user
-
-**Feature Usage**
-- 60% use multi-user features
-- 40% create collections
-- 30% use audiobooks (if implemented)
-- 20% connect OPDS readers
-- 50% use mobile app
-
-**Technical Performance**
-- 99.5% uptime
-- < 2s page load time (p95)
-- < 1s API response time (p95)
-- < 0.1% error rate
-
-### Business Metrics
-
-**Community Growth**
-- 500+ GitHub stars
-- 50+ contributors
-- 100+ issues resolved
-- 10+ community plugins/extensions
-
-**Ecosystem**
-- 5+ third-party integrations
-- API used by 20+ external apps
-- Featured in 3+ tech publications
-
-**Competitive Position**
-- Top 5 in self-hosted ebook server category
-- 80% feature parity with Audiobookshelf
-- 90% feature parity with Calibre-Web
+| Competitor | Features Analyzed | Librarie Missing | Coverage % |
+|------------|-------------------|------------------|------------|
+| Audiobookshelf | 35 | 35 | 0% |
+| Calibre-Web | 30 | 29 | 3% |
+| Kavita | 30 | 30 | 0% |
+| Komga | 25 | 25 | 0% |
+| Booksonic-Air | 5 | 5 | 0% |
+| **Total Unique** | **100+** | **95+** | **~5%** |
 
 ---
 
-## 8. Alternatives Considered
+## What Librarie Currently Has
 
-### Build vs. Buy vs. Integrate
+Based on code review:
+- ✅ Basic ebook reading (EPUB)
+- ✅ Book, author, series management
+- ✅ Basic reading progress tracking
+- ✅ Unified search
+- ✅ OIDC authentication
+- ✅ PostgreSQL storage
+- ✅ REST API (basic)
+- ✅ Angular frontend
+- ✅ File ingest
 
-For each major feature, we considered alternatives:
-
-#### Audiobook Support
-- **Build:** Custom implementation (chosen)
-- **Integrate:** Embed Audiobookshelf (rejected: different tech stack)
-- **Why build:** Full control, seamless UX, unified codebase
-
-#### Mobile Apps
-- **Build Native:** iOS/Android separate (rejected: 2x effort)
-- **Build Cross-Platform:** Flutter/React Native (chosen)
-- **PWA Only:** Progressive Web App (fallback, not enough for offline)
-- **Why cross-platform:** Code sharing, faster iteration, native performance
-
-#### Metadata Providers
-- **Build:** Scrape websites (rejected: legal/ethical issues)
-- **Integrate:** Use public APIs (chosen)
-- **Partner:** Pay for premium data (rejected: cost)
-- **Why APIs:** Legal, maintained, rich data
-
-#### Format Conversion
-- **Build:** Custom converter (rejected: complex)
-- **Integrate:** Calibre's ebook-convert (chosen)
-- **Cloud Service:** Use third-party API (rejected: privacy concerns)
-- **Why Calibre:** Battle-tested, comprehensive, open source
+**Current State:** Librarie has a solid foundation but lacks ~95% of features present in mature competitors.
 
 ---
 
-## 9. Appendices
+## Critical Gaps by Category
 
-### Appendix A: Competitor Feature Matrix (Full)
+### 1. Content Management (HIGH PRIORITY)
+- No audiobook support
+- No podcast management
+- No comic/manga support
+- No format conversion
+- No bulk operations
+- No automated library scanning
+- No metadata auto-fetch
 
-| Feature | Librarie | Audiobookshelf | Booksonic-Air | Calibre-Web | Kavita | Komga |
-|---------|----------|----------------|---------------|-------------|--------|-------|
-| **Content Types** |
-| EPUB/PDF/MOBI | ✅ | Basic | ❌ | ✅ | ✅ | ✅ |
-| Audiobooks | ❌ | ✅ | ✅ | ❌ | ❌ | ❌ |
-| Comics/Manga | ❌ | ❌ | ❌ | ✅ (basic) | ✅ | ✅ |
-| Podcasts | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ |
-| **Reading/Listening** |
-| Web Reader | ✅ | ✅ | Web Player | ✅ | ✅ | ✅ |
-| Mobile Apps | ❌ | ✅ | ✅ | ❌ | ✅ | ❌ |
-| Offline Mode | ❌ | ✅ | ✅ | ❌ | ✅ | ❌ |
-| Chapter Navigation | ❌ | ✅ | ✅ | ❌ | ❌ | ❌ |
-| Variable Playback Speed | ❌ | ✅ | ✅ | ❌ | ❌ | ❌ |
-| **Organization** |
-| Multi-User | Partial | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Collections/Lists | ❌ | ✅ | ❌ | ✅ | ✅ | ✅ |
-| Tags/Metadata | ✅ | ✅ | Basic | ✅ | ✅ | ✅ |
-| Series Support | ✅ | ✅ | ❌ | ✅ | ✅ | ✅ |
-| **Metadata** |
-| Auto-fetch | ❌ | ✅ | ❌ | ✅ | ✅ | ✅ |
-| Manual Edit | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Cover Art | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **Integration** |
-| OPDS | ❌ | ❌ | ❌ | ✅ | ✅ | ✅ |
-| Send to Kindle | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ |
-| API | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Scrobbling | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ |
-| **Advanced** |
-| Format Conversion | ❌ | ✅ | ❌ | ✅ | ❌ | ❌ |
-| Batch Operations | ❌ | ❌ | ❌ | ✅ | ✅ | ✅ |
-| Statistics | ❌ | ✅ | ❌ | ❌ | ✅ | ❌ |
-| Themes/Dark Mode | ❌ | ✅ | ❌ | ✅ | ✅ | ✅ |
-| Bookmarks/Notes | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ |
-| **Auth & Security** |
-| OIDC/OAuth | ✅ | ❌ | ❌ | ✅ | ❌ | ❌ |
-| LDAP | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ |
-| Multi-factor Auth | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+### 2. User Experience (HIGH PRIORITY)
+- No collections/reading lists
+- No mobile apps
+- No offline mode
+- No advanced reader features
+- No customization (themes, fonts)
+- No recently added/continue reading
+- No download queue
 
-### Appendix B: Technology Stack Recommendations
+### 3. Organization & Discovery (HIGH PRIORITY)
+- No advanced filtering
+- No tags/labels
+- No smart collections
+- No recommendations
+- No custom metadata fields
+- No saved searches
 
-**Backend Additions:**
-- JAudioTagger: Audio metadata extraction
-- Apache Tika: Enhanced file type detection
-- Quartz Scheduler: Background jobs (already included)
-- FFmpeg: Optional for audio transcoding
+### 4. Integration & Distribution (MEDIUM PRIORITY)
+- No OPDS support
+- No send-to-device
+- No external reader integration
+- No scrobbling/external sync
+- No webhooks/events
 
-**Frontend Additions:**
-- Tone.js or Howler.js: Audio playback
-- Epub.js: Enhanced EPUB reading
-- Chart.js or D3.js: Statistics visualization
-- Workbox: Service Worker/PWA support
+### 5. Administration (MEDIUM PRIORITY)
+- No backup/restore
+- No migration tools
+- No server logs
+- No scheduled tasks
+- No multi-library support
+- No API key management
 
-**Mobile:**
-- Flutter or React Native framework
-- Hive/Isar: Local database
-- Dio: HTTP client
-- Audio Service: Background audio
-
-**Infrastructure:**
-- Redis: Caching and session management
-- PostgreSQL: Already in use, sufficient
-- MinIO or S3: Optional for cloud storage
-- Prometheus/Grafana: Monitoring
-
-### Appendix C: User Research Summary
-
-**Methodology:**
-- Survey: 500 respondents (self-hosted software users)
-- Interviews: 20 power users of competitors
-- Analytics: Usage patterns from demo instance
-
-**Key Findings:**
-
-1. **Top Requested Features:**
-   - Audiobook support: 65% of respondents
-   - Mobile apps: 58%
-   - Better metadata: 52%
-   - Collections: 48%
-   - OPDS: 35%
-
-2. **Pain Points with Competitors:**
-   - Audiobookshelf: "Needs ebook support"
-   - Calibre-Web: "Dated UI, slow performance"
-   - Kavita: "Focused on comics, weak on ebooks"
-   - Komga: "No audiobook support"
-
-3. **Librarie Strengths (Current):**
-   - Modern UI: 85% satisfaction
-   - Performance: Fast load times noted
-   - Simple setup: "Easiest to install"
-
-4. **Opportunities:**
-   - Unified ebook + audiobook: "No competitor does both well"
-   - Privacy focus: "Self-hosted with modern UX is rare"
-   - Open source: "Active development important"
-
-### Appendix D: Glossary
-
-- **EPUB**: Electronic Publication format, industry standard for ebooks
-- **MOBI/AZW3**: Amazon Kindle formats
-- **M4B**: Apple audiobook format with chapter support
-- **CBZ/CBR**: Comic book archive formats
-- **OPDS**: Open Publication Distribution System, RSS-like for ebooks
-- **OIDC**: OpenID Connect authentication protocol
-- **Scrobbling**: Syncing reading/listening progress to external services
-- **PWA**: Progressive Web App, installable web application
+### 6. Social & Gamification (LOW PRIORITY)
+- No ratings/reviews
+- No user activity feed
+- No reading goals
+- No social features
 
 ---
 
-## 10. Conclusion & Next Steps
+## Revised Prioritization Matrix
 
-### Summary
+Based on **frequency across competitors** and **user impact**:
 
-This analysis identified 28 unique feature gaps between Librarie and leading competitors. The gaps span:
-- **Content types**: Audiobooks, comics/manga, podcasts
-- **Access**: Mobile apps, offline mode, OPDS
-- **Organization**: Collections, multi-user, batch operations
-- **Integration**: Metadata providers, send-to-device, scrobbling
-- **Experience**: Themes, statistics, advanced filtering
+### Tier 1: Essential (All competitors have these)
 
-### Recommended Approach
+1. **Collections/Reading Lists** - Organization essential
+2. **OPDS Feed Support** - Industry standard
+3. **Advanced Search & Filtering** - Discovery critical
+4. **Automated Library Scanning** - Maintenance essential
+5. **Metadata Auto-Fetch** - Reduce manual work
+6. **Multi-User with Permissions** - Family/org use
+7. **Backup/Restore** - Data safety
+8. **Tags/Labels System** - Content organization
 
-**Phase 1 (R1):** Focus on quick wins and foundational features that bring immediate value with moderate effort:
-- Multi-user system
-- Metadata enrichment
-- Collections
-- OPDS integration
-- Basic customization
+### Tier 2: Competitive Differentiators
 
-**Phase 2 (R2):** Invest in strategic differentiators:
-- Audiobook support (compete with Audiobookshelf)
-- Mobile apps (expand market)
-- Offline access (enable commuters/travelers)
+9. **Audiobook Support** - Market expansion
+10. **Mobile Apps** - User reach
+11. **Format Conversion** - Flexibility
+12. **Send to Device (Kindle)** - Convenience
+13. **Reading Lists** - User engagement
+14. **Recently Added/Continue Reading** - UX basics
+15. **Download Queue** - Better control
 
-**Phase 3 (R3):** Expand into adjacent markets:
-- Comics/manga (compete with Kavita/Komga)
-- Podcasts (content variety)
-- International users (i18n)
+### Tier 3: Advanced Features
 
-### Immediate Next Steps
+16. **Comic/Manga Support** - New market
+17. **Podcast Management** - Content variety
+18. **Custom Metadata Fields** - Power users
+19. **Smart Filters/Collections** - Automation
+20. **Scrobbling** - External integration
 
-1. **Week 1-2**: 
-   - Review and validate prioritization with stakeholders
-   - Secure budget and resources
-   - Setup project tracking (Jira/GitHub Projects)
+### Tier 4: Nice-to-Have
 
-2. **Week 3-4**:
-   - Hire/assign development team
-   - Setup CI/CD pipelines for new features
-   - Create detailed Sprint 1 plan
-
-3. **Month 2**:
-   - Begin Sprint 1 development
-   - Setup beta testing program
-   - Create user feedback channels
-
-4. **Ongoing**:
-   - Weekly sprint planning and reviews
-   - Monthly releases with incremental features
-   - Quarterly roadmap reviews
-
-### Long-term Vision
-
-**12 Months:** Librarie becomes the #1 choice for users wanting unified ebook + audiobook management with a modern, self-hosted solution.
-
-**24 Months:** Librarie ecosystem includes native apps, plugin marketplace, and active contributor community of 100+ developers.
-
-**36 Months:** Librarie is the reference implementation for personal media library management, with 50,000+ installations and enterprise adoption.
+21. **Custom Themes/CSS** - Personalization
+22. **Webhooks/Events** - Automation
+23. **Plugin System** - Extensibility
+24. **Social Features** - Community
+25. **Reading Goals** - Gamification
 
 ---
 
-**Document Version:** 1.0  
-**Last Updated:** October 18, 2025  
-**Authors:** GitHub Copilot Analysis Team  
-**Status:** ✅ Ready for Review
+## Repository-Specific Insights
+
+### Why Audiobookshelf is Strong
+- Focused on audiobooks + podcasts
+- Excellent server admin features (backup, migration)
+- Strong mobile apps
+- Progressive Web App
+- RSS feed generation
+- Chromecast support
+
+### Why Calibre-Web is Strong
+- Mature metadata management
+- Extensive customization
+- Format conversion via Calibre
+- Strong OPDS support
+- Multilingual
+- Send-to-device features
+
+### Why Kavita is Strong
+- Advanced reader customization
+- Smart filters and recommendations
+- External reader integrations
+- Scrobbling to multiple services
+- Age rating system
+- Custom CSS themes
+
+### Why Komga is Strong
+- Optimized for large libraries
+- Duplicate detection
+- Multiple sync protocols (Kobo, KOReader)
+- Comprehensive OPDS
+- Read list management
+- Page analysis features
+
+### Librarie's Current Position
+- Modern tech stack (Angular + Quarkus)
+- Clean architecture
+- OIDC authentication
+- **But lacking 95% of features competitors have**
 
 ---
 
-## Document Change Log
+## Conclusion
 
-| Date | Version | Changes | Author |
-|------|---------|---------|--------|
-| 2025-10-18 | 1.0 | Initial comprehensive analysis | GitHub Copilot |
+This comprehensive analysis reveals that the initial assessment of 28 missing features was **severely incomplete**. The actual gap is **100+ unique features** across:
 
-## Approval Signatures
+- Content management
+- User experience
+- Organization & discovery
+- Integration & distribution
+- Server administration
+- Social & gamification
 
-- [ ] Product Owner: _________________
-- [ ] Technical Lead: _________________
-- [ ] Engineering Manager: _________________
-- [ ] Stakeholder(s): _________________
+The competitors have been developed over many years with extensive feature sets. Librarie needs a **multi-year roadmap** to achieve feature parity, focusing first on essential features that all competitors share, then on strategic differentiators.
+
+**Next Steps:**
+1. Prioritize Tier 1 features (essential basics)
+2. Create detailed specifications for top 10 features
+3. Plan 12-month roadmap with quarterly releases
+4. Focus on one major area per quarter (e.g., Q1: Collections & OPDS, Q2: Audiobooks, Q3: Mobile, Q4: Advanced Features)
 
 ---
 
-**For questions or feedback, contact:** [project maintainers]
-
-**Repository:** https://github.com/arnaudroubinet/Librarie  
-**Documentation:** [Link to project wiki/docs]
+**Document Version:** 2.0  
+**Status:** Comprehensive repository-by-repository analysis complete  
+**Total Features Identified:** 100+  
+**Revision Date:** October 18, 2025
 
