@@ -48,7 +48,7 @@ jobs:
         if: always()
         working-directory: ./frontend
         run: |
-          if [ ${{ steps.size_pr.outcome }} == 'success' ]; then
+          if [ '${{ steps.size_pr.outcome }}' == 'success' ]; then
             echo "✅ Bundle size check PASSED" > pr_result.txt
           else
             echo "❌ Bundle size check FAILED - Bundle exceeds size limits" > pr_result.txt
