@@ -241,7 +241,7 @@ public class BookController {
             }
             jakarta.ws.rs.core.CacheControl cc = new jakarta.ws.rs.core.CacheControl();
             cc.setPrivate(false);
-            cc.setMaxAge(86400); // 1 day
+            cc.setMaxAge(86400); // 1 day - static EPUB resources don't change
 
             if (precond != null) {
                 return precond.cacheControl(cc).tag(new EntityTag(etagValue))

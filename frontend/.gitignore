@@ -40,3 +40,8 @@ testem.log
 # System files
 .DS_Store
 Thumbs.db
+
+# Test artifacts
+playwright-settings-check.mjs
+settings-page.png
+books-page.png

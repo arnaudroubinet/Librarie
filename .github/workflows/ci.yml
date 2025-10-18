@@ -1,0 +1,211 @@
+name: CI Pipeline
+
+on:
+  pull_request:
+    branches: [main, develop]
+  push:
+    branches: [main, develop]
+
+# Ensure only one workflow runs at a time per PR
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Job to detect which parts of the codebase changed
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      frontend: ${{ steps.filter.outputs.frontend }}
+      workflows: ${{ steps.filter.outputs.workflows }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check for changes
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            backend:
+              - 'backend/**'
+            frontend:
+              - 'frontend/**'
+            workflows:
+              - '.github/workflows/**'
+
+  # Backend build and test
+  backend-ci:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.backend == 'true' || needs.detect-changes.outputs.workflows == 'true'
+    runs-on: ubuntu-latest
+    name: Backend - Build & Test
+    strategy:
+      matrix:
+        java: [21]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK ${{ matrix.java }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ matrix.java }}
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Cache Quarkus build cache
+        uses: actions/cache@v4
+        with:
+          path: backend/target/quarkus-work
+          key: ${{ runner.os }}-quarkus-${{ hashFiles('backend/src/**/*.java', 'backend/src/**/*.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-quarkus-
+
+      - name: Verify Maven and Java versions
+        run: |
+          java -version
+          mvn -version
+
+      - name: Run tests with coverage
+        run: |
+          cd backend
+          mvn clean verify
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: backend-test-results-java-${{ matrix.java }}
+          path: backend/target/surefire-reports/
+          retention-days: 7
+
+      - name: Upload coverage reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: backend-coverage-java-${{ matrix.java }}
+          path: backend/target/site/jacoco/
+          retention-days: 7
+
+  # Frontend build and test
+  frontend-ci:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.frontend == 'true' || needs.detect-changes.outputs.workflows == 'true'
+    runs-on: ubuntu-latest
+    name: Frontend - Build & Test
+    strategy:
+      matrix:
+        node-version: [20]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+          cache-dependency-path: 'frontend/package-lock.json'
+
+      - name: Verify Node and npm versions
+        run: |
+          node -v
+          npm -v
+
+      - name: Install dependencies
+        working-directory: ./frontend
+        run: npm ci
+
+      - name: Lint - Check code formatting
+        working-directory: ./frontend
+        run: |
+          if npm list prettier > /dev/null 2>&1; then
+            npx prettier --check "src/**/*.{ts,html,scss,css}"
+          else
+            echo "Prettier not available, skipping format check"
+          fi
+
+      - name: Run tests with coverage
+        working-directory: ./frontend
+        run: npm run test -- --watch=false --browsers=ChromeHeadless --code-coverage
+
+      - name: Build application
+        working-directory: ./frontend
+        run: npm run build
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: frontend-test-results-node-${{ matrix.node-version }}
+          path: frontend/coverage/
+          retention-days: 7
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: frontend-build-node-${{ matrix.node-version }}
+          path: frontend/dist/
+          retention-days: 7
+
+  # Dependency security scanning
+  dependency-scan:
+    runs-on: ubuntu-latest
+    name: Security - Dependency Scan
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@0.29.0
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH'
+
+      - name: Upload Trivy results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+      - name: Upload Trivy results as artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: trivy-security-scan
+          path: 'trivy-results.sarif'
+          retention-days: 7
+
+  # Final status check - all jobs must pass
+  ci-status:
+    runs-on: ubuntu-latest
+    name: CI Status Check
+    needs: [backend-ci, frontend-ci, dependency-scan]
+    if: always()
+    steps:
+      - name: Check all jobs status
+        run: |
+          if [[ "${{ needs.backend-ci.result }}" == "failure" ]] || \
+             [[ "${{ needs.frontend-ci.result }}" == "failure" ]] || \
+             [[ "${{ needs.dependency-scan.result }}" == "failure" ]]; then
+            echo "One or more CI jobs failed"
+            exit 1
+          elif [[ "${{ needs.backend-ci.result }}" == "cancelled" ]] || \
+               [[ "${{ needs.frontend-ci.result }}" == "cancelled" ]] || \
+               [[ "${{ needs.dependency-scan.result }}" == "cancelled" ]]; then
+            echo "One or more CI jobs were cancelled"
+            exit 1
+          else
+            echo "All CI jobs passed successfully"
+          fi
