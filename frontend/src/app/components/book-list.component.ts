@@ -115,10 +115,10 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
                     }
                     <div class="book-overlay">
                       <div class="book-actions">
-                        <button mat-icon-button class="action-btn" aria-label="Bookmark" (click)="toggleFavorite($event, asBook(book))">
+                        <button mat-icon-button class="action-btn" [aria-label]="'Bookmark ' + getShortTitle(asBook(book).title)" (click)="toggleFavorite($event, asBook(book))">
                           <iconify-icon [icon]="getBookmarkIcon(asBook(book))"></iconify-icon>
                         </button>
-                        <button mat-icon-button class="action-btn" aria-label="Share" (click)="shareBook($event, asBook(book))">
+                        <button mat-icon-button class="action-btn" [aria-label]="'Share ' + getShortTitle(asBook(book).title)" (click)="shareBook($event, asBook(book))">
                           <iconify-icon icon="material-symbols-light:share"></iconify-icon>
                         </button>
                       </div>

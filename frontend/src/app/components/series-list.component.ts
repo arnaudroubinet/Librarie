@@ -91,10 +91,10 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
                     }
                     <div class="series-overlay">
                       <div class="series-actions">
-                        <button mat-icon-button class="action-btn" aria-label="Bookmark" (click)="toggleFavorite($event, asSeries(series))">
+                        <button mat-icon-button class="action-btn" [aria-label]="'Bookmark series: ' + getShortTitle(asSeries(series).name)" (click)="toggleFavorite($event, asSeries(series))">
                           <iconify-icon [icon]="getBookmarkIcon(asSeries(series))"></iconify-icon>
                         </button>
-                        <button mat-icon-button class="action-btn" aria-label="Share" (click)="shareSeries($event, asSeries(series))">
+                        <button mat-icon-button class="action-btn" [aria-label]="'Share series: ' + getShortTitle(asSeries(series).name)" (click)="shareSeries($event, asSeries(series))">
                           <iconify-icon icon="material-symbols-light:share"></iconify-icon>
                         </button>
                       </div>

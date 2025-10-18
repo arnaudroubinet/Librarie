@@ -4,14 +4,12 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.jboss.logging.Logger;
 import org.motpassants.domain.port.out.FileStorageService;
-import org.motpassants.domain.port.out.ConfigurationPort;
 import org.motpassants.domain.port.out.SecureFileProcessingPort;
 import org.motpassants.infrastructure.config.LibrarieConfigProperties;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.List;
 import java.util.stream.Collectors;

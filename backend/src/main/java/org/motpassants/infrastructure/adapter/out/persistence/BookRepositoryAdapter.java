@@ -147,7 +147,6 @@ public class BookRepositoryAdapter implements BookRepository {
                 items = new ArrayList<>(items.subList(0, limit));
                 
                 // Build nextCursor based on sort field
-                Object sortValue = null;
                 long sortValueEpoch = 0L;
                 String sortValueStr = "";
                 

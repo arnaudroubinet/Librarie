@@ -13,7 +13,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -27,7 +26,6 @@ import java.util.stream.Stream;
 public class IngestService implements IngestUseCase {
     
     private final BookUseCase bookUseCase;
-    private final FileStorageService fileStorageService;
     private final SecureFileProcessingPort secureFileProcessingPort;
     private final ConfigurationPort configurationPort;
     
@@ -37,7 +35,6 @@ public class IngestService implements IngestUseCase {
                         SecureFileProcessingPort secureFileProcessingPort,
                         ConfigurationPort configurationPort) {
         this.bookUseCase = bookUseCase;
-        this.fileStorageService = fileStorageService;
         this.secureFileProcessingPort = secureFileProcessingPort;
         this.configurationPort = configurationPort;
     }
@@ -120,9 +117,6 @@ public class IngestService implements IngestUseCase {
         }
         
         // Check if book already exists in library
-        String filename = filePath.getFileName().toString();
-        String title = extractTitleFromFilename(filename);
-        
         // Simple check - in real implementation, would check database
         // For now, assume we can ingest if file is valid
         return true;
@@ -154,31 +148,17 @@ public class IngestService implements IngestUseCase {
         return result.toString();
     }
     
-    private String extractFormatFromFilename(String filename) {
-        int lastDot = filename.lastIndexOf('.');
-        if (lastDot > 0 && lastDot < filename.length() - 1) {
-            return filename.substring(lastDot + 1).toUpperCase();
-        }
-        return "UNKNOWN";
-    }
-    
     private void enhanceBookMetadata(Book book, Path bookPath) {
         // Try to extract metadata from file content
         // For now, just set basic information
         
-        try {
-            long fileSize = Files.size(bookPath);
-            // Could set file size information
-            
-            // Could try to parse ebook metadata using libraries like:
-            // - Apache Tika for general metadata extraction
-            // - epub4j for EPUB files
-            // - iText for PDF files
-            
-            // For demo purposes, just set basic info using setters
-            book.setDescription("Automatically ingested from: " + bookPath.getFileName());
-            
-        } catch (IOException e) {
-        }
+        // Could set file size information
+        // Could try to parse ebook metadata using libraries like:
+        // - Apache Tika for general metadata extraction
+        // - epub4j for EPUB files
+        // - iText for PDF files
+        
+        // For demo purposes, just set basic info using setters
+        book.setDescription("Automatically ingested from: " + bookPath.getFileName());
     }
 }

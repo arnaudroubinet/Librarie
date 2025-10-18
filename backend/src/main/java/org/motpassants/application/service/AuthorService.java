@@ -10,7 +10,6 @@ import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 
 import java.time.LocalDate;
-import org.motpassants.domain.core.model.AuthorSortCriteria;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;

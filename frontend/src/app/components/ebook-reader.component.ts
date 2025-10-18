@@ -471,10 +471,72 @@ export class EbookReaderComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    // destroy navigator if available
+    // Cleanup: Save progress before destroying
+    const progress = this.currentProgress();
+    if (progress && this.book()) {
+      this.readingProgressService.saveProgress(this.book()!.id, {
+        progress: progress.progress,
+        currentPage: progress.currentPage,
+        totalPages: progress.totalPages,
+        locator: (progress as any).locator
+      }).subscribe();
+    }
+
+    // Destroy Readium navigator and clean up ResizeObservers
     const nav: any = (this as any)._navigator;
-    try { nav?.destroy?.(); } catch {}
-  try { this._navObserver?.disconnect(); this._navObserver = null; } catch {}
+    try { 
+      // Try multiple destruction APIs for compatibility
+      nav?.destroy?.(); 
+      nav?.stop?.();
+      nav?.cleanup?.();
+      nav?.close?.();
+    } catch (e) {
+      if (this.debug) console.debug('[Reader] Navigator destruction error:', e);
+    }
+    
+    // Disconnect mutation observer
+    try { 
+      if (this._navObserver) {
+        this._navObserver.disconnect(); 
+        this._navObserver = null;
+      }
+    } catch (e) {
+      if (this.debug) console.debug('[Reader] MutationObserver disconnect error:', e);
+    }
+    
+    // Clean up fallback iframe
+    try {
+      if (this._fallbackIframe) {
+        // Remove event listeners before cleanup
+        this._fallbackIframe.removeEventListener('load', () => {});
+        this._fallbackIframe.src = 'about:blank';
+        
+        // Detach from DOM if still present
+        if (this._fallbackIframe.parentElement) {
+          this._fallbackIframe.parentElement.removeChild(this._fallbackIframe);
+        }
+        this._fallbackIframe = null;
+      }
+    } catch (e) {
+      if (this.debug) console.debug('[Reader] Iframe cleanup error:', e);
+    }
+    
+    // Clear container
+    try {
+      const container = this.readerContainer?.nativeElement;
+      if (container) {
+        container.innerHTML = '';
+      }
+    } catch (e) {
+      if (this.debug) console.debug('[Reader] Container cleanup error:', e);
+    }
+    
+    // Force GC hint - set to null
+    (this as any)._navigator = null;
+    this._spineHrefs = [];
+    this._prefetched.clear();
+    this.manifest = null;
+    this._resourceBase = null;
   }
 
   private async loadBook(bookId: string): Promise<void> {
