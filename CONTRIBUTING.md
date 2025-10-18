@@ -76,14 +76,11 @@ The `size-limit` tool will report:
 
 ### Bundle Size Limits
 
-Current limits are configured in `frontend/package.json` under the `size-limit` section:
+Current limit is configured in `frontend/package.json` under the `size-limit` section:
 
-- **Main Bundle**: 35 kB
-- **Polyfills**: 40 kB
-- **Angular Material Chunk**: 170 kB
-- **Readium Chunk**: 130 kB
-- **Core Chunk**: 85 kB
-- **Styles**: 25 kB
+- **Application Bundle**: 500 kB (compressed size of all files loaded on initial page load)
+
+This limit includes the main application code, polyfills, Angular Material components, and all other code that loads when the application first opens. Lazy-loaded routes and components are not included in this measurement.
 
 ### What Happens in CI
 
