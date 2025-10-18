@@ -47,6 +47,7 @@
     "@angular/cli": "^20.1.5",
     "@angular/compiler-cli": "^20.1.0",
     "@axe-core/playwright": "^4.10.2",
+    "@playwright/test": "^1.56.1",
     "@types/jasmine": "~5.1.0",
     "axe-core": "^4.11.0",
     "jasmine-core": "~5.8.0",
