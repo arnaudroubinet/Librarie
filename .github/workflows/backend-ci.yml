@@ -53,6 +53,11 @@ jobs:
           java -version
           mvn -version
 
+      - name: Run Checkstyle linting
+        run: |
+          cd backend
+          mvn checkstyle:check || echo "Checkstyle found issues - see report"
+
       - name: Run tests
         run: |
           cd backend
