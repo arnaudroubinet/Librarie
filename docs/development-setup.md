@@ -70,6 +70,18 @@ Copy-Item docs\testcontainers.properties.template $env:USERPROFILE\.testcontaine
 copy docs\testcontainers.properties.template %USERPROFILE%\.testcontainers.properties
 ```
 
+**Or use the automated setup script:**
+
+**Linux/Mac:**
+```bash
+./scripts/setup-dev.sh
+```
+
+**Windows (PowerShell):**
+```powershell
+.\scripts\setup-dev.ps1
+```
+
 #### Step 3: Restart Docker Desktop (Optional but Recommended)
 
 After creating the configuration file, restart Docker Desktop to ensure the settings are picked up.
@@ -83,13 +95,22 @@ cd backend
 ./mvnw quarkus:dev
 ```
 
-**First Start:** ~28-31 seconds (containers are created)
-**Subsequent Starts:** < 5 seconds (containers are reused)
+**First Start:** ~27-31 seconds (containers are created)
+**Subsequent Starts:** ~27-28 seconds (PostgreSQL container is reused)
 
-You should see log messages indicating that containers are being reused:
+You should see log messages indicating that the PostgreSQL container is being reused:
 ```
-INFO  [org.testcontainers...] Reusing container with ID: ...
+INFO  [tc.do.io/postgres:17] Reusing container with ID: ...
+INFO  [tc.do.io/postgres:17] Reusing existing container ... and not creating a new one
 ```
+
+**Important Note:** While PostgreSQL container reuse is working perfectly (reducing startup from ~2s to ~0.4s), Keycloak still takes ~20 seconds to initialize on each start. This is a known limitation of Quarkus DevServices for OIDC. The overall improvement is still significant for development workflows where you frequently restart the application.
+
+**Performance Breakdown:**
+- PostgreSQL container: ~0.4s (with reuse) vs ~2s (without reuse) ✅
+- Keycloak container: ~20s (cannot be reused in current Quarkus version)
+- Application initialization: ~6-8s
+- **Total:** ~27s (vs ~30s without reuse)
 
 ### Manual Container Cleanup
 

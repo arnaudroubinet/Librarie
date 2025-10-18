@@ -24,7 +24,9 @@ For detailed setup instructions, see the [Development Setup Guide](docs/developm
 
 ### Enable Fast Development Mode
 
-**Important**: Configure TestContainers reuse to reduce backend startup time from ~28s to **< 5s**.
+**Important**: Configure TestContainers reuse to improve backend startup performance.
+
+PostgreSQL container startup: **~0.4s** (with reuse) vs **~2s** (without reuse)
 
 Copy the TestContainers template to your home directory:
 
