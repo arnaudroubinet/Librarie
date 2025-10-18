@@ -28,6 +28,7 @@ import java.util.regex.Pattern;
 
 /**
  * Service for caching and serving images with security validation.
+ * Implements HTTP caching with ETags and Cache-Control headers for bandwidth optimization.
  */
 @ApplicationScoped
 public class ImageCachingService {
@@ -37,6 +38,9 @@ public class ImageCachingService {
         "<meta\\s+(?:property|name)\\s*=\\s*\\\"og:image\\\"\\s+content\\s*=\\s*\\\"([^\\\"]+)\\\"",
         Pattern.CASE_INSENSITIVE
     );
+    
+    // Cache duration for static assets (1 day in seconds)
+    private static final int CACHE_MAX_AGE_SECONDS = 86400;
     
     private final LibrarieConfigProperties config;
     private final SecureFileProcessingPort secureFileProcessingPort;
@@ -125,9 +129,10 @@ public class ImageCachingService {
 
                 Response.ResponseBuilder preDate = httpRequest.evaluatePreconditions(lastMod);
                 if (preDate != null) {
+                    LOG.debug("Returning 304 Not Modified for local file (Last-Modified match): " + localFile);
                     return preDate
                         .lastModified(lastMod)
-                        .header(jakarta.ws.rs.core.HttpHeaders.CACHE_CONTROL, "public, max-age=0, must-revalidate")
+                        .header(jakarta.ws.rs.core.HttpHeaders.CACHE_CONTROL, "public, max-age=" + CACHE_MAX_AGE_SECONDS)
                         .header(jakarta.ws.rs.core.HttpHeaders.VARY, "Accept-Encoding")
                         .build();
                 }
@@ -139,17 +144,19 @@ public class ImageCachingService {
 
                 Response.ResponseBuilder pre = httpRequest.evaluatePreconditions(lastMod, strong);
                 if (pre != null) {
+                    LOG.debug("Returning 304 Not Modified for local file (ETag match): " + localFile);
                     return pre
                         .tag(strong)
                         .lastModified(lastMod)
-                        .header(jakarta.ws.rs.core.HttpHeaders.CACHE_CONTROL, "public, max-age=0, must-revalidate")
+                        .header(jakarta.ws.rs.core.HttpHeaders.CACHE_CONTROL, "public, max-age=" + CACHE_MAX_AGE_SECONDS)
                         .header(jakarta.ws.rs.core.HttpHeaders.VARY, "Accept-Encoding")
                         .build();
                 }
+                LOG.debug("Serving local file with caching headers: " + localFile);
                 return Response.ok(bytes, mime)
                     .tag(strong)
                     .lastModified(lastMod)
-                    .header(jakarta.ws.rs.core.HttpHeaders.CACHE_CONTROL, "public, max-age=0, must-revalidate")
+                    .header(jakarta.ws.rs.core.HttpHeaders.CACHE_CONTROL, "public, max-age=" + CACHE_MAX_AGE_SECONDS)
                     .header(jakarta.ws.rs.core.HttpHeaders.VARY, "Accept-Encoding")
                     .build();
             }
@@ -173,17 +180,19 @@ public class ImageCachingService {
                     // Evaluate preconditions (rare on first fetch, but safe)
                     Response.ResponseBuilder pre = httpRequest.evaluatePreconditions(lastMod, strong);
                     if (pre != null) {
+                        LOG.debug("Returning 304 Not Modified for hydrated image (ETag match)");
                         return pre
                             .tag(strong)
                             .lastModified(lastMod)
-                            .header(jakarta.ws.rs.core.HttpHeaders.CACHE_CONTROL, "public, max-age=0, must-revalidate")
+                            .header(jakarta.ws.rs.core.HttpHeaders.CACHE_CONTROL, "public, max-age=" + CACHE_MAX_AGE_SECONDS)
                             .header(jakarta.ws.rs.core.HttpHeaders.VARY, "Accept-Encoding")
                             .build();
                     }
+                    LOG.debug("Serving newly hydrated image with caching headers");
                     return Response.ok(bytes, contentType)
                         .tag(strong)
                         .lastModified(lastMod)
-                        .header(jakarta.ws.rs.core.HttpHeaders.CACHE_CONTROL, "public, max-age=0, must-revalidate")
+                        .header(jakarta.ws.rs.core.HttpHeaders.CACHE_CONTROL, "public, max-age=" + CACHE_MAX_AGE_SECONDS)
                         .header(jakarta.ws.rs.core.HttpHeaders.VARY, "Accept-Encoding")
                         .build();
                 }
@@ -192,7 +201,7 @@ public class ImageCachingService {
             // If no fallback requested, return 404 to let frontend render its own placeholder
             if (fallbackSvg == null) {
                 return Response.status(Response.Status.NOT_FOUND)
-                    .header(jakarta.ws.rs.core.HttpHeaders.CACHE_CONTROL, "public, max-age=0, must-revalidate")
+                    .header(jakarta.ws.rs.core.HttpHeaders.CACHE_CONTROL, "public, max-age=" + CACHE_MAX_AGE_SECONDS)
                     .header(jakarta.ws.rs.core.HttpHeaders.VARY, "Accept-Encoding")
                     .build();
             }
@@ -202,15 +211,17 @@ public class ImageCachingService {
             EntityTag strong = new EntityTag(sha256Hex(svg));
             Response.ResponseBuilder pre = httpRequest.evaluatePreconditions(strong);
             if (pre != null) {
+                LOG.debug("Returning 304 Not Modified for fallback SVG (ETag match)");
                 return pre
                     .tag(strong)
-                    .header(jakarta.ws.rs.core.HttpHeaders.CACHE_CONTROL, "public, max-age=0, must-revalidate")
+                    .header(jakarta.ws.rs.core.HttpHeaders.CACHE_CONTROL, "public, max-age=" + CACHE_MAX_AGE_SECONDS)
                     .header(jakarta.ws.rs.core.HttpHeaders.VARY, "Accept-Encoding")
                     .build();
             }
+            LOG.debug("Serving fallback SVG with caching headers");
             return Response.ok(svg, "image/svg+xml")
                 .tag(strong)
-                .header(jakarta.ws.rs.core.HttpHeaders.CACHE_CONTROL, "public, max-age=0, must-revalidate")
+                .header(jakarta.ws.rs.core.HttpHeaders.CACHE_CONTROL, "public, max-age=" + CACHE_MAX_AGE_SECONDS)
                 .header(jakarta.ws.rs.core.HttpHeaders.VARY, "Accept-Encoding")
                 .build();
         } catch (Exception e) {
