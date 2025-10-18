@@ -3,3 +3,7 @@ export interface SettingsResponse {
   supportedFormats: string[];
   entityCounts: { [key: string]: number };
 }
+
+export interface UserPreferences {
+  locale: string;
+}

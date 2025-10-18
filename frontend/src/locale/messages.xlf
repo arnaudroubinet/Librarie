@@ -1,0 +1,315 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<xliff version="2.0" xmlns="urn:oasis:names:tc:xliff:document:2.0" srcLang="en-US">
+  <file id="ngi18n" original="ng.template">
+    <unit id="navSectionLibrary">
+      <notes>
+        <note category="location">src/app/components/navigation.component.ts:26,27</note>
+        <note category="description">Library section header</note>
+        <note category="meaning">Navigation section header</note>
+      </notes>
+      <segment>
+        <source>LIBRARY</source>
+      </segment>
+    </unit>
+    <unit id="navAllBooks">
+      <notes>
+        <note category="location">src/app/components/navigation.component.ts:29,31</note>
+        <note category="description">All books link</note>
+        <note category="meaning">Navigation link</note>
+      </notes>
+      <segment>
+        <source>All Books</source>
+      </segment>
+    </unit>
+    <unit id="navSeries">
+      <notes>
+        <note category="location">src/app/components/navigation.component.ts:33,35</note>
+        <note category="description">Series link</note>
+        <note category="meaning">Navigation link</note>
+      </notes>
+      <segment>
+        <source>Series</source>
+      </segment>
+    </unit>
+    <unit id="navAuthors">
+      <notes>
+        <note category="location">src/app/components/navigation.component.ts:37,39</note>
+        <note category="description">Authors link</note>
+        <note category="meaning">Navigation link</note>
+      </notes>
+      <segment>
+        <source>Authors</source>
+      </segment>
+    </unit>
+    <unit id="navSearch">
+      <notes>
+        <note category="location">src/app/components/navigation.component.ts:41,45</note>
+        <note category="description">Search link</note>
+        <note category="meaning">Navigation link</note>
+      </notes>
+      <segment>
+        <source>Search</source>
+      </segment>
+    </unit>
+    <unit id="navSectionManagement">
+      <notes>
+        <note category="location">src/app/components/navigation.component.ts:46,47</note>
+        <note category="description">Management section header</note>
+        <note category="meaning">Navigation section header</note>
+      </notes>
+      <segment>
+        <source>MANAGEMENT</source>
+      </segment>
+    </unit>
+    <unit id="navSettings">
+      <notes>
+        <note category="location">src/app/components/navigation.component.ts:49,53</note>
+        <note category="description">Settings link</note>
+        <note category="meaning">Navigation link</note>
+      </notes>
+      <segment>
+        <source>Settings</source>
+      </segment>
+    </unit>
+    <unit id="navVersion">
+      <notes>
+        <note category="location">src/app/components/navigation.component.ts:56,57</note>
+        <note category="description">Frontend version</note>
+        <note category="meaning">Version info</note>
+      </notes>
+      <segment>
+        <source>Version <ph id="0" equiv="INTERPOLATION" disp="{{ frontendVersion }}"/></source>
+      </segment>
+    </unit>
+    <unit id="settingsTitle">
+      <notes>
+        <note category="location">src/app/components/settings.component.ts:24,26</note>
+        <note category="description">Settings page title</note>
+        <note category="meaning">Page title</note>
+      </notes>
+      <segment>
+        <source>Settings</source>
+      </segment>
+    </unit>
+    <unit id="settingsSubtitle">
+      <notes>
+        <note category="location">src/app/components/settings.component.ts:26,31</note>
+        <note category="description">Settings page subtitle</note>
+        <note category="meaning">Page subtitle</note>
+      </notes>
+      <segment>
+        <source>Configure and explore your library system</source>
+      </segment>
+    </unit>
+    <unit id="settingsLoadingTitle">
+      <notes>
+        <note category="location">src/app/components/settings.component.ts:34,35</note>
+        <note category="description">Loading settings</note>
+        <note category="meaning">Loading message</note>
+      </notes>
+      <segment>
+        <source>Loading settings...</source>
+      </segment>
+    </unit>
+    <unit id="settingsLoadingSubtitle">
+      <notes>
+        <note category="location">src/app/components/settings.component.ts:35,39</note>
+        <note category="description">Fetching settings</note>
+        <note category="meaning">Loading message</note>
+      </notes>
+      <segment>
+        <source>Fetching configuration and system information</source>
+      </segment>
+    </unit>
+    <unit id="settingsWarningUnreachable">
+      <notes>
+        <note category="location">src/app/components/settings.component.ts:43,46</note>
+        <note category="description">Settings service unreachable</note>
+        <note category="meaning">Warning message</note>
+      </notes>
+      <segment>
+        <source>The settings service is unreachable. Showing last known data.</source>
+      </segment>
+    </unit>
+    <unit id="settingsAppInfoTitle">
+      <notes>
+        <note category="location">src/app/components/settings.component.ts:56,57</note>
+        <note category="description">Application information</note>
+        <note category="meaning">Card title</note>
+      </notes>
+      <segment>
+        <source>Application Information</source>
+      </segment>
+    </unit>
+    <unit id="settingsRefreshAppInfoAria">
+      <notes>
+        <note category="location">src/app/components/settings.component.ts:57,58</note>
+        <note category="description">Refresh application info</note>
+        <note category="meaning">Refresh button</note>
+      </notes>
+      <segment>
+        <source>Refresh application info</source>
+      </segment>
+    </unit>
+    <unit id="settingsAppInfoSubtitle">
+      <notes>
+        <note category="location">src/app/components/settings.component.ts:61,63</note>
+        <note category="description">System details</note>
+        <note category="meaning">Card subtitle</note>
+      </notes>
+      <segment>
+        <source>System details and version</source>
+      </segment>
+    </unit>
+    <unit id="settingsBackendVersion">
+      <notes>
+        <note category="location">src/app/components/settings.component.ts:66,67</note>
+        <note category="description">Backend version</note>
+        <note category="meaning">Stat label</note>
+      </notes>
+      <segment>
+        <source>Backend version:</source>
+      </segment>
+    </unit>
+    <unit id="settingsFrontendVersion">
+      <notes>
+        <note category="location">src/app/components/settings.component.ts:70,71</note>
+        <note category="description">Frontend version</note>
+        <note category="meaning">Stat label</note>
+      </notes>
+      <segment>
+        <source>Frontend version:</source>
+      </segment>
+    </unit>
+    <unit id="settingsHealthTitle">
+      <notes>
+        <note category="location">src/app/components/settings.component.ts:83,84</note>
+        <note category="description">Health status</note>
+        <note category="meaning">Card title</note>
+      </notes>
+      <segment>
+        <source>Liveness &amp; Readiness</source>
+      </segment>
+    </unit>
+    <unit id="settingsRefreshHealthAria">
+      <notes>
+        <note category="location">src/app/components/settings.component.ts:84,85</note>
+        <note category="description">Refresh health</note>
+        <note category="meaning">Refresh button</note>
+      </notes>
+      <segment>
+        <source>Refresh health</source>
+      </segment>
+    </unit>
+    <unit id="settingsHealthSubtitle">
+      <notes>
+        <note category="location">src/app/components/settings.component.ts:88,90</note>
+        <note category="description">Backend health status</note>
+        <note category="meaning">Card subtitle</note>
+      </notes>
+      <segment>
+        <source>Backend health status</source>
+      </segment>
+    </unit>
+    <unit id="settingsHealthLiveness">
+      <notes>
+        <note category="location">src/app/components/settings.component.ts:93,94</note>
+        <note category="description">Liveness</note>
+        <note category="meaning">Health label</note>
+      </notes>
+      <segment>
+        <source>Liveness</source>
+      </segment>
+    </unit>
+    <unit id="settingsHealthReadiness">
+      <notes>
+        <note category="location">src/app/components/settings.component.ts:99,100</note>
+        <note category="description">Readiness</note>
+        <note category="meaning">Health label</note>
+      </notes>
+      <segment>
+        <source>Readiness</source>
+      </segment>
+    </unit>
+    <unit id="settingsFormatsTitle">
+      <notes>
+        <note category="location">src/app/components/settings.component.ts:130,131</note>
+        <note category="description">Supported formats</note>
+        <note category="meaning">Card title</note>
+      </notes>
+      <segment>
+        <source>Supported Formats</source>
+      </segment>
+    </unit>
+    <unit id="settingsRefreshFormatsAria">
+      <notes>
+        <note category="location">src/app/components/settings.component.ts:131,132</note>
+        <note category="description">Refresh formats</note>
+        <note category="meaning">Refresh button</note>
+      </notes>
+      <segment>
+        <source>Refresh formats</source>
+      </segment>
+    </unit>
+    <unit id="settingsFormatsSubtitle">
+      <notes>
+        <note category="location">src/app/components/settings.component.ts:135</note>
+        <note category="description">Formats supported count</note>
+        <note category="meaning">Card subtitle</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="INTERPOLATION" disp="{{ settingsData()?.supportedFormats?.length || 0 }}"/> formats supported</source>
+      </segment>
+    </unit>
+    <unit id="settingsStatsTitle">
+      <notes>
+        <note category="location">src/app/components/settings.component.ts:159,160</note>
+        <note category="description">Library statistics</note>
+        <note category="meaning">Card title</note>
+      </notes>
+      <segment>
+        <source>Library Statistics</source>
+      </segment>
+    </unit>
+    <unit id="settingsRefreshStatsAria">
+      <notes>
+        <note category="location">src/app/components/settings.component.ts:160,161</note>
+        <note category="description">Refresh statistics</note>
+        <note category="meaning">Refresh button</note>
+      </notes>
+      <segment>
+        <source>Refresh statistics</source>
+      </segment>
+    </unit>
+    <unit id="settingsStatsSubtitle">
+      <notes>
+        <note category="location">src/app/components/settings.component.ts:164,166</note>
+        <note category="description">Content overview</note>
+        <note category="meaning">Card subtitle</note>
+      </notes>
+      <segment>
+        <source>Content overview</source>
+      </segment>
+    </unit>
+    <unit id="settingsLanguageTitle">
+      <notes>
+        <note category="location">src/app/components/settings.component.ts:188,189</note>
+        <note category="description">Language preferences</note>
+        <note category="meaning">Card title</note>
+      </notes>
+      <segment>
+        <source>Language Preferences</source>
+      </segment>
+    </unit>
+    <unit id="settingsLanguageSubtitle">
+      <notes>
+        <note category="location">src/app/components/settings.component.ts:189,192</note>
+        <note category="description">Select interface language</note>
+        <note category="meaning">Card subtitle</note>
+      </notes>
+      <segment>
+        <source>Select your preferred interface language</source>
+      </segment>
+    </unit>
+  </file>
+</xliff>

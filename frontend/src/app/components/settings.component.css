@@ -113,3 +113,57 @@ mat-card-title { display: flex; align-items: center; gap: 8px; }
   mat-card.dark-card { box-shadow: 0 1px 4px rgba(0, 0, 0, 0.32); }
   mat-card.dark-card:hover { box-shadow: 0 2px 12px rgba(0, 0, 0, 0.5); }
 }
+
+/* Language preferences */
+.language-options {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.language-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 2px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+}
+
+.language-option:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(79, 195, 247, 0.3);
+}
+
+.language-option.selected {
+  background: rgba(79, 195, 247, 0.15);
+  border-color: rgba(79, 195, 247, 0.5);
+}
+
+.language-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.language-name {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+.language-code {
+  font-size: 0.85rem;
+  color: #cfcfcf;
+  text-transform: uppercase;
+}
+
+.check-icon {
+  font-size: 24px;
+  color: #4fc3f7;
+}

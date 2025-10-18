@@ -4,6 +4,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { MATERIAL_MODULES } from '../shared/materials';
 import { SettingsService } from '../services/settings.service';
 import { SettingsResponse } from '../models/settings.model';
+import { LanguageService, Language } from '../services/language.service';
 import pkg from '../../../package.json';
 
 @Component({
@@ -20,9 +21,9 @@ import pkg from '../../../package.json';
         <div class="header-content">
           <h1 class="library-title">
             <iconify-icon class="title-icon" icon="material-symbols:settings-outline"></iconify-icon>
-            Settings
+            <ng-container i18n="Page title|Settings page title@@settingsTitle">Settings</ng-container>
           </h1>
-          <p class="library-subtitle">Configure and explore your library system</p>
+          <p class="library-subtitle" i18n="Page subtitle|Settings page subtitle@@settingsSubtitle">Configure and explore your library system</p>
         </div>
       </div>
 
@@ -30,8 +31,8 @@ import pkg from '../../../package.json';
         <div class="loading-section">
           <div class="loading-content">
             <mat-progress-spinner mode="indeterminate" diameter="60" color="accent"></mat-progress-spinner>
-            <h3>Loading settings...</h3>
-            <p>Fetching configuration and system information</p>
+            <h3 i18n="Loading message|Loading settings@@settingsLoadingTitle">Loading settings...</h3>
+            <p i18n="Loading message|Fetching settings@@settingsLoadingSubtitle">Fetching configuration and system information</p>
           </div>
         </div>
       } @else {
@@ -39,7 +40,7 @@ import pkg from '../../../package.json';
           @if (usingCachedWarning()) {
             <div class="warning-banner">
               <iconify-icon icon="mdi:alert"></iconify-icon>
-              The settings service is unreachable. Showing last known data.
+              <ng-container i18n="Warning message|Settings service unreachable@@settingsWarningUnreachable">The settings service is unreachable. Showing last known data.</ng-container>
             </div>
           }
           <div class="dashboard-grid">
@@ -52,21 +53,21 @@ import pkg from '../../../package.json';
                     <iconify-icon icon="mdi:information-outline"></iconify-icon>
                   </div>
                   <mat-card-title>
-                    Application Information
-                    <button mat-icon-button class="refresh-btn" aria-label="Refresh application info" (click)="reloadSettings(true)">
+                    <ng-container i18n="Card title|Application information@@settingsAppInfoTitle">Application Information</ng-container>
+                    <button mat-icon-button class="refresh-btn" i18n-aria-label="Refresh button|Refresh application info@@settingsRefreshAppInfoAria" aria-label="Refresh application info" (click)="reloadSettings(true)">
                       <iconify-icon icon="material-symbols-light:refresh-rounded"></iconify-icon>
                     </button>
                   </mat-card-title>
-                  <mat-card-subtitle>System details and version</mat-card-subtitle>
+                  <mat-card-subtitle i18n="Card subtitle|System details@@settingsAppInfoSubtitle">System details and version</mat-card-subtitle>
                 </mat-card-header>
                 
                 <mat-card-content>
                   <div class="stat-row">
-                    <span class="stat-label">Backend version:</span>
+                    <span class="stat-label" i18n="Stat label|Backend version@@settingsBackendVersion">Backend version:</span>
                     <span class="stat-value">{{ settingsData()?.version || 'Unknown' }}</span>
                   </div>
                   <div class="stat-row">
-                    <span class="stat-label">Frontend version:</span>
+                    <span class="stat-label" i18n="Stat label|Frontend version@@settingsFrontendVersion">Frontend version:</span>
                     <span class="stat-value">{{ frontendVersion }}</span>
                   </div>
                 </mat-card-content>
@@ -79,23 +80,23 @@ import pkg from '../../../package.json';
                     <iconify-icon icon="mdi:heart-pulse"></iconify-icon>
                   </div>
                   <mat-card-title>
-                    Liveness & Readiness
-                    <button mat-icon-button class="refresh-btn" aria-label="Refresh health" (click)="healthRefresh()">
+                    <ng-container i18n="Card title|Health status@@settingsHealthTitle">Liveness & Readiness</ng-container>
+                    <button mat-icon-button class="refresh-btn" i18n-aria-label="Refresh button|Refresh health@@settingsRefreshHealthAria" aria-label="Refresh health" (click)="healthRefresh()">
                       <iconify-icon icon="material-symbols-light:refresh-rounded"></iconify-icon>
                     </button>
                   </mat-card-title>
-                  <mat-card-subtitle>Backend health status</mat-card-subtitle>
+                  <mat-card-subtitle i18n="Card subtitle|Backend health status@@settingsHealthSubtitle">Backend health status</mat-card-subtitle>
                 </mat-card-header>
                 <mat-card-content>
                   <div class="health-grid">
                     <div class="health-item">
-                      <span class="health-label">Liveness</span>
+                      <span class="health-label" i18n="Health label|Liveness@@settingsHealthLiveness">Liveness</span>
                       <span class="status-badge" [ngClass]="livenessOk() ? 'ok' : 'ko'">
                         {{ livenessOk() ? 'OK' : 'KO' }}
                       </span>
                     </div>
                     <div class="health-item">
-                      <span class="health-label">Readiness</span>
+                      <span class="health-label" i18n="Health label|Readiness@@settingsHealthReadiness">Readiness</span>
                       <span class="status-badge" [ngClass]="readinessOk() ? 'ok' : 'ko'">
                         {{ readinessOk() ? 'OK' : 'KO' }}
                       </span>
@@ -126,12 +127,12 @@ import pkg from '../../../package.json';
                   <iconify-icon icon="mdi:file-document-outline"></iconify-icon>
                 </div>
                 <mat-card-title>
-                  Supported Formats
-                  <button mat-icon-button class="refresh-btn" aria-label="Refresh formats" (click)="reloadSettings(true)">
+                  <ng-container i18n="Card title|Supported formats@@settingsFormatsTitle">Supported Formats</ng-container>
+                  <button mat-icon-button class="refresh-btn" i18n-aria-label="Refresh button|Refresh formats@@settingsRefreshFormatsAria" aria-label="Refresh formats" (click)="reloadSettings(true)">
                     <iconify-icon icon="material-symbols-light:refresh-rounded"></iconify-icon>
                   </button>
                 </mat-card-title>
-                <mat-card-subtitle>{{ settingsData()?.supportedFormats?.length || 0 }} formats supported</mat-card-subtitle>
+                <mat-card-subtitle i18n="Card subtitle|Formats supported count@@settingsFormatsSubtitle">{{ settingsData()?.supportedFormats?.length || 0 }} formats supported</mat-card-subtitle>
               </mat-card-header>
               
               <mat-card-content>
@@ -155,12 +156,12 @@ import pkg from '../../../package.json';
                   <iconify-icon icon="mdi:chart-bar"></iconify-icon>
                 </div>
                 <mat-card-title>
-                  Library Statistics
-                  <button mat-icon-button class="refresh-btn" aria-label="Refresh statistics" (click)="reloadSettings(true)">
+                  <ng-container i18n="Card title|Library statistics@@settingsStatsTitle">Library Statistics</ng-container>
+                  <button mat-icon-button class="refresh-btn" i18n-aria-label="Refresh button|Refresh statistics@@settingsRefreshStatsAria" aria-label="Refresh statistics" (click)="reloadSettings(true)">
                     <iconify-icon icon="material-symbols-light:refresh-rounded"></iconify-icon>
                   </button>
                 </mat-card-title>
-                <mat-card-subtitle>Content overview</mat-card-subtitle>
+                <mat-card-subtitle i18n="Card subtitle|Content overview@@settingsStatsSubtitle">Content overview</mat-card-subtitle>
               </mat-card-header>
               
               <mat-card-content>
@@ -173,6 +174,39 @@ import pkg from '../../../package.json';
                         <div class="stat-name">{{ stat.name }}</div>
                       </div>
                     </div>
+                  }
+                </div>
+              </mat-card-content>
+            </mat-card>
+
+            <!-- Language Preferences -->
+            <mat-card class="language-card dark-card">
+              <mat-card-header>
+                <div mat-card-avatar class="avatar">
+                  <iconify-icon icon="mdi:translate"></iconify-icon>
+                </div>
+                <mat-card-title i18n="Card title|Language preferences@@settingsLanguageTitle">Language Preferences</mat-card-title>
+                <mat-card-subtitle i18n="Card subtitle|Select interface language@@settingsLanguageSubtitle">Select your preferred interface language</mat-card-subtitle>
+              </mat-card-header>
+              
+              <mat-card-content>
+                <div class="language-options">
+                  @for (lang of languageService.availableLanguages; track lang.code) {
+                    <button 
+                      mat-raised-button 
+                      class="language-option"
+                      [class.selected]="languageService.getCurrentLocale() === lang.code"
+                      (click)="switchLanguage(lang.code)"
+                      [attr.aria-label]="'Switch to ' + lang.name"
+                    >
+                      <div class="language-info">
+                        <span class="language-name">{{ lang.nativeName }}</span>
+                        <span class="language-code">{{ lang.code }}</span>
+                      </div>
+                      @if (languageService.getCurrentLocale() === lang.code) {
+                        <iconify-icon class="check-icon" icon="mdi:check-circle"></iconify-icon>
+                      }
+                    </button>
                   }
                 </div>
               </mat-card-content>
@@ -195,7 +229,11 @@ export class SettingsComponent implements OnInit {
   private healthIntervalId: any;
 
 
-  constructor(private settingsService: SettingsService, private snackBar: MatSnackBar) {}
+  constructor(
+    private settingsService: SettingsService, 
+    private snackBar: MatSnackBar,
+    public languageService: LanguageService
+  ) {}
 
   ngOnInit() {
     this.loadSettings();
@@ -278,6 +316,9 @@ export class SettingsComponent implements OnInit {
   }
   readinessChecks() { return this._readinessChecks(); }
 
+  switchLanguage(localeCode: string): void {
+    this.languageService.switchLanguage(localeCode);
+  }
 
 
   getEntityStats() {
