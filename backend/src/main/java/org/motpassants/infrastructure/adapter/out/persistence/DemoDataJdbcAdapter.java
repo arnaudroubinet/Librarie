@@ -39,14 +39,19 @@ public class DemoDataJdbcAdapter implements DemoDataPort {
     public void seed() {
         try {
             if (!configurationPort.isDemoEnabled()) return;
-            if (countBooks() > 0) return; // already seeded
+            long initialBookCount = countBooks();
+            if (initialBookCount > 0) {
+                log.info("Demo data already exists (found " + initialBookCount + " books); checking for updates");
+            }
 
             Path dataDir = resolveDataDir();
             if (dataDir == null) { log.warn("Demo data directory not found; expected ./data"); return; }
 
+            log.info("Starting demo data seeding process");
             Map<String, String> authorIdToName = loadAuthors(dataDir.resolve("authors.csv"));
             Map<String, UUID> seriesUuidToId = loadSeries(dataDir.resolve("series.csv"));
             loadBooks(dataDir.resolve("books.csv"), authorIdToName, seriesUuidToId);
+            log.info("Demo data seeding completed");
         } catch (Exception e) {
             log.error("Demo seed failed; continuing", e);
         }
@@ -93,6 +98,7 @@ public class DemoDataJdbcAdapter implements DemoDataPort {
         Map<String, Integer> idx = headerIndex(header);
     int batch = 0;
     int inserted = 0;
+    int skipped = 0;
     boolean txActive = false;
     List<Object[]> pendingDownloads = new ArrayList<>();
     try {
@@ -111,7 +117,11 @@ public class DemoDataJdbcAdapter implements DemoDataPort {
             if (name == null || name.isBlank()) continue;
             idToName.putIfAbsent(csvId, name);
     UUID existing = findAuthorByName(name);
-        if (existing != null) continue;
+        if (existing != null) {
+            skipped++;
+            if (skipped % 10 == 0) { log.debug("Skipped " + skipped + " existing authors so far"); }
+            continue;
+        }
 
             LocalDate birthDate = parseIsoDate(birth);
             LocalDate deathDate = parseIsoDate(death);
@@ -147,7 +157,7 @@ public class DemoDataJdbcAdapter implements DemoDataPort {
             }
             if (hasPic) pendingDownloads.add(new Object[] { pic, "authors", "pictures", id });
             inserted++;
-            if (inserted % 10 == 0) { log.warn("Inserted " + inserted + " authors so far"); }
+            if (inserted % 10 == 0) { log.info("Created " + inserted + " new authors so far"); }
             batch++;
             if (batch >= 100) {
                 try { utx.commit(); processDownloads(pendingDownloads); } catch (Exception e) { log.error("Author batch commit failed at line " + (i + 1), e); try { utx.rollback(); } catch (Exception ignore) {} finally { pendingDownloads.clear(); }
@@ -158,6 +168,7 @@ public class DemoDataJdbcAdapter implements DemoDataPort {
         } finally {
             try { if (txActive) { utx.commit(); } } catch (Exception e) { log.error("Author final commit failed", e); try { utx.rollback(); } catch (Exception ignored) {} } finally { processDownloads(pendingDownloads); }
         }
+        log.info("Authors: created " + inserted + ", skipped " + skipped + " existing");
         return idToName;
     }
 
@@ -170,6 +181,7 @@ public class DemoDataJdbcAdapter implements DemoDataPort {
         Map<String, Integer> idx = headerIndex(header);
     int batch = 0;
     int inserted = 0;
+    int skipped = 0;
     boolean txActive = false;
     List<Object[]> pendingDownloads = new ArrayList<>();
     try {
@@ -212,19 +224,23 @@ public class DemoDataJdbcAdapter implements DemoDataPort {
             }
             if (hasPic) pendingDownloads.add(new Object[] { cover, "series", "covers", seriesId });
             inserted++;
-            if (inserted % 10 == 0) { log.warn("Inserted " + inserted + " series so far"); }
+            if (inserted % 10 == 0) { log.info("Created " + inserted + " new series so far"); }
             batch++;
             if (batch >= 100) {
                 try { utx.commit(); processDownloads(pendingDownloads); } catch (Exception e) { log.error("Series batch commit failed at line " + (i + 1), e); try { utx.rollback(); } catch (Exception ignore) {} finally { pendingDownloads.clear(); }
                 }
                 txActive = false; batch = 0;
             }
+        } else {
+            skipped++;
+            if (skipped % 10 == 0) { log.debug("Skipped " + skipped + " existing series so far"); }
         }
             if (csvId != null && !csvId.isBlank() && seriesId != null) uuidToId.putIfAbsent(csvId, seriesId);
         }
         } finally {
             try { if (txActive) { utx.commit(); } } catch (Exception e) { log.error("Series final commit failed", e); try { utx.rollback(); } catch (Exception ignored) {} } finally { processDownloads(pendingDownloads); }
         }
+        log.info("Series: created " + inserted + ", skipped " + skipped + " existing");
         return uuidToId;
     }
 
@@ -236,6 +252,7 @@ public class DemoDataJdbcAdapter implements DemoDataPort {
         Map<String, Integer> idx = headerIndex(header);
     int batch = 0;
     int inserted = 0;
+    int skipped = 0;
     boolean txActive = false;
     List<Object[]> pendingDownloads = new ArrayList<>();
     try {
@@ -254,9 +271,17 @@ public class DemoDataJdbcAdapter implements DemoDataPort {
             String seriesName = get(cols, idx.get("series_name"));
             String seriesIndexStr = get(cols, idx.get("series_index"));
             if (title == null || title.isBlank()) continue;
-        if (isbn != null && !isbn.isBlank() && findBookByIsbn(isbn) != null) continue;
+        if (isbn != null && !isbn.isBlank() && findBookByIsbn(isbn) != null) {
+            skipped++;
+            if (skipped % 10 == 0) { log.debug("Skipped " + skipped + " existing books so far"); }
+            continue;
+        }
             String relPath = "/demo/books/" + sanitizeFileName(csvId != null && !csvId.isBlank() ? csvId : title) + ".epub";
-        if (findBookByPath(relPath) != null) continue;
+        if (findBookByPath(relPath) != null) {
+            skipped++;
+            if (skipped % 10 == 0) { log.debug("Skipped " + skipped + " existing books so far"); }
+            continue;
+        }
     UUID id = parseUuid(csvId);
     if (id == null) {
         // Fallback: derive deterministic UUID from CSV id or title
@@ -328,7 +353,7 @@ public class DemoDataJdbcAdapter implements DemoDataPort {
                 }
             } catch (Exception e) { log.warn("Failed to add demo formats for book '" + title + "': " + e.getMessage()); }
             inserted++;
-            if (inserted % 10 == 0) { log.warn("Inserted " + inserted + " books so far"); }
+            if (inserted % 10 == 0) { log.info("Created " + inserted + " new books so far"); }
             batch++;
             if (batch >= 100) {
                 try { utx.commit(); processDownloads(pendingDownloads); } catch (Exception e) { log.error("Book batch commit failed at line " + (i + 1), e); try { utx.rollback(); } catch (Exception ignore) {} finally { pendingDownloads.clear(); }
@@ -339,6 +364,7 @@ public class DemoDataJdbcAdapter implements DemoDataPort {
         } finally {
             try { if (txActive) { utx.commit(); } } catch (Exception e) { log.error("Book final commit failed", e); try { utx.rollback(); } catch (Exception ignored) {} } finally { processDownloads(pendingDownloads); }
         }
+        log.info("Books: created " + inserted + ", skipped " + skipped + " existing");
     }
 
     private String generateRandomHash() { String chars = "0123456789abcdef"; Random r = new Random(); StringBuilder sb = new StringBuilder(); for (int i = 0; i < 64; i++) sb.append(chars.charAt(r.nextInt(chars.length()))); return sb.toString(); }
