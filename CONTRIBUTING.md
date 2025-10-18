@@ -8,6 +8,7 @@ Thank you for your interest in contributing to Librarie! This document provides 
 - [CI/CD Pipeline](#cicd-pipeline)
 - [Coding Standards](#coding-standards)
 - [Testing](#testing)
+- [Bundle Size Monitoring](#bundle-size-monitoring)
 - [Pull Request Process](#pull-request-process)
 
 ## Getting Started
@@ -49,16 +50,15 @@ Thank you for your interest in contributing to Librarie! This document provides 
    - Write tests for new functionality
    - Update documentation as needed
 
-3. **Test locally**
+3. **Run tests locally**
    ```bash
    # Backend
    cd backend
-   mvn clean verify
+   mvn test
    
    # Frontend
    cd frontend
-   npm run test
-   npm run build
+   npm test
    ```
 
 4. **Commit your changes**
@@ -120,6 +120,15 @@ Dedicated workflow for frontend changes.
 - Unit tests with Karma/Jasmine
 - Build production application
 - Upload test results and build artifacts
+
+#### Bundle Size Check (`bundle-size-check.yml`)
+Monitors frontend bundle sizes on pull requests.
+
+**Runs:**
+- Build and measure bundle sizes
+- Compare with main branch
+- Post results as PR comment
+- Fail if bundles exceed limits
 
 ### Required Status Checks
 
@@ -220,6 +229,86 @@ npm run test
 npm run test -- --watch=false --browsers=ChromeHeadless --code-coverage
 ```
 
+## Bundle Size Monitoring
+
+We monitor bundle sizes to ensure the application remains performant and fast to load.
+
+### Checking Bundle Size Locally
+
+Before submitting a pull request, you can check the bundle size:
+
+```bash
+cd frontend
+npm run build
+npm run size
+```
+
+The `size-limit` tool will report:
+- Current size of the bundle
+- Whether the size exceeds configured limits
+- Loading time estimates on slow networks
+- Running time estimates on slower devices
+
+### Bundle Size Limits
+
+Current limit is configured in `frontend/package.json` under the `size-limit` section:
+
+- **Application Bundle**: 500 kB (compressed size of all files loaded on initial page load)
+
+This limit includes the main application code, polyfills, Angular Material components, and all other code that loads when the application first opens. Lazy-loaded routes and components are not included in this measurement.
+
+### What Happens in CI
+
+When you submit a pull request affecting the frontend:
+
+1. The GitHub Actions workflow builds your branch
+2. Bundle sizes are checked against configured limits
+3. Sizes are compared with the main branch
+4. A comment is posted to your PR with the results
+5. **The PR build will fail if any bundle exceeds its limit**
+
+### If Your Bundle Exceeds the Limit
+
+If the bundle size check fails, you have several options:
+
+1. **Optimize your code** (preferred):
+   - Remove unnecessary imports
+   - Use lazy loading for routes and components
+   - Tree-shake unused code
+   - Optimize dependencies
+
+2. **Analyze the bundle** to identify large dependencies:
+   ```bash
+   cd frontend
+   npm run build
+   npm run analyze
+   ```
+
+3. **Update size limits** (only if justified):
+   - If the size increase is necessary and justified
+   - Update the limits in `frontend/package.json`
+   - Document the reason in your PR description
+
+### Bundle Analysis
+
+To analyze what's in your bundle:
+
+```bash
+cd frontend
+npm run analyze
+```
+
+This will:
+1. Build your application with stats generation
+2. Create a `dist/frontend/stats.json` file
+3. Display a link to the esbuild analyzer
+
+Open https://esbuild.github.io/analyze/ in your browser and upload the generated `dist/frontend/stats.json` file to see:
+- Size of each module
+- What's taking up space in your bundles
+- Dependencies and their sizes
+- Opportunities for optimization
+
 ## Pull Request Process
 
 1. **Create PR**
@@ -231,6 +320,7 @@ npm run test -- --watch=false --browsers=ChromeHeadless --code-coverage
    - All CI workflows must pass
    - Address any failing tests or security issues
    - Ensure code coverage doesn't decrease significantly
+   - Bundle sizes must not exceed limits
 
 3. **Code Review**
    - Request reviews from maintainers
