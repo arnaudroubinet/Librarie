@@ -1,0 +1,16 @@
+# Enable container reuse for faster development
+# This dramatically reduces startup time from ~28-31 seconds to < 5 seconds
+testcontainers.reuse.enable=true
+
+# Optional: Override Docker socket path if needed
+# Uncomment and modify if Docker is not running on the default socket
+# testcontainers.docker.socket.override=/var/run/docker.sock
+
+# Optional: Docker host override
+# Uncomment if you need to connect to a remote Docker daemon
+# docker.host=tcp://localhost:2375
+
+# Optional: Ryuk container settings
+# Ryuk is used to clean up containers. With reuse enabled, you may want to
+# keep it running. The default settings should work for most cases.
+# testcontainers.ryuk.container.privileged=false
