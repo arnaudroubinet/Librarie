@@ -44,7 +44,6 @@ import { environment } from '../../environments/environment';
             </mat-form-field>
             <button mat-raised-button color="primary" type="submit">Search</button>
           </div>
-        </form>
 
         @if (showSuggestions()) {
           <div class="search-suggestions">
@@ -150,6 +149,7 @@ import { environment } from '../../environments/environment';
             </div>
           </mat-expansion-panel>
         </mat-accordion>
+        </form>
 
         @if (loading()) {
           <div class="loading-section">
