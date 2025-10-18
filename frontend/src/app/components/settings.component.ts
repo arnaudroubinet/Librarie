@@ -1,7 +1,9 @@
 import { Component, OnInit, signal, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { MatSnackBar } from '@angular/material/snack-bar';
-import { MATERIAL_MODULES } from '../shared/materials';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatCardModule } from '@angular/material/card';
+import { MatButtonModule } from '@angular/material/button';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { SettingsService } from '../services/settings.service';
 import { SettingsResponse } from '../models/settings.model';
 import pkg from '../../../package.json';
@@ -12,7 +14,10 @@ import pkg from '../../../package.json';
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   imports: [
     CommonModule,
-    ...MATERIAL_MODULES
+    MatCardModule,
+    MatButtonModule,
+    MatProgressSpinnerModule,
+    MatSnackBarModule
   ],
   template: `
   <div class="motspassants-library">
