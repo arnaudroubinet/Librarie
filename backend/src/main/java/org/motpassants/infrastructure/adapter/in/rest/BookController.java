@@ -487,7 +487,7 @@ public class BookController {
     @Path("/{id}/completion")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    @Operation(summary = "Update reading completion", description = "Update the reading completion progress for a book")
+    @Operation(summary = "Update reading completion", description = "Update the reading completion progress for a book with optional status")
     @APIResponses(value = {
         @APIResponse(responseCode = "200", description = "Reading completion updated successfully"),
         @APIResponse(responseCode = "404", description = "Book not found"),
@@ -541,6 +541,21 @@ public class BookController {
                 totalPages = ((Number) completionData.get("totalPages")).intValue();
             }
             
+            // Parse status if provided
+            org.motpassants.domain.core.model.ReadingStatus status = null;
+            if (completionData.containsKey("status")) {
+                Object statusObj = completionData.get("status");
+                if (statusObj instanceof String statusStr) {
+                    try {
+                        status = org.motpassants.domain.core.model.ReadingStatus.fromString(statusStr);
+                    } catch (IllegalArgumentException e) {
+                        return Response.status(Response.Status.BAD_REQUEST)
+                            .entity("Invalid status value: " + statusStr)
+                            .build();
+                    }
+                }
+            }
+            
             // For now, use a mock user ID - in real implementation, get from security context
             UUID userId = UUID.fromString("550e8400-e29b-41d4-a716-446655440000"); // Mock user ID
             
@@ -561,19 +576,32 @@ public class BookController {
                 }
             }
 
-            // Update reading progress
-            ReadingProgress readingProgress = readingProgressService.updateReadingProgress(
-                userId, bookId, progressDecimal, currentPage, totalPages, locatorJson);
+            // Update reading progress with or without status
+            ReadingProgress readingProgress;
+            if (status != null) {
+                readingProgress = readingProgressService.updateReadingProgressWithStatus(
+                    userId, bookId, progressDecimal, currentPage, totalPages, locatorJson, status);
+            } else {
+                readingProgress = readingProgressService.updateReadingProgress(
+                    userId, bookId, progressDecimal, currentPage, totalPages, locatorJson);
+            }
             
             Map<String, Object> response = new java.util.LinkedHashMap<>();
             response.put("progress", progress);
             response.put("currentPage", readingProgress.getCurrentPage() != null ? readingProgress.getCurrentPage() : 0);
             response.put("totalPages", readingProgress.getTotalPages() != null ? readingProgress.getTotalPages() : 0);
             response.put("isCompleted", readingProgress.getIsCompleted() != null ? readingProgress.getIsCompleted() : false);
+            response.put("status", readingProgress.getStatus() != null ? readingProgress.getStatus().name() : "READING");
+            if (readingProgress.getStartedAt() != null) {
+                response.put("startedAt", readingProgress.getStartedAt().toString());
+            }
+            if (readingProgress.getFinishedAt() != null) {
+                response.put("finishedAt", readingProgress.getFinishedAt().toString());
+            }
             if (readingProgress.getProgressLocator() != null) {
                 response.put("locator", readingProgress.getProgressLocator());
             }
-            response.put("status", "updated");
+            response.put("syncVersion", readingProgress.getSyncVersion() != null ? readingProgress.getSyncVersion() : 1L);
             response.put("message", "Reading completion updated successfully");
             
             return Response.ok(response).build();
@@ -625,7 +653,11 @@ public class BookController {
                 resp.put("currentPage", 0);
                 resp.put("totalPages", 0);
                 resp.put("isCompleted", false);
+                resp.put("status", "UNREAD");
                 resp.put("lastReadAt", null);
+                resp.put("startedAt", null);
+                resp.put("finishedAt", null);
+                resp.put("syncVersion", 1L);
                 response = resp;
             } else {
                 ReadingProgress readingProgress = progress.get();
@@ -634,10 +666,21 @@ public class BookController {
                 resp.put("currentPage", readingProgress.getCurrentPage() != null ? readingProgress.getCurrentPage() : 0);
                 resp.put("totalPages", readingProgress.getTotalPages() != null ? readingProgress.getTotalPages() : 0);
                 resp.put("isCompleted", readingProgress.getIsCompleted() != null ? readingProgress.getIsCompleted() : false);
+                resp.put("status", readingProgress.getStatus() != null ? readingProgress.getStatus().name() : "READING");
                 resp.put("lastReadAt", readingProgress.getLastReadAt());
+                if (readingProgress.getStartedAt() != null) {
+                    resp.put("startedAt", readingProgress.getStartedAt());
+                }
+                if (readingProgress.getFinishedAt() != null) {
+                    resp.put("finishedAt", readingProgress.getFinishedAt());
+                }
                 if (readingProgress.getProgressLocator() != null) {
                     resp.put("locator", readingProgress.getProgressLocator());
                 }
+                if (readingProgress.getNotes() != null) {
+                    resp.put("notes", readingProgress.getNotes());
+                }
+                resp.put("syncVersion", readingProgress.getSyncVersion() != null ? readingProgress.getSyncVersion() : 1L);
                 response = resp;
             }
             
@@ -896,6 +939,152 @@ public class BookController {
             }
         } catch (Exception ignored) { }
         return builder.build();
+    }
+
+    @POST
+    @Path("/{id}/mark-started")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Operation(summary = "Mark book as started", description = "Mark a book as started reading")
+    @APIResponses(value = {
+        @APIResponse(responseCode = "200", description = "Book marked as started successfully"),
+        @APIResponse(responseCode = "404", description = "Book not found"),
+        @APIResponse(responseCode = "400", description = "Invalid book ID")
+    })
+    public Response markAsStarted(
+            @Parameter(description = "Book UUID", required = true)
+            @PathParam("id") String id) {
+        
+        try {
+            UUID bookId = bookService.validateAndParseId(id);
+            
+            Optional<Book> existingBook = bookService.getBookById(bookId);
+            if (existingBook.isEmpty()) {
+                return Response.status(Response.Status.NOT_FOUND)
+                    .entity("Book not found")
+                    .build();
+            }
+            
+            // For now, use a mock user ID - in real implementation, get from security context
+            UUID userId = UUID.fromString("550e8400-e29b-41d4-a716-446655440000");
+            
+            ReadingProgress readingProgress = readingProgressService.markAsStarted(userId, bookId);
+            
+            Map<String, Object> response = new java.util.LinkedHashMap<>();
+            response.put("status", readingProgress.getStatus().name());
+            response.put("startedAt", readingProgress.getStartedAt());
+            response.put("message", "Book marked as started successfully");
+            
+            return Response.ok(response).build();
+            
+        } catch (IllegalArgumentException e) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                .entity("Invalid book ID format")
+                .build();
+        } catch (Exception e) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                .entity("Internal server error: " + e.getMessage())
+                .build();
+        }
+    }
+
+    @POST
+    @Path("/{id}/mark-finished")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Operation(summary = "Mark book as finished", description = "Mark a book as completed/finished reading")
+    @APIResponses(value = {
+        @APIResponse(responseCode = "200", description = "Book marked as finished successfully"),
+        @APIResponse(responseCode = "404", description = "Book not found"),
+        @APIResponse(responseCode = "400", description = "Invalid book ID")
+    })
+    public Response markAsFinished(
+            @Parameter(description = "Book UUID", required = true)
+            @PathParam("id") String id) {
+        
+        try {
+            UUID bookId = bookService.validateAndParseId(id);
+            
+            Optional<Book> existingBook = bookService.getBookById(bookId);
+            if (existingBook.isEmpty()) {
+                return Response.status(Response.Status.NOT_FOUND)
+                    .entity("Book not found")
+                    .build();
+            }
+            
+            // For now, use a mock user ID - in real implementation, get from security context
+            UUID userId = UUID.fromString("550e8400-e29b-41d4-a716-446655440000");
+            
+            ReadingProgress readingProgress = readingProgressService.markAsCompleted(userId, bookId);
+            
+            Map<String, Object> response = new java.util.LinkedHashMap<>();
+            response.put("status", readingProgress.getStatus().name());
+            response.put("finishedAt", readingProgress.getFinishedAt());
+            response.put("progress", 100.0);
+            response.put("isCompleted", true);
+            response.put("message", "Book marked as finished successfully");
+            
+            return Response.ok(response).build();
+            
+        } catch (IllegalArgumentException e) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                .entity("Invalid book ID format")
+                .build();
+        } catch (Exception e) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                .entity("Internal server error: " + e.getMessage())
+                .build();
+        }
+    }
+
+    @POST
+    @Path("/{id}/mark-dnf")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Operation(summary = "Mark book as DNF", description = "Mark a book as DNF (Did Not Finish)")
+    @APIResponses(value = {
+        @APIResponse(responseCode = "200", description = "Book marked as DNF successfully"),
+        @APIResponse(responseCode = "404", description = "Book not found"),
+        @APIResponse(responseCode = "400", description = "Invalid book ID or no prior reading progress"),
+        @APIResponse(responseCode = "409", description = "Cannot mark as DNF without starting the book")
+    })
+    public Response markAsDnf(
+            @Parameter(description = "Book UUID", required = true)
+            @PathParam("id") String id) {
+        
+        try {
+            UUID bookId = bookService.validateAndParseId(id);
+            
+            Optional<Book> existingBook = bookService.getBookById(bookId);
+            if (existingBook.isEmpty()) {
+                return Response.status(Response.Status.NOT_FOUND)
+                    .entity("Book not found")
+                    .build();
+            }
+            
+            // For now, use a mock user ID - in real implementation, get from security context
+            UUID userId = UUID.fromString("550e8400-e29b-41d4-a716-446655440000");
+            
+            ReadingProgress readingProgress = readingProgressService.markAsDnf(userId, bookId);
+            
+            Map<String, Object> response = new java.util.LinkedHashMap<>();
+            response.put("status", readingProgress.getStatus().name());
+            response.put("progress", readingProgress.getProgress() != null ? readingProgress.getProgress() * 100 : 0.0);
+            response.put("isCompleted", false);
+            response.put("message", "Book marked as DNF successfully");
+            
+            return Response.ok(response).build();
+            
+        } catch (IllegalStateException e) {
+            return Response.status(Response.Status.CONFLICT)
+                .entity(e.getMessage())
+                .build();
+        } catch (IllegalArgumentException e) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                .entity("Invalid book ID format")
+                .build();
+        } catch (Exception e) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                .entity("Internal server error: " + e.getMessage())
+                .build();
+        }
     }
 
     private BookListItemDto toListItemDto(Book book) {
