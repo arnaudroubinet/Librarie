@@ -86,8 +86,12 @@ public class ReadingProgress {
         // Update completion status
         if (progress != null && progress >= 1.0) {
             this.isCompleted = true;
-            if (this.status != ReadingStatus.FINISHED) {
-                markAsFinished();
+            this.status = ReadingStatus.FINISHED;
+            this.finishedAt = now;
+            
+            // Set current page to total pages if both are available
+            if (this.totalPages != null && this.currentPage == null) {
+                this.currentPage = this.totalPages;
             }
         } else {
             this.isCompleted = false;
