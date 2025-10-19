@@ -40,20 +40,20 @@
   width: 240px;
   height: 360px;
   object-fit: cover;
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0;
+  border: 1px solid var(--border-color);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
 }
 
 .series-cover-placeholder {
   width: 240px;
   height: 360px;
-  border-radius: 12px;
+  border-radius: 0;
   background: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%);
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--border-color);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
   text-align: center;
   padding: 16px;
@@ -83,11 +83,10 @@
   background: rgba(0,0,0,0.8);
   color: white;
   padding: 4px 8px;
-  border-radius: 12px;
+  border-radius: 0;
   font-size: 12px;
   font-weight: 500;
-  backdrop-filter: blur(6px);
-  border: 1px solid rgba(255,255,255,0.15);
+  border: 1px solid var(--border-color);
 }
 
 /* Series Information */
@@ -110,11 +109,11 @@
 
 /* Details List */
 .details-list {
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 12px;
+  background: var(--panel-bg);
+  border-radius: 0;
   padding: 24px;
   margin-bottom: 24px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--border-color);
 }
 
 .detail-item {
@@ -123,7 +122,7 @@
   gap: 16px;
   align-items: start;
   padding: 12px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .detail-item:last-child { border-bottom: none; }
@@ -154,10 +153,10 @@
 
 /* Contributors Grid using author-list styles */
 .contributors-grid { display: grid; grid-template-columns: repeat(auto-fill, 240px); gap: 16px; justify-content: center; }
-.author-card { background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.04) 100%); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 16px; overflow: hidden; transition: all 0.3s ease; cursor: pointer; position: relative; backdrop-filter: blur(10px); width: 240px; }
-.author-card:hover { transform: translateY(-4px); box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3); border-color: rgba(33, 150, 243, 0.5); }
+.author-card { background: var(--panel-bg); border: 1px solid var(--border-color); border-radius: 0; overflow: hidden; transition: all 0.3s ease; cursor: pointer; position: relative; width: 240px; }
+.author-card:hover { transform: translateY(-4px); box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3); border-color: rgba(115, 234, 255, 0.35); }
 .card-container { padding: 20px; }
-.author-photo { position: relative; width: 100%; height: 200px; border-radius: 12px; overflow: hidden; margin-bottom: 16px; background: linear-gradient(135deg, #333 0%, #555 100%); }
+.author-photo { position: relative; width: 100%; height: 200px; border-radius: 0; overflow: hidden; margin-bottom: 16px; background: linear-gradient(135deg, #333 0%, #555 100%); }
 .photo-image { width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s ease; }
 .author-card:hover .photo-image { transform: scale(1.05); }
 .photo-placeholder { width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #888; background: linear-gradient(135deg, #2a2a2a 0%, #1e1e1e 100%); }

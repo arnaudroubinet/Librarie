@@ -8,51 +8,84 @@
 
 /* Google Fonts imported in index.html */
 
-/* Global styles */
+/* Global styles with IoT Sharp Dark theme */
 html, body { 
   height: 100%; 
   margin: 0; 
   /* Match ngx-admin demo font */
   font-family: 'Open Sans', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', 'Liberation Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+  background: var(--app-bg);
+  color: var(--content-fg);
 }
 
-/* Default links are white across the app */
-a, a:visited { color: #ffffff; text-decoration: none; }
-a:hover, a:focus { color: #ffffff; text-decoration: underline; }
+/* Links with good contrast on dark */
+a, a:visited { color: #73eaff; text-decoration: none; }
+a:hover, a:focus { color: #b5f3ff; text-decoration: underline; }
 
-/* Custom theme variables */
+/* Prefer readable default focus outlines and add a utility for custom rings */
+:where(button, [role="button"], a, input, select, textarea) {
+  outline-color: #9ddfff;
+  outline-offset: 2px;
+}
+.focus-ring:focus-visible { outline: none !important; box-shadow: var(--focus-ring); border-radius: 0; }
+.focus-ring-strong:focus-visible { outline: none !important; box-shadow: var(--ring-strong); border-radius: 0; }
+
+/* Motion safety */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition: none !important; animation: none !important; }
+}
+
+/* ======================================
+   GLOBAL SHARP CORNERS OVERRIDE
+   Force border-radius: 0 on ALL elements
+   to achieve the IoT sharp design
+====================================== */
+* {
+  border-radius: 0 !important;
+}
+/* Exception: keep dots circular for badges */
+.badge .dot {
+  border-radius: 50% !important;
+}
+
+/* IoT Sharp Dark Theme - Global variables */
 :root {
-  --primary-color: #1976d2;
-  --accent-color: #ff4081;
-  --background-color: #fafafa;
-  --surface-color: #ffffff;
-  --text-primary: rgba(0, 0, 0, 0.87);
-  --text-secondary: rgba(0, 0, 0, 0.54);
-  --font-family-primary: 'Poppins', 'Inter', 'Roboto', sans-serif;
-  --font-family-display: 'Inter', 'Poppins', 'Roboto', sans-serif;
-  /* Unified theme tokens */
-  --app-bg: #1f1f1f;
-  --content-fg: #ffffff;
-  --muted-fg: #888;
-  --border-color: rgba(255, 255, 255, 0.1);
-  /* Solid panel backgrounds (no transparency) */
-  --panel-bg: #1f1f1f; /* same as app background to remove transparency */
-  --panel-bg-soft: #151515; /* slightly darker for soft panels */
-  --accent-grad-start: #4fc3f7;
-  --accent-grad-end: #29b6f6;
-  /* Reserve space for select validation icon used by the intrinsic panel width rules */
+  /* Deep navy palette for dark, contrasty IoT dashboard */
+  --app-bg: #151a30;            /* deep navy background */
+  --panel-bg: #192038;          /* card panels */
+  --panel-bg-soft: #0f1422;     /* soft surfaces */
+  --border-color: rgba(255, 255, 255, 0.06);
+  --content-fg: #e6e9f0;        /* high-contrast foreground */
+  --muted-fg: #8f9bb3;          /* subdued text */
+  
+  /* Accent gradients: cyan → blue */
+  --accent-grad-start: #00d2ff;
+  --accent-grad-end: #3a7bd5;
+  
+  /* IoT-specific accents */
+  --iot-accent: #4fc3f7;
+  --iot-ok: #2e7d32;
+  --iot-ko: #c62828;
+  
+  /* Shadows and focus rings */
+  --card-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  --focus-ring: 0 0 0 3px rgba(0, 210, 255, 0.45);
+  --ring-strong: 0 0 0 3px rgba(58, 123, 213, 0.55);
+  
+  /* Select validation icon space */
   --select-validation-icon-space: 36px;
-  /* Spacing & type scale */
+  
+  /* Spacing & type scale (IoT-tuned) */
   --space-1: 8px;
-  --space-2: 12px;
-  --space-3: 16px;
+  --space-2: 10px;
+  --space-3: 14px;
   --space-4: 20px;
-  --space-5: 24px;
+  --space-5: 22px;
   --space-6: 32px;
   --font-size-sm: 0.875rem;
   --font-size-md: 1rem;
-  --font-size-lg: 1.25rem;
-  --font-size-xl: 1.75rem;
+  --font-size-lg: 1.2rem;
+  --font-size-xl: 1.6rem;
 }
 
 /* Utility classes */
@@ -154,14 +187,14 @@ body, .motspassants-container { background: var(--app-bg); color: var(--content-
 .fab-search:hover,
 .btn-primary:hover { transform: translateY(-2px) !important; box-shadow: 0 12px 40px rgba(79, 195, 247, 0.4) !important; }
 
-/* Ensure mat-select overlay panel matches the closed control's panel background */
+/* Ensure mat-select overlay panel matches the closed control's panel background (SHARP) */
 /* Global rule because the panel is attached to the overlay container outside component scope */
 .mat-mdc-select-panel {
-  /* Cleaner panel: match app background, subtle frame, minimal shadow */
+  /* Cleaner panel: match app background, subtle frame, minimal shadow, SHARP */
   background: var(--app-bg) !important;
   color: #ffffff !important;
   border: 1px solid rgba(255,255,255,0.06) !important;
-  border-radius: 6px !important;
+  border-radius: 0 !important; /* SHARP */
   box-shadow: 0 4px 12px rgba(0,0,0,0.45) !important;
   padding: 4px 0 !important;
 }
@@ -366,9 +399,9 @@ body, .motspassants-container { background: var(--app-bg); color: var(--content-
   font-weight: 500 !important;
 }
 
-/* Consolidated base styles for book grids and cards used across components */
+/* Consolidated base styles for book grids and cards used across components (SHARP) */
 .books-grid{display:grid;gap:24px;justify-content:center}
-.book-card{background:rgba(255,255,255,0.05);border-radius:12px;overflow:hidden;transition:box-shadow .2s ease,border-color .2s ease;cursor:pointer;position:relative;border:1px solid rgba(255,255,255,.1)}
+.book-card{background:rgba(255,255,255,0.05);border-radius:0;overflow:hidden;transition:box-shadow .2s ease,border-color .2s ease;cursor:pointer;position:relative;border:1px solid rgba(255,255,255,.1)}
 .book-card:hover{box-shadow:0 12px 28px rgba(0,0,0,.4);border-color:rgba(115,234,255,.35)}
 .book-card:focus-visible{outline:none;box-shadow:var(--focus-ring)}
 .book-cover{position:relative;width:100%;height:100%;overflow:hidden}
@@ -395,115 +428,8 @@ body, .motspassants-container { background: var(--app-bg); color: var(--content-
 }
 
 /* ---------------------------------------------
-   Ngx-admin IoT-inspired theme (opt-in)
-   Enable by adding class="theme-ngx" on <body>.
-   This keeps existing defaults intact and provides
-   utilities for dashboards (cards, KPIs, grids).
-   Built with accessibility in mind (focus rings,
-   contrast, reduced motion respect).
+   IoT Sharp Dark Theme - NOW GLOBAL
+   Previously opt-in via .theme-ngx class, now
+   applied globally. All IoT primitives (cards,
+   controls, tabs, chips, badges) are above.
 ---------------------------------------------- */
-
-.theme-ngx {
-  /* Palette tuned for a deep, contrasty dark theme similar to ngx-admin */
-  --app-bg: #151a30;            /* deep navy */
-  --panel-bg: #192038;          /* card panels */
-  --panel-bg-soft: #0f1422;     /* soft surfaces */
-  --border-color: rgba(255,255,255,0.06);
-  --content-fg: #e6e9f0;        /* high-contrast foreground */
-  --muted-fg: #8f9bb3;          /* subdued text */
-  --accent-grad-start: #00d2ff; /* cyan */
-  --accent-grad-end: #3a7bd5;   /* blue */
-  --card-shadow: 0 8px 24px rgba(0,0,0,0.35);
-  --focus-ring: 0 0 0 3px rgba(0,210,255,0.45);
-  --ring-strong: 0 0 0 3px rgba(58,123,213,0.55);
-  /* allow tightening/loosening spacing & headings */
-  --space-2: 10px;
-  --space-3: 14px;
-  --space-5: 22px;
-  --font-size-lg: 1.2rem;
-  --font-size-xl: 1.6rem;
-
-  background: var(--app-bg);
-  color: var(--content-fg);
-}
-
-/* Links with good contrast on dark */
-.theme-ngx a, .theme-ngx a:visited { color: #73eaff; text-decoration: none; }
-.theme-ngx a:hover, .theme-ngx a:focus { color: #b5f3ff; text-decoration: underline; }
-
-/* Prefer readable default focus outlines and add a utility for custom rings */
-.theme-ngx :where(button, [role="button"], a, input, select, textarea) {
-  outline-color: #9ddfff;
-  outline-offset: 2px;
-}
-.focus-ring:focus-visible { outline: none !important; box-shadow: var(--focus-ring); border-radius: 8px; }
-.focus-ring-strong:focus-visible { outline: none !important; box-shadow: var(--ring-strong); border-radius: 8px; }
-
-/* Motion safety */
-@media (prefers-reduced-motion: reduce) {
-  .theme-ngx *, .theme-ngx *::before, .theme-ngx *::after { transition: none !important; animation: none !important; }
-}
-
-/* Layout utilities inspired by ngx-admin cards/grids */
-.ngx-container { max-width: 1280px; margin: 0 auto; padding: var(--space-5) 20px; }
-.ngx-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: var(--space-4); }
-.ngx-grid.tight { gap: 12px; }
-
-/* Card primitives */
-.ngx-card {
-  background: var(--panel-bg);
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
-  box-shadow: var(--card-shadow);
-  overflow: hidden;
-}
-.ngx-card.flat { box-shadow: none; }
-.ngx-card.hoverable { transition: box-shadow .2s ease, border-color .2s ease; }
-.ngx-card.hoverable:hover { border-color: rgba(115,234,255,0.35); box-shadow: 0 12px 28px rgba(0,0,0,0.4); }
-.ngx-card-header {
-  display: flex; align-items: center; gap: 10px;
-  padding: 12px 20px; border-bottom: 1px solid var(--border-color);
-  color: #c5cee0; font-weight: 600; letter-spacing: .2px;
-}
-.ngx-card-subtitle { color: var(--muted-fg); font-size: .9rem; }
-.ngx-card-content { padding: 16px 20px; }
-.ngx-card-footer { padding: 12px 20px; border-top: 1px solid var(--border-color); display:flex; justify-content:flex-end; gap:12px; }
-
-/* KPI tiles (value + label) */
-.ngx-kpi {
-  display: grid; grid-auto-flow: column; align-items: center; gap: 12px;
-  padding: 16px 18px; border-radius: 12px; border: 1px solid var(--border-color);
-  background: linear-gradient(135deg, rgba(0,210,255,0.12), rgba(58,123,213,0.12));
-}
-.ngx-kpi .kpi-icon { font-size: 28px; color: #9fdcff; }
-.ngx-kpi .kpi-value { font-size: 1.6rem; font-weight: 700; color: #ffffff; letter-spacing: .2px; }
-.ngx-kpi .kpi-label { font-size: .9rem; color: var(--muted-fg); }
-
-/* Buttons: solid (gradient) and ghost variants */
-.btn-solid { background: linear-gradient(135deg, var(--accent-grad-start), var(--accent-grad-end)); color: #fff; border: none; border-radius: 10px; padding: 10px 14px; font-weight: 600; cursor: pointer; box-shadow: 0 10px 28px rgba(0,210,255,0.25); transition: transform .2s ease, box-shadow .2s ease; }
-.btn-solid:hover { transform: translateY(-2px); box-shadow: 0 14px 34px rgba(0,210,255,0.35); }
-.btn-ghost { background: transparent; color: #9fdcff; border: 1px solid rgba(159,220,255,0.4); border-radius: 10px; padding: 9px 13px; font-weight: 600; cursor: pointer; transition: background-color .2s ease, border-color .2s ease; }
-.btn-ghost:hover { background: rgba(159,220,255,0.06); border-color: rgba(159,220,255,0.7); }
-.btn-solid:focus-visible, .btn-ghost:focus-visible { outline: none; box-shadow: var(--focus-ring); }
-
-/* Tilted refresh icon style to match angled design accents */
-.refresh-btn.tilt iconify-icon { display:inline-block; transform: rotate(-15deg); transition: transform .2s ease; }
-.refresh-btn.tilt:focus-visible iconify-icon { transform: rotate(-15deg) scale(1.05); }
-
-/* Headings scale helpers reminiscent of dashboard typography */
-.ngx-h1 { font-size: var(--font-size-xl); font-weight: 700; letter-spacing: -0.2px; margin: 0; }
-.ngx-h2 { font-size: var(--font-size-lg); font-weight: 600; letter-spacing: -0.1px; margin: 0; color: #c5cee0; }
-.ngx-muted { color: var(--muted-fg); }
-
-/* Simple status badges */
-.badge { display:inline-flex; align-items:center; gap:8px; padding:4px 10px; border-radius:999px; font-size:.8rem; font-weight:600; border:1px solid var(--border-color); background: rgba(255,255,255,0.04); color:#dfe7ff; }
-.badge .dot { width:8px; height:8px; border-radius:50%; background:#9fdcff; }
-.badge.success .dot { background:#3ad29f; }
-.badge.warn .dot { background:#ffd166; }
-.badge.error .dot { background:#ff6b6b; }
-
-/* Make existing book cards harmonize with the new theme without breaking defaults */
-.theme-ngx .book-card { background: var(--panel-bg); border-color: var(--border-color); }
-.theme-ngx .book-card:hover { border-color: rgba(115,234,255,0.35); }
-.theme-ngx .book-info { color: var(--content-fg); }
-

@@ -38,10 +38,6 @@ import pkg from '../../../package.json';
             <iconify-icon icon="material-symbols:supervised-user-circle"></iconify-icon>
             <span>Authors</span>
           </a>
-          <a mat-button class="nav-item" routerLink="/search" routerLinkActive="active">
-            <iconify-icon icon="material-symbols:search-rounded"></iconify-icon>
-            <span>Search</span>
-          </a>
         </div>
 
         <div class="nav-section">
@@ -71,6 +67,12 @@ import pkg from '../../../package.json';
               </button>
             }
           </div>
+          <div class="shell-header-right">
+            <button class="search-btn" type="button" (click)="goToSearch()" aria-label="Search">
+              <iconify-icon icon="material-symbols:search-rounded" aria-hidden="true"></iconify-icon>
+              <span class="search-label">Search</span>
+            </button>
+          </div>
         </header>
         <ng-content></ng-content>
       </main>
@@ -84,6 +86,7 @@ export class NavigationComponent {
   private currentTitle = signal('Books Library');
   pageTitle = computed(() => this.currentTitle());
   headerIcon = computed(() => this.computeHeaderIcon());
+  // Motion removed: no rotation state
 
   constructor(private router: Router, private route: ActivatedRoute, public actions: HeaderActionsService) {
     // Update title on navigation end
@@ -114,5 +117,12 @@ export class NavigationComponent {
     if (url.startsWith('/search')) return 'material-symbols:search-rounded';
     if (url.startsWith('/books')) return 'material-symbols:book-2-rounded';
     return 'material-symbols:book-2-rounded';
+  }
+
+  goToSearch() {
+    // If already on search, do nothing
+    if ((this.router.url || '').startsWith('/search')) return;
+    // Navigate directly without motion
+    this.router.navigate(['/search']);
   }
 }

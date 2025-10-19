@@ -35,7 +35,7 @@ export const routes: Routes = [
   },
   { 
     path: 'search', 
-    loadComponent: () => import('./components/search.component').then(c => c.SearchComponent),
+    loadComponent: () => import('./components/advanced-search.component').then(c => c.AdvancedSearchComponent),
     data: { title: 'Search Library' }
   },
   { 

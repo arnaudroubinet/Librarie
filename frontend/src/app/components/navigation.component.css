@@ -150,6 +150,39 @@
   border-radius: 6px;
 }
 
+/* Top-right header actions */
+.shell-header-right { display:flex; align-items:center; gap: 8px; }
+.search-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  color: var(--content-fg);
+  border: 1px solid var(--border-color);
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color .2s ease, border-color .2s ease, transform .2s ease;
+}
+.search-btn iconify-icon { font-size: 20px; width: 20px; height: 20px; }
+.search-btn .search-label { display: inline-block; font-weight: 500; }
+.search-btn:hover { background: rgba(255,255,255,0.06); border-color: #e5a00d; }
+.search-btn:active { transform: translateY(1px); }
+.search-btn:focus-visible { outline: 2px solid var(--focus-ring, #6ea8fe); outline-offset: 2px; }
+
+/* Rotate-out transition on main content before navigating to search */
+/* Motion removed: rotation classes no longer used */
+
+/* .motspassants-content.rotate-out {} */
+/* @keyframes rotateOutTo90 {} */
+
+/* .motspassants-content.rotate-in {} */
+/* @keyframes rotateInFromBottom {} */
+@media (prefers-reduced-motion: reduce) {
+  .motspassants-content.rotate-out,
+  .motspassants-content.rotate-in { animation: none; }
+}
+
 /* Remove top overlay that visually separates header and content */
 /* .motspassants-content::before { ... } */
 

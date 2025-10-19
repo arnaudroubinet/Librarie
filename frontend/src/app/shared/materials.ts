@@ -6,6 +6,7 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatSelectModule } from '@angular/material/select';
 import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
 import { MatRippleModule } from '@angular/material/core';
 import { MatBadgeModule } from '@angular/material/badge';
 import { MatDividerModule } from '@angular/material/divider';
@@ -26,6 +27,7 @@ export const MATERIAL_MODULES = [
   MatSnackBarModule,
   MatSelectModule,
   MatFormFieldModule,
+  MatInputModule,
   MatRippleModule,
   MatBadgeModule,
   MatDividerModule,
