@@ -211,7 +211,7 @@ import { forkJoin } from 'rxjs';
                   </h2>
                   <div class="books-grid">
                     @for (b of authorBooks(); track b.id) {
-                      <a class="book-card" [routerLink]="['/books', b.id]">
+                      <a class="book-card ngx-card hoverable" [routerLink]="['/books', b.id]">
                         <div class="cover-wrap">
                           @if (b.hasCover) {
                             <img class="book-cover" [src]="apiUrl + '/v1/books/' + b.id + '/cover'" [alt]="b.title + ' cover'" />

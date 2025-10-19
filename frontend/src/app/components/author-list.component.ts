@@ -1,4 +1,4 @@
-import { Component, OnInit, CUSTOM_ELEMENTS_SCHEMA, signal } from '@angular/core';
+import { Component, OnInit, OnDestroy, CUSTOM_ELEMENTS_SCHEMA, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { MatSnackBar } from '@angular/material/snack-bar';
@@ -10,6 +10,7 @@ import { SortField, SortDirection, SortOption } from '../models/book.model';
 import { InfiniteScrollService, AlphabeticalSeparator } from '../services/infinite-scroll.service';
 import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive';
 import { environment } from '../../environments/environment';
+import { HeaderActionsService } from '../services/header-actions.service';
 
 @Component({
   selector: 'app-author-list',
@@ -25,13 +26,6 @@ import { environment } from '../../environments/environment';
   <div class="motspassants-library" appInfiniteScroll (scrolled)="onScroll()" [disabled]="scrollState.loading()">
       <div class="library-header">
         <div class="header-content">
-          <h1 class="library-title">
-            <iconify-icon class="title-icon" icon="material-symbols:supervised-user-circle"></iconify-icon>
-            Authors Library
-            <button mat-icon-button class="refresh-btn" aria-label="Refresh authors" (click)="refresh()">
-              <iconify-icon icon="material-symbols-light:refresh-rounded"></iconify-icon>
-            </button>
-          </h1>
           <p class="library-subtitle">Discover and explore your favorite authors</p>
           <div class="sort-controls">
             <div class="sort-field">
@@ -145,7 +139,7 @@ import { environment } from '../../environments/environment';
   `,
   styleUrls: ['./author-list.component.css']
 })
-export class AuthorListComponent implements OnInit {
+export class AuthorListComponent implements OnInit, OnDestroy {
   scrollState;
   readonly apiUrl = environment.apiUrl;
   currentSort: { field: string; direction: string } = { field: 'SORT_NAME', direction: 'ASC' };
@@ -162,7 +156,8 @@ export class AuthorListComponent implements OnInit {
   constructor(
     private authorService: AuthorService,
     private snackBar: MatSnackBar,
-    protected infiniteScrollService: InfiniteScrollService
+    protected infiniteScrollService: InfiniteScrollService,
+    private headerActions: HeaderActionsService
   ) {
     // Initialize infinite scroll state with alphabetical separators and sort params
     this.scrollState = this.infiniteScrollService.createInfiniteScrollState(
@@ -179,6 +174,12 @@ export class AuthorListComponent implements OnInit {
   ngOnInit() {
   // Initialization is handled by the infinite scroll service
   window.addEventListener('resize', this.onResize, { passive: true });
+  this.headerActions.setRefresh(() => this.refresh());
+  }
+
+  ngOnDestroy(): void {
+    window.removeEventListener('resize', this.onResize as any);
+    this.headerActions.setRefresh(null);
   }
 
   onScroll() {

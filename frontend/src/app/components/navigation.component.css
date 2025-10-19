@@ -1,6 +1,16 @@
 
 .motspassants-container { display: flex; height: 100vh; }
 
+.sr-only:not(:focus):not(:active) {
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  height: 1px;
+  overflow: hidden;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
+}
+
 .motspassants-sidebar {
   width: 240px;
   /* Transparent to let the root gradient flow across the whole page */
@@ -109,6 +119,37 @@
 .version-info :is(mat-icon, iconify-icon) { margin-right: 8px; font-size: 16px; width: 16px; height: 16px; }
 
 .motspassants-content { flex: 1; background: transparent; overflow-y: auto; position: relative; }
+/* Header bar inside content */
+.shell-header { display:flex; align-items:center; justify-content:space-between; padding: 16px 20px; border-bottom: 1px solid var(--border-color); position: sticky; top: 0; background: var(--app-bg); z-index: 5; }
+.shell-header-left { display:flex; align-items:center; gap: 10px; }
+.shell-title { margin: 0; color: var(--content-fg); }
+.shell-header .title-icon { font-size: 20px; width: 20px; height: 20px; color: var(--content-fg); opacity: .9; }
+
+/* Simple refresh button next to title */
+.shell-header .refresh-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  padding: 4px;
+  margin-left: 2px;
+  cursor: pointer;
+}
+
+.shell-header .refresh-btn iconify-icon {
+  font-size: 26px;
+  width: 26px;
+  height: 26px;
+  color: var(--content-fg);
+}
+
+.shell-header .refresh-btn:focus-visible {
+  outline: 2px solid var(--focus-ring, #6ea8fe);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
 /* Remove top overlay that visually separates header and content */
 /* .motspassants-content::before { ... } */
 

@@ -1,4 +1,4 @@
-import { Component, OnInit, CUSTOM_ELEMENTS_SCHEMA, signal } from '@angular/core';
+import { Component, OnInit, OnDestroy, CUSTOM_ELEMENTS_SCHEMA, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
@@ -13,6 +13,7 @@ import { Book, SortField, SortDirection, BookSortCriteria, SortOption } from '..
 import { environment } from '../../environments/environment';
 import { InfiniteScrollService } from '../services/infinite-scroll.service';
 import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive';
+import { HeaderActionsService } from '../services/header-actions.service';
 
 @Component({
   selector: 'app-book-list',
@@ -33,13 +34,6 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
   <div class="motspassants-library" appInfiniteScroll (scrolled)="onScroll()" [disabled]="scrollState.loading()">
       <div class="library-header">
         <div class="header-content">
-          <h1 class="library-title">
-            <iconify-icon class="title-icon" icon="material-symbols:book-2-rounded"></iconify-icon>
-            Books Library
-            <button mat-icon-button class="refresh-btn" aria-label="Refresh books" (click)="refresh()">
-              <iconify-icon icon="material-symbols-light:refresh-rounded"></iconify-icon>
-            </button>
-          </h1>
           <p class="library-subtitle">Discover and explore your digital book collection</p>
         
           <!-- Sort control: matches look-and-feel used across the app. -->
@@ -93,8 +87,8 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
       } @else {
         <div class="library-content">
             <div class="books-grid">
-              @for (book of scrollState.items(); track asBook(book).id) {
-                <div class="book-card" 
+              @for (book of scrollState.items(); track asBook(book).id; let i = $index) {
+                <div class="book-card ngx-card hoverable" 
                      matRipple 
                      [routerLink]="['/books', asBook(book).id]">
                   <div class="book-cover">
@@ -102,9 +96,9 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
                       <img [src]="getEffectiveImagePath(asBook(book))!" 
                            [alt]="asBook(book).title + ' cover'"
                            class="cover-image"
-                           loading="lazy"
+                           [attr.loading]="i === 0 ? 'eager' : 'lazy'"
+                           [attr.fetchpriority]="i === 0 ? 'high' : 'low'"
                            decoding="async"
-                           fetchpriority="low"
                            (load)="onImageLoad($event)"
                            (error)="onImageError($event)">
                     } @else {
@@ -176,7 +170,7 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
   `,
   styleUrls: ['./book-list.component.css']
 })
-export class BookListComponent implements OnInit {
+export class BookListComponent implements OnInit, OnDestroy {
   scrollState;
   private readonly CARD_WIDTH = 240; // px
   private readonly CARD_HEIGHT = 360; // px
@@ -224,7 +218,8 @@ export class BookListComponent implements OnInit {
   constructor(
     private bookService: BookService,
     private snackBar: MatSnackBar,
-    private infiniteScrollService: InfiniteScrollService
+    private infiniteScrollService: InfiniteScrollService,
+    private headerActions: HeaderActionsService
   ) {
     // Initialize infinite scroll state with sorting support
     this.scrollState = this.infiniteScrollService.createInfiniteScrollState(
@@ -241,6 +236,13 @@ export class BookListComponent implements OnInit {
   // Initialization is handled by the infinite scroll service
   // Recalculate on resize to keep loads efficient
   window.addEventListener('resize', this.onResize, { passive: true });
+  // Register shell header refresh action
+  this.headerActions.setRefresh(() => this.refresh());
+  }
+
+  ngOnDestroy(): void {
+    window.removeEventListener('resize', this.onResize as any);
+    this.headerActions.setRefresh(null);
   }
 
   onScroll() {

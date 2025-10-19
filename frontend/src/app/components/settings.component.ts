@@ -1,5 +1,5 @@
-import { Component, OnInit, signal, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, signal, CUSTOM_ELEMENTS_SCHEMA, Inject } from '@angular/core';
+import { CommonModule, DOCUMENT } from '@angular/common';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
@@ -20,172 +20,176 @@ import pkg from '../../../package.json';
     MatSnackBarModule
   ],
   template: `
-  <div class="motspassants-library">
-      <div class="library-header">
-        <div class="header-content">
-          <h1 class="library-title">
-            <iconify-icon class="title-icon" icon="material-symbols:settings-outline"></iconify-icon>
-            Settings
-          </h1>
-          <p class="library-subtitle">Configure and explore your library system</p>
+  <div class="ngx-container settings-scope iot-scope">
+    @if (loading()) {
+      <section class="loading-section" aria-busy="true" aria-live="polite">
+        <div class="loading-content">
+          <mat-progress-spinner mode="indeterminate" diameter="60" color="accent" aria-hidden="true"></mat-progress-spinner>
+          <h2 class="ngx-h2">Loading settings…</h2>
+          <p class="ngx-muted">Fetching configuration and system information</p>
         </div>
-      </div>
-
-      @if (loading()) {
-        <div class="loading-section">
-          <div class="loading-content">
-            <mat-progress-spinner mode="indeterminate" diameter="60" color="accent"></mat-progress-spinner>
-            <h3>Loading settings...</h3>
-            <p>Fetching configuration and system information</p>
-          </div>
-        </div>
-      } @else {
-        <div class="library-content">
-          @if (usingCachedWarning()) {
-            <div class="warning-banner">
-              <iconify-icon icon="mdi:alert"></iconify-icon>
-              The settings service is unreachable. Showing last known data.
-            </div>
-          }
-          <div class="dashboard-grid">
-            <!-- Left column stack: keep Application info and Health together -->
-            <div class="stacked-column">
-              <!-- Application Information -->
-              <mat-card class="info-card dark-card">
-                <mat-card-header>
-                  <div mat-card-avatar class="avatar">
-                    <iconify-icon icon="mdi:information-outline"></iconify-icon>
-                  </div>
-                  <mat-card-title>
-                    Application Information
-                    <button mat-icon-button class="refresh-btn" aria-label="Refresh application info" (click)="reloadSettings(true)">
-                      <iconify-icon icon="material-symbols-light:refresh-rounded"></iconify-icon>
-                    </button>
-                  </mat-card-title>
-                  <mat-card-subtitle>System details and version</mat-card-subtitle>
-                </mat-card-header>
-                
-                <mat-card-content>
-                  <div class="stat-row">
-                    <span class="stat-label">Backend version:</span>
-                    <span class="stat-value">{{ settingsData()?.version || 'Unknown' }}</span>
-                  </div>
-                  <div class="stat-row">
-                    <span class="stat-label">Frontend version:</span>
-                    <span class="stat-value">{{ frontendVersion }}</span>
-                  </div>
-                </mat-card-content>
-              </mat-card>
-
-              <!-- Liveness & Readiness -->
-              <mat-card class="health-card dark-card">
-                <mat-card-header>
-                  <div mat-card-avatar class="avatar">
-                    <iconify-icon icon="mdi:heart-pulse"></iconify-icon>
-                  </div>
-                  <mat-card-title>
-                    Liveness & Readiness
-                    <button mat-icon-button class="refresh-btn" aria-label="Refresh health" (click)="healthRefresh()">
-                      <iconify-icon icon="material-symbols-light:refresh-rounded"></iconify-icon>
-                    </button>
-                  </mat-card-title>
-                  <mat-card-subtitle>Backend health status</mat-card-subtitle>
-                </mat-card-header>
-                <mat-card-content>
-                  <div class="health-grid">
-                    <div class="health-item">
-                      <span class="health-label">Liveness</span>
-                      <span class="status-badge" [ngClass]="livenessOk() ? 'ok' : 'ko'">
-                        {{ livenessOk() ? 'OK' : 'KO' }}
-                      </span>
-                    </div>
-                    <div class="health-item">
-                      <span class="health-label">Readiness</span>
-                      <span class="status-badge" [ngClass]="readinessOk() ? 'ok' : 'ko'">
-                        {{ readinessOk() ? 'OK' : 'KO' }}
-                      </span>
-                    </div>
-                  </div>
-
-                  <!-- Readiness checks (dynamic submodules) -->
-                  @if (readinessChecks().length) {
-                    <div class="readiness-list">
-                      @for (chk of readinessChecks(); track chk.name) {
-                        <div class="health-item">
-                          <span class="health-label">{{ chk.name }}</span>
-                          <span class="status-badge" [ngClass]="(chk.status || '').toLowerCase() === 'up' ? 'ok' : 'ko'">
-                            {{ (chk.status || 'UNKNOWN').toUpperCase() }}
-                          </span>
-                        </div>
-                      }
-                    </div>
-                  }
-                </mat-card-content>
-              </mat-card>
-            </div>
-
-            <!-- Supported Formats -->
-            <mat-card class="formats-card dark-card">
-              <mat-card-header>
-                <div mat-card-avatar class="avatar">
-                  <iconify-icon icon="mdi:file-document-outline"></iconify-icon>
-                </div>
-                <mat-card-title>
-                  Supported Formats
-                  <button mat-icon-button class="refresh-btn" aria-label="Refresh formats" (click)="reloadSettings(true)">
-                    <iconify-icon icon="material-symbols-light:refresh-rounded"></iconify-icon>
-                  </button>
-                </mat-card-title>
-                <mat-card-subtitle>{{ settingsData()?.supportedFormats?.length || 0 }} formats supported</mat-card-subtitle>
-              </mat-card-header>
-              
-              <mat-card-content>
-                <div class="stats-grid format-grid">
-                  @for (format of settingsData()?.supportedFormats; track format) {
-                    <div class="stat-item format-item">
-                      <iconify-icon class="stat-icon format-icon" icon="mdi:file-document-outline"></iconify-icon>
-                      <div class="stat-content">
-                        <div class="stat-count format-text">{{ format.toUpperCase() }}</div>
-                      </div>
-                    </div>
-                  }
-                </div>
-              </mat-card-content>
-            </mat-card>
-
-            <!-- Library Statistics -->
-            <mat-card class="stats-card dark-card">
-              <mat-card-header>
-                <div mat-card-avatar class="avatar">
-                  <iconify-icon icon="mdi:chart-bar"></iconify-icon>
-                </div>
-                <mat-card-title>
-                  Library Statistics
-                  <button mat-icon-button class="refresh-btn" aria-label="Refresh statistics" (click)="reloadSettings(true)">
-                    <iconify-icon icon="material-symbols-light:refresh-rounded"></iconify-icon>
-                  </button>
-                </mat-card-title>
-                <mat-card-subtitle>Content overview</mat-card-subtitle>
-              </mat-card-header>
-              
-              <mat-card-content>
-                <div class="stats-grid">
-                  @for (stat of getEntityStats(); track stat.key) {
-                    <div class="stat-item">
-                      <iconify-icon class="stat-icon" [icon]="stat.icon"></iconify-icon>
-                      <div class="stat-content">
-                        <div class="stat-count">{{ stat.count }}</div>
-                        <div class="stat-name">{{ stat.name }}</div>
-                      </div>
-                    </div>
-                  }
-                </div>
-              </mat-card-content>
-            </mat-card>
-          </div>
+      </section>
+    } @else {
+      @if (usingCachedWarning()) {
+        <div class="warning-banner" role="status" aria-live="polite">
+          <iconify-icon icon="mdi:alert" aria-hidden="true"></iconify-icon>
+          The settings service is unreachable. Showing last known data.
         </div>
       }
-    </div>
+
+      <!-- IoT-style control tiles -->
+      <div class="iot-controls-grid" aria-label="Primary indicators">
+        <div class="iot-control" role="group" aria-label="Backend">
+          <div class="iot-icon" aria-hidden="true"><iconify-icon icon="mdi:server"></iconify-icon></div>
+          <div class="iot-meta">
+            <div class="iot-title">Backend</div>
+            <div class="iot-state on">{{ (settingsData()?.version || 'Unknown') }}</div>
+          </div>
+        </div>
+        <div class="iot-control" role="group" aria-label="Frontend">
+          <div class="iot-icon" aria-hidden="true"><iconify-icon icon="mdi:webpack"></iconify-icon></div>
+          <div class="iot-meta">
+            <div class="iot-title">Frontend</div>
+            <div class="iot-state on">{{ frontendVersion }}</div>
+          </div>
+        </div>
+        <button class="iot-control iot-action" type="button" (click)="healthRefresh()" aria-label="Refresh and show liveness" [attr.aria-pressed]="livenessOk()">
+          <div class="iot-icon" aria-hidden="true"><iconify-icon icon="mdi:heart-pulse"></iconify-icon></div>
+          <div class="iot-meta">
+            <div class="iot-title">Liveness</div>
+            <div class="iot-state" [class.on]="livenessOk()" [class.off]="!livenessOk()">{{ livenessOk() ? 'ON' : 'OFF' }}</div>
+          </div>
+        </button>
+        <button class="iot-control iot-action" type="button" (click)="healthRefresh()" aria-label="Refresh and show readiness" [attr.aria-pressed]="readinessOk()">
+          <div class="iot-icon" aria-hidden="true"><iconify-icon icon="mdi:check-network"></iconify-icon></div>
+          <div class="iot-meta">
+            <div class="iot-title">Readiness</div>
+            <div class="iot-state" [class.on]="readinessOk()" [class.off]="!readinessOk()">{{ readinessOk() ? 'ON' : 'OFF' }}</div>
+          </div>
+        </button>
+      </div>
+
+      <!-- IoT-style two-column main area -->
+      <div class="iot-main-grid" aria-label="Settings sections">
+        <!-- Left: Tabbed overview -->
+        <section class="ngx-card hoverable iot-tab-card" aria-labelledby="overview-title">
+          <div class="ngx-card-header">
+            <div class="avatar" aria-hidden="true">
+              <iconify-icon icon="mdi:information-outline"></iconify-icon>
+            </div>
+            <div class="title-group">
+              <h2 class="ngx-h2" id="overview-title">System Overview</h2>
+              <div class="ngx-card-subtitle">Application & Health</div>
+            </div>
+            <div class="iot-tab-actions" role="tablist" aria-label="Overview tabs">
+              <button type="button" role="tab" [attr.aria-selected]="tab() === 'app'" class="iot-tab" (click)="selectTab('app')">Application</button>
+              <button type="button" role="tab" [attr.aria-selected]="tab() === 'health'" class="iot-tab" (click)="selectTab('health')">Health</button>
+            </div>
+            <button class="refresh-btn btn-ghost" aria-label="Refresh" (click)="reloadSettings(true)">
+              <iconify-icon icon="material-symbols-light:refresh-rounded" aria-hidden="true"></iconify-icon>
+            </button>
+          </div>
+          <div class="ngx-card-content">
+            @if (tab() === 'app') {
+              <div class="stat-row">
+                <span class="stat-label">Backend version</span>
+                <span class="stat-value">{{ settingsData()?.version || 'Unknown' }}</span>
+              </div>
+              <div class="stat-row">
+                <span class="stat-label">Frontend version</span>
+                <span class="stat-value">{{ frontendVersion }}</span>
+              </div>
+              <div class="formats-wrap">
+                <div class="formats-title">Supported formats</div>
+                <div class="chip-list" role="list">
+                  @for (format of settingsData()?.supportedFormats; track format) {
+                    <span class="chip" role="listitem" [attr.aria-label]="'Format ' + format">{{ format.toUpperCase() }}</span>
+                  }
+                </div>
+              </div>
+            } @else {
+              <div class="health-grid">
+                <div class="health-item">
+                  <span class="health-label">Liveness</span>
+                  <span class="status-badge" [ngClass]="livenessOk() ? 'ok' : 'ko'">{{ livenessOk() ? 'UP' : 'DOWN' }}</span>
+                </div>
+                <div class="health-item">
+                  <span class="health-label">Readiness</span>
+                  <span class="status-badge" [ngClass]="readinessOk() ? 'ok' : 'ko'">{{ readinessOk() ? 'UP' : 'DOWN' }}</span>
+                </div>
+              </div>
+              @if (readinessChecks().length) {
+                <div class="readiness-list" aria-label="Readiness checks">
+                  @for (chk of readinessChecks(); track chk.name) {
+                    <div class="health-item">
+                      <span class="health-label">{{ chk.name }}</span>
+                      <span class="status-badge" [ngClass]="(chk.status || '').toLowerCase() === 'up' ? 'ok' : 'ko'">
+                        {{ (chk.status || 'UNKNOWN').toUpperCase() }}
+                      </span>
+                    </div>
+                  }
+                </div>
+              }
+            }
+          </div>
+        </section>
+
+        <!-- Right: Quick stats -->
+        <section class="ngx-card hoverable iot-quick-card" aria-labelledby="quick-stats-title">
+          <div class="ngx-card-header">
+            <div class="avatar" aria-hidden="true">
+              <iconify-icon icon="mdi:view-dashboard"></iconify-icon>
+            </div>
+            <div class="title-group">
+              <h2 class="ngx-h2" id="quick-stats-title">Quick Stats</h2>
+              <div class="ngx-card-subtitle">Library overview</div>
+            </div>
+            <button class="refresh-btn btn-ghost" aria-label="Refresh statistics" (click)="reloadSettings(true)">
+              <iconify-icon icon="material-symbols-light:refresh-rounded" aria-hidden="true"></iconify-icon>
+            </button>
+          </div>
+          <div class="ngx-card-content">
+            <ul class="quick-list" role="list">
+              @for (stat of getEntityStats(); track stat.key) {
+                <li class="quick-item" role="listitem">
+                  <iconify-icon class="quick-icon" [icon]="stat.icon" aria-hidden="true"></iconify-icon>
+                  <div class="quick-meta">
+                    <div class="quick-name">{{ stat.name }}</div>
+                    <div class="quick-count">{{ stat.count }}</div>
+                  </div>
+                </li>
+              }
+            </ul>
+          </div>
+        </section>
+      </div>
+
+      <!-- Bottom row: Formats as dedicated card (compact) -->
+      <div class="iot-bottom-grid">
+        <section class="ngx-card hoverable" aria-labelledby="formats-title">
+          <div class="ngx-card-header">
+            <div class="avatar" aria-hidden="true">
+              <iconify-icon icon="mdi:file-document-outline"></iconify-icon>
+            </div>
+            <div class="title-group">
+              <h2 class="ngx-h2" id="formats-title">Supported Formats</h2>
+              <div class="ngx-card-subtitle">{{ settingsData()?.supportedFormats?.length || 0 }} formats supported</div>
+            </div>
+            <button class="refresh-btn btn-ghost" aria-label="Refresh formats" (click)="reloadSettings(true)">
+              <iconify-icon icon="material-symbols-light:refresh-rounded" aria-hidden="true"></iconify-icon>
+            </button>
+          </div>
+          <div class="ngx-card-content">
+            <div class="chip-list" role="list">
+              @for (format of settingsData()?.supportedFormats; track format) {
+                <span class="chip" role="listitem" [attr.aria-label]="'Format ' + format">{{ format.toUpperCase() }}</span>
+              }
+            </div>
+          </div>
+        </section>
+      </div>
+    }
+  </div>
   `,
   styleUrls: ['./settings.component.css']
 })
@@ -196,13 +200,21 @@ export class SettingsComponent implements OnInit {
   private _livenessOk = signal<boolean | null>(null);
   private _readinessOk = signal<boolean | null>(null);
   private _readinessChecks = signal<Array<{ name: string; status: string }>>([]);
+  // IoT-style tab selection: 'app' or 'health'
+  tab = signal<'app' | 'health'>('app');
   frontendVersion = (pkg as any).version ?? '0.0.0';
   private healthIntervalId: any;
 
 
-  constructor(private settingsService: SettingsService, private snackBar: MatSnackBar) {}
+  constructor(
+    private settingsService: SettingsService,
+    private snackBar: MatSnackBar,
+    @Inject(DOCUMENT) private document: Document
+  ) {}
 
   ngOnInit() {
+    // Apply ngx-admin-like dark theme to the whole page while on Settings
+    this.document.body.classList.add('theme-ngx');
     this.loadSettings();
     this.checkHealth();
     // Poll health probes every minute
@@ -210,10 +222,16 @@ export class SettingsComponent implements OnInit {
   }
 
   ngOnDestroy() {
+    // Remove theme class on leave to avoid leaking styles to other pages
+    this.document.body.classList.remove('theme-ngx');
     if (this.healthIntervalId) {
       clearInterval(this.healthIntervalId);
       this.healthIntervalId = null;
     }
+  }
+
+  selectTab(next: 'app' | 'health') {
+    this.tab.set(next);
   }
 
   loadSettings(force = false) {

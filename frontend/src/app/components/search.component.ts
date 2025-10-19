@@ -27,10 +27,7 @@ import { environment } from '../../environments/environment';
   <div class="motspassants-library motspassants-search">
       <div class="library-header">
         <div class="header-content">
-          <h1 class="library-title">
-            <iconify-icon class="title-icon" icon="material-symbols:search-rounded"></iconify-icon>
-            Search Library
-          </h1>
+          
           <p class="library-subtitle">Find exactly what you're looking for in your collection</p>
         </div>
       </div>

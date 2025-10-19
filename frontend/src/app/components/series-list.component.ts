@@ -1,4 +1,4 @@
-import { Component, OnInit, CUSTOM_ELEMENTS_SCHEMA, signal } from '@angular/core';
+import { Component, OnInit, OnDestroy, CUSTOM_ELEMENTS_SCHEMA, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { MatSnackBar } from '@angular/material/snack-bar';
@@ -10,6 +10,7 @@ import { environment } from '../../environments/environment';
 import { Series } from '../models/series.model';
 import { InfiniteScrollService } from '../services/infinite-scroll.service';
 import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive';
+import { HeaderActionsService } from '../services/header-actions.service';
 
 @Component({
   selector: 'app-series-list',
@@ -25,13 +26,6 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
   <div class="motspassants-library" appInfiniteScroll (scrolled)="onScroll()" [disabled]="scrollState.loading()">
       <div class="library-header">
         <div class="header-content">
-          <h1 class="library-title">
-            <iconify-icon class="title-icon" icon="material-symbols:books-movies-and-music"></iconify-icon>
-            Series Library
-            <button mat-icon-button class="refresh-btn" aria-label="Refresh series" (click)="refresh()">
-              <iconify-icon icon="material-symbols-light:refresh-rounded"></iconify-icon>
-            </button>
-          </h1>
           <p class="library-subtitle">Explore your book series collections</p>
           <div class="header-actions">
             <div class="sort-field">
@@ -135,7 +129,7 @@ import { InfiniteScrollDirective } from '../directives/infinite-scroll.directive
   `,
   styleUrls: ['./series-list.component.css']
 })
-export class SeriesListComponent implements OnInit {
+export class SeriesListComponent implements OnInit, OnDestroy {
   scrollState;
   // Sort options for series listing (reuse book sort enums where appropriate)
   sortOptions: SortOption[] = [
@@ -152,7 +146,8 @@ export class SeriesListComponent implements OnInit {
   constructor(
     private seriesService: SeriesService,
     private snackBar: MatSnackBar,
-    private infiniteScrollService: InfiniteScrollService
+    private infiniteScrollService: InfiniteScrollService,
+    private headerActions: HeaderActionsService
   ) {
     // Initialize infinite scroll state (support sort criteria)
     this.scrollState = this.infiniteScrollService.createInfiniteScrollState(
@@ -168,6 +163,12 @@ export class SeriesListComponent implements OnInit {
   ngOnInit() {
     // Recalculate on resize
     window.addEventListener('resize', this.onResize, { passive: true });
+    this.headerActions.setRefresh(() => this.refresh());
+  }
+
+  ngOnDestroy(): void {
+    window.removeEventListener('resize', this.onResize as any);
+    this.headerActions.setRefresh(null);
   }
 
   onScroll() { this.scrollState.loadMore(); }

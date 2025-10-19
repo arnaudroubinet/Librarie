@@ -4,7 +4,8 @@ export const routes: Routes = [
   { path: '', redirectTo: '/books', pathMatch: 'full' },
   { 
     path: 'books', 
-    loadComponent: () => import('./components/book-list.component').then(c => c.BookListComponent)
+    loadComponent: () => import('./components/book-list.component').then(c => c.BookListComponent),
+    data: { title: 'Books Library' }
   },
   { 
     path: 'books/:id', 
@@ -16,7 +17,8 @@ export const routes: Routes = [
   },
   { 
     path: 'series', 
-    loadComponent: () => import('./components/series-list.component').then(c => c.SeriesListComponent)
+    loadComponent: () => import('./components/series-list.component').then(c => c.SeriesListComponent),
+    data: { title: 'Series Library' }
   },
   { 
     path: 'series/:id', 
@@ -24,7 +26,8 @@ export const routes: Routes = [
   },
   { 
     path: 'authors', 
-    loadComponent: () => import('./components/author-list.component').then(c => c.AuthorListComponent)
+    loadComponent: () => import('./components/author-list.component').then(c => c.AuthorListComponent),
+    data: { title: 'Authors Library' }
   },
   { 
     path: 'authors/:id', 
@@ -32,11 +35,13 @@ export const routes: Routes = [
   },
   { 
     path: 'search', 
-    loadComponent: () => import('./components/search.component').then(c => c.SearchComponent)
+    loadComponent: () => import('./components/search.component').then(c => c.SearchComponent),
+    data: { title: 'Search Library' }
   },
   { 
     path: 'settings', 
-    loadComponent: () => import('./components/settings.component').then(c => c.SettingsComponent)
+    loadComponent: () => import('./components/settings.component').then(c => c.SettingsComponent),
+    data: { title: 'Settings' }
   },
   { path: '**', redirectTo: '/books' }
 ];

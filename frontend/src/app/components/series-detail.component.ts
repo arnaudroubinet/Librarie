@@ -121,7 +121,7 @@ import { forkJoin, of } from 'rxjs';
               @if (books().length > 0) {
                 <div class="books-grid">
                   @for (book of books(); track book.id) {
-                    <div class="book-card" 
+        <div class="book-card ngx-card hoverable" 
                          matRipple
                          [routerLink]="['/books', book.id]">
                       <div class="book-cover">

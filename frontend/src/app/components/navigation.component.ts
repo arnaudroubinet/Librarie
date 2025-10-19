@@ -1,6 +1,7 @@
-import { Component, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
+import { Component, CUSTOM_ELEMENTS_SCHEMA, computed, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { ActivatedRoute, NavigationEnd, Router, RouterModule } from '@angular/router';
+import { HeaderActionsService } from '../../app/services/header-actions.service';
 import { MatButtonModule } from '@angular/material/button';
 import pkg from '../../../package.json';
 
@@ -16,6 +17,7 @@ import pkg from '../../../package.json';
   ],
   template: `
     <div class="motspassants-container">
+      <a class="sr-only" href="#maincontent">Skip to main content</a>
       <nav class="motspassants-sidebar">
         <div class="motspassants-logo">
           <iconify-icon class="logo-icon" icon="mdi:bookshelf"></iconify-icon>
@@ -58,7 +60,18 @@ import pkg from '../../../package.json';
         </div>
       </nav>
 
-  <main class="motspassants-content">
+  <main id="maincontent" role="main" class="motspassants-content">
+        <header class="shell-header">
+          <div class="shell-header-left">
+            <iconify-icon class="title-icon" [icon]="headerIcon()" aria-hidden="true"></iconify-icon>
+            <h1 class="shell-title ngx-h1">{{ pageTitle() }}</h1>
+            @if (actions.refresh()) {
+              <button class="refresh-btn" type="button" aria-label="Refresh" (click)="actions.triggerRefresh()">
+                <iconify-icon icon="material-symbols-light:refresh-rounded"></iconify-icon>
+              </button>
+            }
+          </div>
+        </header>
         <ng-content></ng-content>
       </main>
     </div>
@@ -67,4 +80,39 @@ import pkg from '../../../package.json';
 })
 export class NavigationComponent {
   frontendVersion = (pkg as any).version ?? '0.0.0';
+
+  private currentTitle = signal('Books Library');
+  pageTitle = computed(() => this.currentTitle());
+  headerIcon = computed(() => this.computeHeaderIcon());
+
+  constructor(private router: Router, private route: ActivatedRoute, public actions: HeaderActionsService) {
+    // Update title on navigation end
+    this.router.events.subscribe((evt) => {
+      if (evt instanceof NavigationEnd) {
+        const title = this.findDeepestTitle(this.route);
+        this.currentTitle.set(title ?? 'Books Library');
+      }
+    });
+  }
+
+  private findDeepestTitle(route: ActivatedRoute): string | undefined {
+    let r: ActivatedRoute | null = route.firstChild ?? route;
+    let lastTitle: string | undefined;
+    while (r) {
+      const dataTitle = r.snapshot.data?.['title'];
+      if (dataTitle) lastTitle = dataTitle;
+      r = r.firstChild ?? null;
+    }
+    return lastTitle;
+  }
+
+  private computeHeaderIcon(): string {
+    const url = this.router.url || '';
+    if (url.startsWith('/settings')) return 'material-symbols:settings-outline';
+    if (url.startsWith('/series')) return 'material-symbols:books-movies-and-music';
+    if (url.startsWith('/authors')) return 'material-symbols:supervised-user-circle';
+    if (url.startsWith('/search')) return 'material-symbols:search-rounded';
+    if (url.startsWith('/books')) return 'material-symbols:book-2-rounded';
+    return 'material-symbols:book-2-rounded';
+  }
 }

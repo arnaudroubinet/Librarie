@@ -44,3 +44,41 @@ Thumbs.db
 # Audit artifacts - keep screenshots, exclude logs and traces
 artifacts/**/logs/
 artifacts/**/traces/
+
+# Playwright MCP output
+.playwright-mcp/
+
+# Playwright reports and test outputs
+playwright-report/
+test-results/
+blob-report/
+**/playwright-report/
+**/test-results/
+**/blob-report/
+
+# Logs directory at repo root
+logs/**
+
+# Coverage outputs (JS/TS tooling)
+coverage/
+**/coverage/
+.nyc_output/
+
+# Vite cache (Angular 17+ / Vite-based serves)
+**/.vite/
+
+# TypeScript incremental build info
+*.tsbuildinfo
+
+# Environment files (keep examples)
+.env
+.env.*
+.env.local
+!.env.example
+
+# Angular cache (fallback, already covered in frontend)
+**/.angular/cache
+
+# Additional tool caches/logs
+.eslintcache
+pnpm-debug.log*
