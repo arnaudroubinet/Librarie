@@ -4,6 +4,7 @@ import io.agroal.api.AgroalDataSource;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.motpassants.domain.core.model.ReadingProgress;
+import org.motpassants.domain.core.model.ReadingStatus;
 import org.motpassants.domain.port.out.ReadingProgressRepository;
 
 import java.sql.*;
@@ -27,8 +28,10 @@ public class ReadingProgressRepositoryAdapter implements ReadingProgressReposito
 
     private ReadingProgress insert(ReadingProgress readingProgress) {
     String sql = """
-        INSERT INTO reading_progress (id, book_id, user_id, device_id, progress_cfi, progress_percent, progress_locator, last_read_at, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?::jsonb, ?, ?, ?)
+        INSERT INTO reading_progress (id, book_id, user_id, device_id, progress_cfi, progress_percent, 
+                                      progress_locator, status, started_at, finished_at, last_read_at, 
+                                      created_at, updated_at, sync_version, notes)
+        VALUES (?, ?, ?, ?, ?, ?, ?::jsonb, ?, ?, ?, ?, ?, ?, ?, ?)
         """;
 
         try (Connection conn = dataSource.getConnection();
@@ -47,13 +50,20 @@ public class ReadingProgressRepositoryAdapter implements ReadingProgressReposito
             // Optional locator JSON string from domain
             String locator = readingProgress.getProgressLocator();
             stmt.setString(7, locator);
-
-            stmt.setTimestamp(8, readingProgress.getLastReadAt() != null ? 
+            stmt.setString(8, readingProgress.getStatus() != null ? 
+                readingProgress.getStatus().name() : ReadingStatus.READING.name());
+            stmt.setTimestamp(9, readingProgress.getStartedAt() != null ? 
+                Timestamp.valueOf(readingProgress.getStartedAt()) : null);
+            stmt.setTimestamp(10, readingProgress.getFinishedAt() != null ? 
+                Timestamp.valueOf(readingProgress.getFinishedAt()) : null);
+            stmt.setTimestamp(11, readingProgress.getLastReadAt() != null ? 
                 Timestamp.valueOf(readingProgress.getLastReadAt()) : Timestamp.valueOf(LocalDateTime.now()));
-            stmt.setTimestamp(9, readingProgress.getCreatedAt() != null ? 
+            stmt.setTimestamp(12, readingProgress.getCreatedAt() != null ? 
                 Timestamp.valueOf(readingProgress.getCreatedAt()) : Timestamp.valueOf(LocalDateTime.now()));
-            stmt.setTimestamp(10, readingProgress.getUpdatedAt() != null ? 
+            stmt.setTimestamp(13, readingProgress.getUpdatedAt() != null ? 
                 Timestamp.valueOf(readingProgress.getUpdatedAt()) : Timestamp.valueOf(LocalDateTime.now()));
+            stmt.setLong(14, readingProgress.getSyncVersion() != null ? readingProgress.getSyncVersion() : 1L);
+            stmt.setString(15, readingProgress.getNotes());
 
             stmt.executeUpdate();
             return readingProgress;
@@ -66,7 +76,8 @@ public class ReadingProgressRepositoryAdapter implements ReadingProgressReposito
     private ReadingProgress update(ReadingProgress readingProgress) {
     String sql = """
         UPDATE reading_progress 
-        SET progress_cfi = ?, progress_percent = ?, progress_locator = ?::jsonb, last_read_at = ?, updated_at = ?
+        SET progress_cfi = ?, progress_percent = ?, progress_locator = ?::jsonb, status = ?, 
+            started_at = ?, finished_at = ?, last_read_at = ?, updated_at = ?, sync_version = ?, notes = ?
         WHERE id = ?
         """;
 
@@ -78,11 +89,18 @@ public class ReadingProgressRepositoryAdapter implements ReadingProgressReposito
                 readingProgress.getProgress() != null ? readingProgress.getProgress() * 100 : 0.0));
             String locator = readingProgress.getProgressLocator();
             stmt.setString(3, locator);
-
-            stmt.setTimestamp(4, readingProgress.getLastReadAt() != null ? 
+            stmt.setString(4, readingProgress.getStatus() != null ? 
+                readingProgress.getStatus().name() : ReadingStatus.READING.name());
+            stmt.setTimestamp(5, readingProgress.getStartedAt() != null ? 
+                Timestamp.valueOf(readingProgress.getStartedAt()) : null);
+            stmt.setTimestamp(6, readingProgress.getFinishedAt() != null ? 
+                Timestamp.valueOf(readingProgress.getFinishedAt()) : null);
+            stmt.setTimestamp(7, readingProgress.getLastReadAt() != null ? 
                 Timestamp.valueOf(readingProgress.getLastReadAt()) : Timestamp.valueOf(LocalDateTime.now()));
-            stmt.setTimestamp(5, Timestamp.valueOf(LocalDateTime.now()));
-            stmt.setObject(6, readingProgress.getId());
+            stmt.setTimestamp(8, Timestamp.valueOf(LocalDateTime.now()));
+            stmt.setLong(9, readingProgress.getSyncVersion() != null ? readingProgress.getSyncVersion() : 1L);
+            stmt.setString(10, readingProgress.getNotes());
+            stmt.setObject(11, readingProgress.getId());
 
             stmt.executeUpdate();
             return readingProgress;
@@ -95,7 +113,8 @@ public class ReadingProgressRepositoryAdapter implements ReadingProgressReposito
     @Override
     public Optional<ReadingProgress> findByUserIdAndBookId(UUID userId, UUID bookId) {
         String sql = """
-                SELECT id, book_id, user_id, device_id, progress_cfi, progress_percent, progress_locator, last_read_at, created_at, updated_at
+                SELECT id, book_id, user_id, device_id, progress_cfi, progress_percent, progress_locator, 
+                       status, started_at, finished_at, last_read_at, created_at, updated_at, sync_version, notes
                 FROM reading_progress 
                 WHERE user_id = ? AND book_id = ? AND device_id = 'web-reader'
                 ORDER BY updated_at DESC
@@ -123,7 +142,8 @@ public class ReadingProgressRepositoryAdapter implements ReadingProgressReposito
     @Override
     public List<ReadingProgress> findByUserId(UUID userId) {
         String sql = """
-                SELECT id, book_id, user_id, device_id, progress_cfi, progress_percent, progress_locator, last_read_at, created_at, updated_at
+                SELECT id, book_id, user_id, device_id, progress_cfi, progress_percent, progress_locator, 
+                       status, started_at, finished_at, last_read_at, created_at, updated_at, sync_version, notes
                 FROM reading_progress 
                 WHERE user_id = ? AND device_id = 'web-reader'
                 ORDER BY last_read_at DESC
@@ -205,7 +225,23 @@ public class ReadingProgressRepositoryAdapter implements ReadingProgressReposito
             progress.setProgressLocator(locator);
         }
         
+        // Parse status
+        String statusStr = rs.getString("status");
+        if (statusStr != null) {
+            progress.setStatus(ReadingStatus.valueOf(statusStr));
+        }
+        
         progress.setIsCompleted(progress.getProgress() != null && progress.getProgress() >= 1.0);
+        
+        Timestamp startedAt = rs.getTimestamp("started_at");
+        if (startedAt != null) {
+            progress.setStartedAt(startedAt.toLocalDateTime());
+        }
+        
+        Timestamp finishedAt = rs.getTimestamp("finished_at");
+        if (finishedAt != null) {
+            progress.setFinishedAt(finishedAt.toLocalDateTime());
+        }
         
         Timestamp lastReadAt = rs.getTimestamp("last_read_at");
         if (lastReadAt != null) {
@@ -220,6 +256,16 @@ public class ReadingProgressRepositoryAdapter implements ReadingProgressReposito
         Timestamp updatedAt = rs.getTimestamp("updated_at");
         if (updatedAt != null) {
             progress.setUpdatedAt(updatedAt.toLocalDateTime());
+        }
+        
+        Long syncVersion = rs.getLong("sync_version");
+        if (!rs.wasNull()) {
+            progress.setSyncVersion(syncVersion);
+        }
+        
+        String notes = rs.getString("notes");
+        if (notes != null) {
+            progress.setNotes(notes);
         }
         
         return progress;
