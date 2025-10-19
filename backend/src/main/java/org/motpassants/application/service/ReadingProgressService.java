@@ -1,6 +1,7 @@
 package org.motpassants.application.service;
 
 import org.motpassants.domain.core.model.ReadingProgress;
+import org.motpassants.domain.core.model.ReadingStatus;
 import org.motpassants.domain.port.in.ReadingProgressUseCase;
 import org.motpassants.domain.port.out.ReadingProgressRepository;
 
@@ -59,6 +60,45 @@ public class ReadingProgressService implements ReadingProgressUseCase {
     }
     
     @Override
+    @Transactional
+    public ReadingProgress updateReadingProgressWithStatus(UUID userId, UUID bookId, Double progress, Integer currentPage, 
+                                                          Integer totalPages, String progressLocator, ReadingStatus status) {
+        // Validate inputs
+        if (userId == null || bookId == null) {
+            throw new IllegalArgumentException("User ID and Book ID cannot be null");
+        }
+        
+        if (progress != null && (progress < 0.0 || progress > 1.0)) {
+            throw new IllegalArgumentException("Progress must be between 0.0 and 1.0");
+        }
+        
+        // Get existing reading progress or create new one
+        Optional<ReadingProgress> existingProgress = readingProgressRepository.findByUserIdAndBookId(userId, bookId);
+        
+        ReadingProgress readingProgress;
+        if (existingProgress.isPresent()) {
+            readingProgress = existingProgress.get();
+            readingProgress.updateProgress(progress, currentPage, totalPages);
+            if (status != null) {
+                readingProgress.setStatus(status);
+            }
+        } else {
+            readingProgress = ReadingProgress.create(userId, bookId);
+            readingProgress.updateProgress(progress, currentPage, totalPages);
+            if (status != null) {
+                readingProgress.setStatus(status);
+            }
+        }
+        
+        // Store raw locator JSON if provided
+        if (progressLocator != null && !progressLocator.isBlank()) {
+            readingProgress.setProgressLocator(progressLocator);
+        }
+        
+        return readingProgressRepository.save(readingProgress);
+    }
+    
+    @Override
     public Optional<ReadingProgress> getReadingProgress(UUID userId, UUID bookId) {
         if (userId == null || bookId == null) {
             throw new IllegalArgumentException("User ID and Book ID cannot be null");
@@ -89,6 +129,62 @@ public class ReadingProgressService implements ReadingProgressUseCase {
     @Override
     @Transactional
     public ReadingProgress markAsCompleted(UUID userId, UUID bookId) {
-        return updateReadingProgress(userId, bookId, 1.0, null, null, null);
+        if (userId == null || bookId == null) {
+            throw new IllegalArgumentException("User ID and Book ID cannot be null");
+        }
+        
+        Optional<ReadingProgress> existingProgress = readingProgressRepository.findByUserIdAndBookId(userId, bookId);
+        
+        ReadingProgress readingProgress;
+        if (existingProgress.isPresent()) {
+            readingProgress = existingProgress.get();
+            readingProgress.markAsFinished();
+        } else {
+            readingProgress = ReadingProgress.create(userId, bookId);
+            readingProgress.markAsFinished();
+        }
+        
+        return readingProgressRepository.save(readingProgress);
+    }
+    
+    @Override
+    @Transactional
+    public ReadingProgress markAsStarted(UUID userId, UUID bookId) {
+        if (userId == null || bookId == null) {
+            throw new IllegalArgumentException("User ID and Book ID cannot be null");
+        }
+        
+        Optional<ReadingProgress> existingProgress = readingProgressRepository.findByUserIdAndBookId(userId, bookId);
+        
+        ReadingProgress readingProgress;
+        if (existingProgress.isPresent()) {
+            readingProgress = existingProgress.get();
+            readingProgress.markAsStarted();
+        } else {
+            readingProgress = ReadingProgress.create(userId, bookId);
+            readingProgress.markAsStarted();
+        }
+        
+        return readingProgressRepository.save(readingProgress);
+    }
+    
+    @Override
+    @Transactional
+    public ReadingProgress markAsDnf(UUID userId, UUID bookId) {
+        if (userId == null || bookId == null) {
+            throw new IllegalArgumentException("User ID and Book ID cannot be null");
+        }
+        
+        Optional<ReadingProgress> existingProgress = readingProgressRepository.findByUserIdAndBookId(userId, bookId);
+        
+        ReadingProgress readingProgress;
+        if (existingProgress.isPresent()) {
+            readingProgress = existingProgress.get();
+            readingProgress.markAsDnf();
+        } else {
+            throw new IllegalStateException("Cannot mark a book as DNF without prior reading progress");
+        }
+        
+        return readingProgressRepository.save(readingProgress);
     }
 }
