@@ -1,9 +1,11 @@
 -- V1.0.6__Enhanced_Reading_Progress.sql
 -- Enhanced reading progress tracking with reading status, timestamps, and statistics support
 
--- Add reading status enum support
+-- Add reading status enum support and page tracking
 ALTER TABLE reading_progress 
     ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'READING' CHECK (status IN ('UNREAD', 'READING', 'FINISHED', 'DNF')),
+    ADD COLUMN IF NOT EXISTS current_page INTEGER DEFAULT 0,
+    ADD COLUMN IF NOT EXISTS total_pages INTEGER,
     ADD COLUMN IF NOT EXISTS started_at TIMESTAMPTZ,
     ADD COLUMN IF NOT EXISTS finished_at TIMESTAMPTZ,
     ADD COLUMN IF NOT EXISTS sync_version BIGINT DEFAULT 1,

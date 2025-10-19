@@ -137,15 +137,18 @@ public class ReadingProgressService implements ReadingProgressUseCase {
             throw new IllegalArgumentException("User ID and Book ID cannot be null");
         }
         
-        // Get existing reading progress
+        // Get existing reading progress or create new one
         Optional<ReadingProgress> existingProgress = readingProgressRepository.findByUserIdAndBookId(userId, bookId);
         
-        if (existingProgress.isEmpty()) {
-            throw new IllegalArgumentException("No reading progress found for this book");
+        ReadingProgress readingProgress;
+        if (existingProgress.isPresent()) {
+            readingProgress = existingProgress.get();
+            readingProgress.markAsDNF();
+        } else {
+            // Create new progress and mark as DNF
+            readingProgress = ReadingProgress.create(userId, bookId);
+            readingProgress.markAsDNF();
         }
-        
-        ReadingProgress readingProgress = existingProgress.get();
-        readingProgress.markAsDNF();
         
         return readingProgressRepository.save(readingProgress);
     }
