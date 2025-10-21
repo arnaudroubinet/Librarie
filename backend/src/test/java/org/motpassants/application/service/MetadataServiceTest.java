@@ -7,19 +7,15 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.motpassants.domain.core.model.Book;
 import org.motpassants.domain.core.model.MetadataSearchResult;
 import org.motpassants.domain.core.model.MetadataSource;
-import org.motpassants.domain.port.out.BookRepository;
 import org.motpassants.domain.port.out.MetadataProviderPort;
 
-import java.time.LocalDate;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 import static org.mockito.Mockito.lenient;
@@ -40,16 +36,12 @@ class MetadataServiceTest {
     @Mock
     private MetadataProviderPort openLibraryProvider;
 
-    @Mock
-    private BookRepository bookRepository;
-
     private MetadataService service;
 
     @BeforeEach
     void setUp() {
         service = new MetadataService();
         service.providers = providersInstance;
-        service.bookRepository = bookRepository;
 
         // Setup provider defaults - use lenient to avoid unnecessary stubbing warnings
         lenient().when(googleBooksProvider.getProviderName()).thenReturn("Google Books");
@@ -186,89 +178,7 @@ class MetadataServiceTest {
         assertEquals(0.9, results.get(0).getConfidenceScore());
     }
 
-    @Test
-    @DisplayName("Should apply metadata to book successfully")
-    void shouldApplyMetadataToBookSuccessfully() {
-        // Arrange
-        UUID bookId = UUID.randomUUID();
-        Book book = new Book("Original Title", "/path/to/book");
-        book.setId(bookId);
 
-        MetadataSearchResult metadata = MetadataSearchResult.builder()
-                .title("Updated Title")
-                .subtitle("Updated Subtitle")
-                .description("Updated Description")
-                .isbn13("9781234567890")
-                .pageCount(500)
-                .publishedDate(LocalDate.of(2020, 1, 15))
-                .language("en")
-                .source(MetadataSource.GOOGLE_BOOKS)
-                .providerBookId("abc123")
-                .confidenceScore(0.95)
-                .build();
-
-        when(bookRepository.findById(bookId)).thenReturn(Optional.of(book));
-        when(bookRepository.save(any(Book.class))).thenAnswer(invocation -> invocation.getArgument(0));
-
-        // Act
-        Book updatedBook = service.applyMetadataToBook(bookId, metadata, false);
-
-        // Assert
-        assertNotNull(updatedBook);
-        assertEquals("Updated Title", updatedBook.getTitle());
-        assertEquals("Updated Description", updatedBook.getDescription());
-        assertEquals("9781234567890", updatedBook.getIsbn());
-        assertEquals(500, updatedBook.getPageCount());
-        assertEquals(LocalDate.of(2020, 1, 15), updatedBook.getPublicationDate());
-        assertEquals(2020, updatedBook.getPublicationYear());
-        assertEquals("en", updatedBook.getLanguage());
-
-        // Verify metadata stored in JSONB
-        Map<String, Object> storedMetadata = updatedBook.getMetadata();
-        assertNotNull(storedMetadata);
-        assertEquals("GOOGLE_BOOKS", storedMetadata.get("metadata_source"));
-        assertEquals("abc123", storedMetadata.get("provider_book_id"));
-        assertEquals(0.95, storedMetadata.get("confidence_score"));
-        assertEquals("Updated Subtitle", storedMetadata.get("subtitle"));
-
-        verify(bookRepository).findById(bookId);
-        verify(bookRepository).save(updatedBook);
-    }
-
-    @Test
-    @DisplayName("Should throw exception when applying metadata to non-existent book")
-    void shouldThrowExceptionWhenApplyingMetadataToNonExistentBook() {
-        // Arrange
-        UUID bookId = UUID.randomUUID();
-        MetadataSearchResult metadata = createMockResult(MetadataSource.GOOGLE_BOOKS, "123", 0.9);
-
-        when(bookRepository.findById(bookId)).thenReturn(Optional.empty());
-
-        // Act & Assert
-        assertThrows(IllegalArgumentException.class, () -> {
-            service.applyMetadataToBook(bookId, metadata, false);
-        });
-    }
-
-    @Test
-    @DisplayName("Should throw exception when bookId is null")
-    void shouldThrowExceptionWhenBookIdIsNull() {
-        MetadataSearchResult metadata = createMockResult(MetadataSource.GOOGLE_BOOKS, "123", 0.9);
-
-        assertThrows(IllegalArgumentException.class, () -> {
-            service.applyMetadataToBook(null, metadata, false);
-        });
-    }
-
-    @Test
-    @DisplayName("Should throw exception when metadata is null")
-    void shouldThrowExceptionWhenMetadataIsNull() {
-        UUID bookId = UUID.randomUUID();
-
-        assertThrows(IllegalArgumentException.class, () -> {
-            service.applyMetadataToBook(bookId, null, false);
-        });
-    }
 
     @Test
     @DisplayName("Should skip disabled providers")
