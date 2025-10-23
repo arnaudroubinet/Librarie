@@ -58,4 +58,22 @@ public interface ReadingProgressUseCase {
      * @return the updated reading progress
      */
     ReadingProgress markAsCompleted(UUID userId, UUID bookId);
+    
+    /**
+     * Mark a book as started for a user.
+     * 
+     * @param userId the user ID
+     * @param bookId the book ID
+     * @return the updated reading progress
+     */
+    ReadingProgress markAsStarted(UUID userId, UUID bookId);
+    
+    /**
+     * Mark a book as DNF (Did Not Finish) for a user.
+     * 
+     * @param userId the user ID
+     * @param bookId the book ID
+     * @return the updated reading progress
+     */
+    ReadingProgress markAsDNF(UUID userId, UUID bookId);
 }
