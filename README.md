@@ -1,189 +1,184 @@
-# Librarie - Digital Library Management System
+# 📚 Librarie
 
-A modern, full-stack library management system for managing and reading digital books (EPUB, PDF, and more).
+> A modern, full-stack digital library management system for organizing and reading eBooks.
 
-## Features
+**Quick Links**: [📐 Architecture](./ARCHITECTURE.md) · [📖 Full Documentation](./docs/PROJECT_OVERVIEW.md) · [📝 Glossary](./docs/GLOSSARY.md) · [🤝 Contributing](./CONTRIBUTING.md)
 
-- 📚 **Book Management**: Organize books, authors, and series
-- 🔍 **Unified Search**: Search across books, authors, and series
-- 📖 **eBook Reader**: Built-in EPUB reader powered by Readium
-- 📊 **Reading Progress**: Track reading position across devices
-- 🎨 **Modern UI**: Responsive design with Angular Material
-- 🚀 **Fast & Lightweight**: Quarkus backend with sub-second startup
-- 🔐 **Security**: OIDC authentication support (optional)
-- 🌍 **Multi-language**: Support for multiple languages (BCP 47 standard)
+---
 
-## Architecture
+## ⚡ Quick Start
 
-For detailed architecture documentation including C4 diagrams, hexagonal architecture patterns, and architectural decision records (ADRs), see:
-
-**📐 [ARCHITECTURE.md](./ARCHITECTURE.md)**
-
-### Quick Overview
-
-- **Backend**: Quarkus 3.25 (Java 21) with hexagonal architecture
-- **Frontend**: Angular 20 (TypeScript) with standalone components
-- **Database**: PostgreSQL 16 with Flyway migrations
-- **API**: RESTful JSON API
-- **eBook Reader**: Readium Web Reader
-
-## Getting Started
-
-### Prerequisites
-
-- Java 21 or later
-- Node.js 18 or later
-- PostgreSQL 16 or later
-- Maven 3.9+ (or use included wrapper)
-
-### Backend Setup
+**Clone and run in 2 minutes:**
 
 ```bash
+# 1. Start backend (auto-provisions PostgreSQL via TestContainers)
 cd backend
-
-# Run in development mode (with hot reload)
 ./mvnw quarkus:dev
 
-# The API will be available at http://localhost:8080
-# Swagger UI: http://localhost:8080/q/swagger-ui
+# 2. Start frontend (in another terminal)
+cd frontend
+npm install
+npm start
 ```
 
-### Frontend Setup
+🎯 **Access**: Frontend at `http://localhost:4200` · Backend API at `http://localhost:8080` · Swagger UI at `http://localhost:8080/q/swagger-ui`
+
+**Requirements**: Java 21+ · Node.js 18+ · Docker (for Dev Services)
+
+---
+
+## 🎯 What is Librarie?
+
+A **library management system** for digital books (EPUB, PDF) with:
+
+- 📚 Book catalog with authors, series, and metadata
+- 📖 Built-in EPUB reader (Readium-powered)
+- 📊 Reading progress tracking across devices
+- � Fast search across books, authors, and series
+- 🔐 OIDC authentication (Keycloak-ready)
+- 🌍 Multi-language support (BCP 47)
+
+**Use Cases**: Personal library · Book club · Educational institution · Small publishing house
+
+---
+
+## 🏗️ Tech Stack
+
+| Layer | Technology | Version |
+|-------|-----------|---------|
+| **Frontend** | Angular (Standalone Components) | 20.3 |
+| **Backend** | Quarkus (Hexagonal Architecture) | 3.25.2 |
+| **Database** | PostgreSQL + Flyway | 17 |
+| **Auth** | Keycloak (OIDC) | 26.3 |
+| **Reader** | Readium Navigator | Latest |
+
+**Architecture**: Backend uses hexagonal (ports & adapters) pattern for clean separation. Frontend uses signals for reactive state. [→ Details in ARCHITECTURE.md](./ARCHITECTURE.md)
+
+---
+
+## 📚 Documentation
+
+| Document | Description | When to Read |
+|----------|-------------|--------------|
+| **[PROJECT_OVERVIEW.md](./docs/PROJECT_OVERVIEW.md)** | Complete project documentation | Understanding the full system |
+| **[GLOSSARY.md](./docs/GLOSSARY.md)** | Terminology and domain concepts | Learning the vocabulary |
+| **[ARCHITECTURE.md](./ARCHITECTURE.md)** | Architecture decisions, C4 diagrams, patterns | Technical deep dive |
+| **[CONTRIBUTING.md](./CONTRIBUTING.md)** | Contribution guidelines and CI/CD | Before contributing |
+| **[Backend HTTP_CACHING.md](./backend/docs/HTTP_CACHING.md)** | HTTP caching strategy | Performance optimization |
+| **[Backend DEMO_DATA.md](./backend/DEMO_DATA_IDEMPOTENCY.md)** | Demo data loading | Development setup |
+
+**For LLMs**: Start with [`llms.txt`](./llms.txt) for structured documentation index.
+
+---
+
+## 🚀 Development
+
+### Run Tests
 
 ```bash
-cd frontend
+# Backend tests (includes ArchUnit architecture validation)
+cd backend && ./mvnw test
 
-# Install dependencies
-npm install
+# Frontend tests
+cd frontend && npm test
 
-# Run development server
-npm start
+# Architecture validation only
+cd backend && ./mvnw test -Dtest=HexagonalArchitectureTest
+```
 
-# The application will be available at http://localhost:4200
+### Build for Production
+
+```bash
+# Backend (creates quarkus-app/ runnable)
+cd backend && ./mvnw clean package
+java -jar target/quarkus-app/quarkus-run.jar
+
+# Frontend (outputs to dist/)
+cd frontend && npm run build
 ```
 
 ### Configuration
 
-Backend configuration is in `backend/src/main/resources/application.properties`:
+Backend settings in `backend/src/main/resources/application.properties`:
 
 ```properties
-# Demo mode (generates sample data)
+# Demo data (auto-loads sample books)
 librarie.demo.enabled=true
 
-# Storage settings
+# Storage
 librarie.storage.base-dir=assets
 librarie.storage.max-file-size=104857600
 
-# Database (configure for your environment)
+# Database
 quarkus.datasource.db-kind=postgresql
 quarkus.datasource.jdbc.url=jdbc:postgresql://localhost:5432/librarie
 ```
 
-## Development
+**Profiles**: `%dev` (development with TestContainers), `%prod` (production with external DB/OIDC)
 
-### Running Tests
+---
 
-**Backend:**
-```bash
-cd backend
-./mvnw test
-```
+## 🤝 Contributing
 
-**Frontend:**
-```bash
-cd frontend
-npm test
-```
+1. Read [CONTRIBUTING.md](./CONTRIBUTING.md) for process and CI/CD details
+2. Follow hexagonal architecture patterns (backend) and standalone component patterns (frontend)
+3. Check [GLOSSARY.md](./docs/GLOSSARY.md) for terminology
+4. Run tests before committing
+5. Architecture tests will fail if you violate layer boundaries ✅
 
-### Architecture Validation
+---
 
-The backend includes ArchUnit tests that automatically validate the hexagonal architecture:
-
-```bash
-cd backend
-./mvnw test -Dtest=HexagonalArchitectureTest
-```
-
-### Building for Production
-
-**Backend:**
-```bash
-cd backend
-./mvnw package
-java -jar target/quarkus-app/quarkus-run.jar
-```
-
-**Frontend:**
-```bash
-cd frontend
-npm run build
-# Output in dist/ directory
-```
-
-## Project Structure
+## 📁 Project Structure
 
 ```
-librarie/
-├── backend/                 # Quarkus backend application
-│   ├── src/
-│   │   ├── main/
-│   │   │   ├── java/org/motpassants/
-│   │   │   │   ├── domain/          # Core business logic
-│   │   │   │   ├── application/     # Use cases
-│   │   │   │   └── infrastructure/  # Adapters
-│   │   │   └── resources/
-│   │   │       ├── db/migration/    # Flyway migrations
-│   │   │       └── application.properties
-│   │   └── test/
-│   └── pom.xml
-├── frontend/                # Angular frontend application
-│   ├── src/
-│   │   ├── app/
-│   │   │   ├── components/  # Feature components
-│   │   │   ├── services/    # API services
-│   │   │   └── models/      # TypeScript models
-│   │   └── index.html
-│   └── package.json
-├── ARCHITECTURE.md          # Architecture documentation
-└── README.md               # This file
+Librarie/
+├── backend/                    # Quarkus backend
+│   ├── src/main/java/org/rlh/
+│   │   ├── domain/            # Core business logic (entities, value objects)
+│   │   ├── application/       # Use cases and orchestration
+│   │   └── infrastructure/    # Adapters (REST, DB, file I/O)
+│   ├── src/main/resources/
+│   │   ├── db/migration/      # Flyway SQL migrations
+│   │   └── application.properties
+│   └── assets/                # Book covers, EPUB files, author photos
+├── frontend/                   # Angular frontend
+│   ├── src/app/
+│   │   ├── components/        # Feature components (book-list, reader, etc.)
+│   │   ├── services/          # HTTP services (BookService, AuthService)
+│   │   └── models/            # TypeScript interfaces (Book, Author, Series)
+│   └── proxy.conf.json        # Dev proxy to backend
+├── docs/                       # Documentation
+│   ├── PROJECT_OVERVIEW.md    # Complete project documentation
+│   └── GLOSSARY.md            # Terminology reference
+├── llms.txt                    # LLM documentation index
+└── ARCHITECTURE.md             # Architecture deep dive
+
 ```
 
-## Documentation
+---
 
-- **[Architecture Documentation](./ARCHITECTURE.md)** - System architecture, C4 diagrams, and ADRs
-- **[Frontend README](./frontend/README.md)** - Angular-specific documentation
-- **[Backend API](http://localhost:8080/q/swagger-ui)** - Swagger UI (when running)
+## 🛠️ Troubleshooting
 
-## Technology Stack
+**Backend won't start?**
+- Ensure Docker is running (for Dev Services)
+- Check Java version: `java --version` (must be 21+)
 
-### Backend
-- **Framework**: Quarkus 3.25
-- **Language**: Java 21
-- **Database**: PostgreSQL 16
-- **Migrations**: Flyway
-- **Testing**: JUnit 5, ArchUnit, Mockito
-- **Monitoring**: OpenTelemetry, Micrometer
-- **API Docs**: OpenAPI/Swagger
+**Frontend build errors?**
+- Clear node_modules: `rm -rf node_modules && npm install`
+- Check Node version: `node --version` (must be 18+)
 
-### Frontend
-- **Framework**: Angular 20
-- **Language**: TypeScript 5.8
-- **UI Library**: Angular Material
-- **eBook Reader**: Readium Navigator
-- **Build**: Angular CLI
-- **Testing**: Jasmine, Karma, Playwright
+**Database issues?**
+- Dev mode uses TestContainers (auto-provisioned)
+- Production requires external PostgreSQL
 
-## Contributing
+**More help**: See issue tracker or documentation.
 
-1. Follow the hexagonal architecture patterns (see ARCHITECTURE.md)
-2. Run tests before committing
-3. Update documentation for significant changes
-4. Follow existing code style and conventions
+---
 
-## License
+## 📄 License
 
 [Add your license here]
 
-## Support
+---
 
-For questions or issues, please [open an issue](../../issues) on GitHub.
+**Built with**: Quarkus · Angular · PostgreSQL · Readium · Keycloak

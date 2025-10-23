@@ -1,0 +1,33 @@
+# Librarie - Digital Library Management System
+
+> A modern, full-stack library management system for organizing and reading digital books (EPUB, PDF) with integrated ebook reader powered by Readium.
+
+Librarie is built with Angular 20 (frontend) and Quarkus 3 (backend) using hexagonal architecture. It provides a complete solution for managing personal digital book collections with features including unified search, reading progress tracking, and an integrated EPUB reader.
+
+## Core Documentation
+
+- [Project Overview](./docs/PROJECT_OVERVIEW.md): Complete system overview, business context, technology stack, and high-level architecture
+- [Glossary](./docs/GLOSSARY.md): Authoritative terminology reference - domain concepts, technical terms, acronyms, and frontend-backend mapping
+- [Architecture Documentation](./ARCHITECTURE.md): C4 diagrams, hexagonal architecture details, component structure, data flows, and ADRs
+- [Troubleshooting Guide](./docs/TROUBLESHOOTING.md): Common issues and solutions for development, build, and runtime problems
+- [Serena Integration Guide](./docs/SERENA_INTEGRATION.md): Optimized AI agent integration with memory architecture and usage patterns
+- [Development Guide](./docs/DEVELOPMENT.md): Setup instructions, development workflows, testing strategies, and debugging tips
+- [API Documentation](./docs/API_DOCUMENTATION.md): Complete REST API reference with request/response examples
+- [Contributing Guide](./CONTRIBUTING.md): Code standards, Git workflow, CI/CD pipeline, and PR process
+
+## Quick Start
+
+- [Backend README](./backend/README.md): Backend-specific setup and development
+- [Frontend README](./frontend/README.md): Frontend-specific setup and development
+- [Demo Data Documentation](./backend/DEMO_DATA_IDEMPOTENCY.md): How demo data works and idempotency implementation
+- [HTTP Caching Guide](./backend/docs/HTTP_CACHING.md): Caching strategy for static assets
+
+## Technical Reference
+
+- [Audit Report](./audit_report.md): Complete system audit with findings and recommendations
+- [Tasks Backlog](./tasks.md): Detailed improvement tasks with implementation guides
+
+## Optional
+
+- [CI/CD Workflows](./.github/workflows/): GitHub Actions workflows for automation
+- [Instructions for Copilot](./.github/instructions/): Custom instructions for GitHub Copilot
